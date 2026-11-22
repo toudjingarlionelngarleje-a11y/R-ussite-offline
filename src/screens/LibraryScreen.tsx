@@ -35,12 +35,26 @@ export const LibraryScreen: React.FC = () => {
   const [query, setQuery] = useState('');
   const [examFilter, setExamFilter] = useState<string>('all');
   const [onlyDownloaded, setOnlyDownloaded] = useState(false);
+  const [chapterSearch, setChapterSearch] = useState('');
+  const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'facile' | 'moyen' | 'difficile'>('all');
 
   const selectedSubject = SUBJECTS.find((s) => s.id === selectedSubjectId) ?? SUBJECTS[0];
 
   // Screen 7: Détail d'une matière & Screen 8: Liste des chapitres
   if (screen === 'subject-detail' || screen === 'chapters') {
-    const subjChapters = CHAPTERS.filter((c) => c.subjectId === selectedSubject.id);
+    const subjChapters = CHAPTERS.filter((c) => c.subjectId === selectedSubject.id).sort(
+      (a, b) => a.order - b.order
+    );
+    const filteredChapters = subjChapters.filter((ch) => {
+      if (difficultyFilter !== 'all' && ch.difficulty !== difficultyFilter) return false;
+      if (
+        chapterSearch.trim() &&
+        !`${ch.title} ${ch.summary}`.toLowerCase().includes(chapterSearch.trim().toLowerCase())
+      ) {
+        return false;
+      }
+      return true;
+    });
     const subjAnnales = ANNALES.filter((a) => a.subjectId === selectedSubject.id);
     const subjFiches = allFiches.filter((f) => f.subjectId === selectedSubject.id);
     const subjQuestions = allQuestions.filter((q) => q.subjectId === selectedSubject.id);
@@ -166,10 +180,38 @@ export const LibraryScreen: React.FC = () => {
 
         {/* Chapters List (Screen 8) */}
         <section className="space-y-3">
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">
-            Chapitres du programme
-          </h2>
-          {subjChapters.map((ch) => {
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">
+              Chapitres du programme ({filteredChapters.length}/{subjChapters.length})
+            </h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="search"
+                  value={chapterSearch}
+                  onChange={(e) => setChapterSearch(e.target.value)}
+                  placeholder="Filtrer un chapitre..."
+                  className="rounded-xl border border-slate-300 bg-white py-1.5 pl-8 pr-3 text-xs dark:border-slate-700 dark:bg-slate-800"
+                />
+              </div>
+              <select
+                aria-label="Filtrer par difficulté"
+                value={difficultyFilter}
+                onChange={(e) =>
+                  setDifficultyFilter(e.target.value as 'all' | 'facile' | 'moyen' | 'difficile')
+                }
+                className="rounded-xl border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold dark:border-slate-700 dark:bg-slate-800"
+              >
+                <option value="all">Tous niveaux</option>
+                <option value="facile">Facile</option>
+                <option value="moyen">Moyen</option>
+                <option value="difficile">Difficile</option>
+              </select>
+            </div>
+          </div>
+
+          {filteredChapters.map((ch) => {
             const course = COURSES.find((c) => c.id === ch.courseId);
             const completed = course ? state.completedCourseIds.includes(course.id) : false;
             const chQuestions = allQuestions.filter((q) => q.chapterId === ch.id);
@@ -356,7 +398,7 @@ export const LibraryScreen: React.FC = () => {
             Bibliothèque de contenus
           </h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Explore les matières, chapitres, cours et packs téléchargeables hors ligne.
+            {SUBJECTS.length} matières · {CHAPTERS.length} chapitres · {allFiches.length} fiches de cours disponibles 100 % hors ligne.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -419,6 +461,7 @@ export const LibraryScreen: React.FC = () => {
           const downloaded = isDownloaded('subject', subj.id);
           const pct = downloadingIds[`subject:${subj.id}`];
           const chCount = CHAPTERS.filter((c) => c.subjectId === subj.id).length;
+          const ficheCount = allFiches.filter((f) => f.subjectId === subj.id).length;
           const lockedPremium = subj.isPremium && state.profiles.find((p) => p.id === state.activeProfileId)?.plan !== 'premium';
 
           return (
@@ -454,7 +497,9 @@ export const LibraryScreen: React.FC = () => {
                 </p>
 
                 <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-500">
-                  <span>{chCount} chapitre(s)</span>
+                  <span>{chCount} chapitres</span>
+                  <span>·</span>
+                  <span>{ficheCount} fiches</span>
                   <span>·</span>
                   <span>Pack {subj.sizeKb} Ko</span>
                   {downloaded && (

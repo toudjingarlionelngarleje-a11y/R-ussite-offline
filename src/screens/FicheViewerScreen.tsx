@@ -40,6 +40,7 @@ export const FicheViewerScreen: React.FC = () => {
   const [format, setFormat] = useState<FicheFormat>('detaillee');
   const [searchTerm, setSearchTerm] = useState('');
   const [subjectFilter, setSubjectFilter] = useState('all');
+  const [visibleLimit, setVisibleLimit] = useState(60);
   const [speaking, setSpeaking] = useState(false);
   const [revealedAuto, setRevealedAuto] = useState<Record<number, boolean>>({});
   const [noteText, setNoteText] = useState('');
@@ -59,6 +60,13 @@ export const FicheViewerScreen: React.FC = () => {
 
   const fiche =
     allFiches.find((f) => f.id === selectedFicheId) ?? filteredFiches[0] ?? allFiches[0];
+  const currentIdx = filteredFiches.findIndex((f) => f.id === fiche.id);
+  const prevFiche = currentIdx > 0 ? filteredFiches[currentIdx - 1] : undefined;
+  const nextFiche =
+    currentIdx >= 0 && currentIdx < filteredFiches.length - 1
+      ? filteredFiches[currentIdx + 1]
+      : undefined;
+  const displayedFiches = filteredFiches.slice(0, visibleLimit);
   const subject = SUBJECTS.find((s) => s.id === fiche.subjectId);
   const downloaded = isDownloaded('fiche', fiche.id);
   const isFav = state.favorites.fiches.includes(fiche.id);
@@ -97,7 +105,7 @@ export const FicheViewerScreen: React.FC = () => {
       <div className="no-print flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
-            Fiches synthétiques de révision
+            Fiches synthétiques de révision ({allFiches.length})
           </h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             6 formats disponibles hors ligne : détaillée, express, tableau, cartes mémoire, imprimable PDF et audio.
@@ -143,19 +151,38 @@ export const FicheViewerScreen: React.FC = () => {
             <select
               aria-label="Filtrer les fiches par matière"
               value={subjectFilter}
-              onChange={(e) => setSubjectFilter(e.target.value)}
+              onChange={(e) => {
+                setSubjectFilter(e.target.value);
+                setVisibleLimit(60);
+              }}
               className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold dark:border-slate-700 dark:bg-slate-800"
             >
               <option value="all">Toutes les matières ({allFiches.length})</option>
-              {SUBJECTS.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
+              {SUBJECTS.map((s) => {
+                const count = allFiches.filter((f) => f.subjectId === s.id).length;
+                return (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({count})
+                  </option>
+                );
+              })}
             </select>
 
+            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
+              <span>{filteredFiches.length} fiche(s) trouvée(s)</span>
+              {subjectFilter !== 'all' && (
+                <button
+                  type="button"
+                  onClick={() => setSubjectFilter('all')}
+                  className="text-blue-700 hover:underline dark:text-blue-400"
+                >
+                  Tout voir
+                </button>
+              )}
+            </div>
+
             <div className="max-h-[420px] space-y-1.5 overflow-y-auto pt-1">
-              {filteredFiches.map((f) => {
+              {displayedFiches.map((f) => {
                 const sub = SUBJECTS.find((s) => s.id === f.subjectId);
                 const active = f.id === fiche.id;
                 return (
@@ -191,6 +218,15 @@ export const FicheViewerScreen: React.FC = () => {
                   </button>
                 );
               })}
+              {filteredFiches.length > displayedFiches.length && (
+                <button
+                  type="button"
+                  onClick={() => setVisibleLimit((n) => n + 60)}
+                  className="w-full rounded-xl border border-dashed border-blue-300 bg-blue-50/50 py-2 text-xs font-bold text-blue-700 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300"
+                >
+                  Afficher 60 fiches de plus ({filteredFiches.length - displayedFiches.length} restantes)
+                </button>
+              )}
             </div>
           </div>
         </aside>
@@ -580,6 +616,43 @@ export const FicheViewerScreen: React.FC = () => {
               </div>
             )}
           </article>
+
+          {/* Previous / Next Fiche Navigation */}
+          {(prevFiche || nextFiche) && (
+            <div className="no-print flex flex-wrap items-center justify-between gap-2">
+              <button
+                type="button"
+                disabled={!prevFiche}
+                onClick={() => {
+                  if (!prevFiche) return;
+                  stopSpeaking();
+                  setSpeaking(false);
+                  setRevealedAuto({});
+                  setSelectedFicheId(prevFiche.id);
+                }}
+                className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              >
+                ← Fiche précédente
+              </button>
+              <span className="text-xs font-semibold text-slate-500">
+                Fiche {currentIdx + 1} / {filteredFiches.length}
+              </span>
+              <button
+                type="button"
+                disabled={!nextFiche}
+                onClick={() => {
+                  if (!nextFiche) return;
+                  stopSpeaking();
+                  setSpeaking(false);
+                  setRevealedAuto({});
+                  setSelectedFicheId(nextFiche.id);
+                }}
+                className="rounded-xl bg-blue-700 px-3.5 py-2 text-xs font-bold text-white hover:bg-blue-800 disabled:opacity-40"
+              >
+                Fiche suivante →
+              </button>
+            </div>
+          )}
 
           {/* Notes & Highlights on this Fiche */}
           <div className="no-print grid gap-4 md:grid-cols-2">

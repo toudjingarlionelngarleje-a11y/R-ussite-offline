@@ -81,6 +81,11 @@ import {
   HORIZON_QUESTIONS,
   HORIZON_SUBJECTS,
 } from './horizonCatalog';
+import {
+  EXPANDED_CHAPTERS,
+  EXPANDED_COURSES,
+  EXPANDED_FICHES,
+} from './curriculumExpansion';
 
 export { COUNTRIES, USER_CATEGORIES };
 
@@ -253,6 +258,7 @@ export const CHAPTERS = [
   ...ZENITH_CHAPTERS,
   ...SUMMIT_CHAPTERS,
   ...HORIZON_CHAPTERS,
+  ...EXPANDED_CHAPTERS,
 ];
 export const COURSES = [
   ...BASE_COURSES,
@@ -263,6 +269,7 @@ export const COURSES = [
   ...ZENITH_COURSES,
   ...SUMMIT_COURSES,
   ...HORIZON_COURSES,
+  ...EXPANDED_COURSES,
 ];
 export const QUESTIONS = [
   ...BASE_QUESTIONS,
@@ -293,6 +300,7 @@ export const FICHES = [
   ...ZENITH_FICHES,
   ...SUMMIT_FICHES,
   ...HORIZON_FICHES,
+  ...EXPANDED_FICHES,
 ];
 export const FLASHCARDS = [
   ...BASE_FLASHCARDS,
