@@ -48,12 +48,18 @@ export const OwnerHubScreen: React.FC = () => {
     updateErrorReportStatus,
     syncNow,
     triggerPanicLockdown,
+    lockTwoFactorSessionNow,
+    regenerateTwoFactorRecoveryCodes,
+    resetTwoFactorMethod,
     notify,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<OwnerTab>('governance');
   const [cloudData, setCloudData] = useState<OwnerCloudSnapshot | null>(null);
   const [loadingCloud, setLoadingCloud] = useState(false);
+  const [mfaConfirmCode, setMfaConfirmCode] = useState('');
+  const [freshRecoveryCodes, setFreshRecoveryCodes] = useState<string[] | null>(null);
+  const [mfaBusy, setMfaBusy] = useState(false);
 
   const settings: OwnerGlobalSettings = state.ownerSettings ?? DEFAULT_OWNER_SETTINGS;
   const [announcementText, setAnnouncementText] = useState(settings.announcementText);
@@ -776,53 +782,155 @@ export const OwnerHubScreen: React.FC = () => {
         </section>
       )}
 
-      {/* TAB 5: CLOUD SIEM SECURITY TELEMETRY */}
+      {/* TAB 5: CLOUD SIEM SECURITY TELEMETRY & 2FA MANAGEMENT */}
       {activeTab === 'security' && (
-        <section className="hc-card space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-white">
-              <ShieldCheck className="h-5 w-5 text-emerald-600" />
-              Supervision SIEM Cloud & Contrôle du Bouclier
-            </h2>
-            <div className="flex gap-2">
+        <div className="space-y-4">
+          {/* Owner 2FA Vault Card */}
+          <section className="hc-card space-y-4 rounded-2xl border border-amber-300/70 bg-gradient-to-br from-amber-50/70 via-white to-orange-50/40 p-5 shadow-sm dark:border-amber-500/30 dark:from-slate-900 dark:via-slate-900 dark:to-amber-950/20">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-white">
+                  <Lock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  Double Authentification Propriétaire (2FA Obligatoire)
+                </h2>
+                <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
+                  Méthode active :{' '}
+                  <strong className="text-slate-900 dark:text-white">
+                    {activeProfile?.twoFactor?.method === 'pin'
+                      ? 'Code PIN Maître 6 chiffres (PBKDF2-SHA256)'
+                      : 'Application Authenticator (TOTP RFC 6238)'}
+                  </strong>{' '}
+                  • Codes de secours restants :{' '}
+                  <strong className="text-emerald-700 dark:text-emerald-400">
+                    {activeProfile?.twoFactor?.recoveryCodeHashes?.length ?? 0} / 8
+                  </strong>
+                </p>
+              </div>
               <button
-                onClick={() => navigate('security')}
-                className="rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-700"
+                type="button"
+                onClick={lockTwoFactorSessionNow}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-3.5 py-2 text-xs font-extrabold text-slate-950 hover:bg-amber-400"
               >
-                Ouvrir Pare-feu & Antivirus (36/36)
-              </button>
-              <button
-                onClick={triggerPanicLockdown}
-                className="rounded-xl bg-red-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-red-700"
-              >
-                Verrouillage d’Urgence
+                <Lock className="h-3.5 w-3.5" />
+                Verrouiller ma session 2FA maintenant
               </button>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            {(cloudData?.securityLogs ?? []).length === 0 ? (
-              <p className="rounded-xl bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
-                ✅ Aucune alerte critique enregistrée dans la table Cloud security_audit_logs.
+            <div className="rounded-xl border border-slate-200 bg-white/80 p-3.5 dark:border-slate-800 dark:bg-slate-950/60">
+              <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Opérations sensibles 2FA (saisis ton code 2FA actuel pour confirmer)
               </p>
-            ) : (
-              (cloudData?.securityLogs ?? []).map((log) => (
-                <div
-                  key={log.id}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 p-3 text-xs dark:border-slate-800"
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  value={mfaConfirmCode}
+                  onChange={(e) => setMfaConfirmCode(e.target.value.toUpperCase().slice(0, 9))}
+                  placeholder="Code 6 chiffres ou secours"
+                  className="w-52 rounded-xl border border-slate-300 bg-white px-3 py-2 font-mono text-xs font-bold tracking-widest text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                />
+                <button
+                  type="button"
+                  disabled={mfaBusy || mfaConfirmCode.length < 6}
+                  onClick={async () => {
+                    setMfaBusy(true);
+                    const res = await regenerateTwoFactorRecoveryCodes(mfaConfirmCode);
+                    setMfaBusy(false);
+                    if (res.ok && res.codes) {
+                      setFreshRecoveryCodes(res.codes);
+                      setMfaConfirmCode('');
+                    } else if (res.error) {
+                      notify(res.error, 'error');
+                    }
+                  }}
+                  className="rounded-xl bg-blue-700 px-3.5 py-2 text-xs font-bold text-white hover:bg-blue-800 disabled:opacity-50"
                 >
-                  <div>
-                    <span className="font-mono font-bold text-red-600">{log.rule_id}</span>{' '}
-                    <span className="font-bold">{log.source}</span> ({log.category})
+                  Régénérer 8 codes de secours
+                </button>
+                <button
+                  type="button"
+                  disabled={mfaBusy || mfaConfirmCode.length < 6}
+                  onClick={async () => {
+                    setMfaBusy(true);
+                    const res = await resetTwoFactorMethod(mfaConfirmCode);
+                    setMfaBusy(false);
+                    if (!res.ok && res.error) {
+                      notify(res.error, 'error');
+                    } else {
+                      setMfaConfirmCode('');
+                    }
+                  }}
+                  className="rounded-xl border border-red-300 bg-red-50 px-3.5 py-2 text-xs font-bold text-red-700 hover:bg-red-100 disabled:opacity-50 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300"
+                >
+                  Changer d’Authenticator / Méthode 2FA
+                </button>
+              </div>
+
+              {freshRecoveryCodes && (
+                <div className="mt-3 rounded-xl border border-emerald-300 bg-emerald-50 p-3 dark:border-emerald-800 dark:bg-emerald-950/40">
+                  <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
+                    ✅ Tes 8 nouveaux codes de secours (enregistre-les maintenant, les anciens sont annulés) :
+                  </p>
+                  <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                    {freshRecoveryCodes.map((c) => (
+                      <code
+                        key={c}
+                        className="rounded-lg bg-white px-2 py-1 text-center font-mono text-xs font-bold text-slate-900 shadow-sm dark:bg-slate-900 dark:text-white"
+                      >
+                        {c}
+                      </code>
+                    ))}
                   </div>
-                  <span className="font-mono text-[10px] text-slate-400">
-                    {new Date(log.created_at).toLocaleString('fr-FR')}
-                  </span>
                 </div>
-              ))
-            )}
-          </div>
-        </section>
+              )}
+            </div>
+          </section>
+
+          <section className="hc-card space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-white">
+                <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                Supervision SIEM Cloud & Contrôle du Bouclier
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => navigate('security')}
+                  className="rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-700"
+                >
+                  Ouvrir Pare-feu & Antivirus (36/36)
+                </button>
+                <button
+                  onClick={triggerPanicLockdown}
+                  className="rounded-xl bg-red-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-red-700"
+                >
+                  Verrouillage d’Urgence
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {(cloudData?.securityLogs ?? []).length === 0 ? (
+                <p className="rounded-xl bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
+                  ✅ Aucune alerte critique enregistrée dans la table Cloud security_audit_logs.
+                </p>
+              ) : (
+                (cloudData?.securityLogs ?? []).map((log) => (
+                  <div
+                    key={log.id}
+                    className="flex items-center justify-between rounded-xl border border-slate-200 p-3 text-xs dark:border-slate-800"
+                  >
+                    <div>
+                      <span className="font-mono font-bold text-red-600">{log.rule_id}</span>{' '}
+                      <span className="font-bold">{log.source}</span> ({log.category})
+                    </div>
+                    <span className="font-mono text-[10px] text-slate-400">
+                      {new Date(log.created_at).toLocaleString('fr-FR')}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+        </div>
       )}
     </div>
   );

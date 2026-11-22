@@ -6,6 +6,7 @@ import {
   OwnerGlobalSettings,
   Question,
   SecurityEvent,
+  TwoFactorConfig,
   UserProfile,
 } from '../types';
 import { isOwnerProfile } from './owner';
@@ -130,7 +131,7 @@ export async function syncStateWithSupabase(
   const secCfg = state.security?.config ?? DEFAULT_SECURITY_CONFIG;
 
   try {
-    // 1. Upsert user profile (sanitized + preserve Owner entitlements)
+    // 1. Upsert user profile (sanitized + preserve Owner entitlements & 2FA metadata)
     const ownerFlag = isOwnerProfile(activeProfile);
     const { error: profErr } = await sb.from('user_profiles').upsert({
       id: activeProfile.id,
@@ -149,6 +150,14 @@ export async function syncStateWithSupabase(
       target_score: activeProfile.targetScore,
       plan: ownerFlag ? 'premium' : activeProfile.plan,
       streak_days: state.streakDays,
+      mfa_required: ownerFlag ? true : Boolean(activeProfile.twoFactor?.required),
+      mfa_enabled: Boolean(activeProfile.twoFactor?.enabled),
+      mfa_method: activeProfile.twoFactor?.method ?? 'totp',
+      mfa_secret_encrypted: activeProfile.twoFactor?.secretEncrypted ?? null,
+      mfa_pin_hash: activeProfile.twoFactor?.pinHash ?? null,
+      mfa_recovery_hashes: activeProfile.twoFactor?.recoveryCodeHashes ?? [],
+      mfa_configured_at: activeProfile.twoFactor?.configuredAt ?? null,
+      mfa_last_verified_at: activeProfile.twoFactor?.lastVerifiedAt ?? null,
       updated_at: new Date().toISOString(),
     });
     if (profErr) throw profErr;
@@ -550,3 +559,70 @@ export async function deleteCloudTeacherContent(
     return { ok: false, error: err instanceof Error ? err.message : 'Erreur suppression' };
   }
 }
+
+/**
+ * Persists a user's encrypted 2FA / MFA configuration to Supabase for multi-device enforcement.
+ */
+export async function syncTwoFactorConfigToCloud(
+  profile: UserProfile
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = getSupabaseClient();
+  if (!sb || !profile.twoFactor) return { ok: true };
+  try {
+    const ownerFlag = isOwnerProfile(profile);
+    const { error } = await sb
+      .from('user_profiles')
+      .update({
+        mfa_required: ownerFlag ? true : profile.twoFactor.required,
+        mfa_enabled: profile.twoFactor.enabled,
+        mfa_method: profile.twoFactor.method,
+        mfa_secret_encrypted: profile.twoFactor.secretEncrypted ?? null,
+        mfa_pin_hash: profile.twoFactor.pinHash ?? null,
+        mfa_recovery_hashes: profile.twoFactor.recoveryCodeHashes ?? [],
+        mfa_configured_at: profile.twoFactor.configuredAt ?? null,
+        mfa_last_verified_at: profile.twoFactor.lastVerifiedAt ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('email', profile.email.toLowerCase());
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Erreur sync 2FA Cloud' };
+  }
+}
+
+/**
+ * Fetches existing 2FA / MFA configuration from Supabase so a new device cannot bypass 2FA.
+ */
+export async function fetchProfileMfaFromCloud(
+  email: string
+): Promise<TwoFactorConfig | null> {
+  const sb = getSupabaseClient();
+  if (!sb || !email) return null;
+  try {
+    const { data, error } = await sb
+      .from('user_profiles')
+      .select(
+        'mfa_required, mfa_enabled, mfa_method, mfa_secret_encrypted, mfa_pin_hash, mfa_recovery_hashes, mfa_configured_at, mfa_last_verified_at'
+      )
+      .eq('email', email.trim().toLowerCase())
+      .maybeSingle();
+    if (error || !data) return null;
+    if (!data.mfa_required && !data.mfa_enabled) return null;
+    return {
+      required: Boolean(data.mfa_required),
+      enabled: Boolean(data.mfa_enabled),
+      method: data.mfa_method === 'pin' ? 'pin' : 'totp',
+      secretEncrypted: data.mfa_secret_encrypted ?? undefined,
+      pinHash: data.mfa_pin_hash ?? undefined,
+      recoveryCodeHashes: Array.isArray(data.mfa_recovery_hashes)
+        ? (data.mfa_recovery_hashes as string[])
+        : [],
+      configuredAt: data.mfa_configured_at ?? undefined,
+      lastVerifiedAt: data.mfa_last_verified_at ?? undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+

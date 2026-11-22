@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, GraduationCap, Lock, ShieldCheck, UserPlus } from 'lucide-react';
 import { USER_CATEGORIES } from '../data';
 import { useApp } from '../context/AppContext';
+import { isTwoFactorMandatoryForProfile } from '../lib/twoFactor';
 import { UserCategory } from '../types';
 
 export const AuthScreen: React.FC = () => {
@@ -185,20 +186,32 @@ export const AuthScreen: React.FC = () => {
             </p>
             {state.profiles.length > 0 && (
               <div className="mt-3 space-y-2">
-                {state.profiles.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => switchProfile(p.id)}
-                    className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-left text-xs hover:border-blue-400 dark:border-slate-700"
-                  >
-                    <div>
-                      <p className="font-bold text-slate-900 dark:text-white">{p.name}</p>
-                      <p className="text-slate-500">{p.email}</p>
-                    </div>
-                    <span className="font-semibold text-blue-700 dark:text-blue-400">Ouvrir →</span>
-                  </button>
-                ))}
+                {state.profiles.map((p) => {
+                  const protected2fa = isTwoFactorMandatoryForProfile(p);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => switchProfile(p.id)}
+                      className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-left text-xs hover:border-blue-400 dark:border-slate-700"
+                    >
+                      <div>
+                        <p className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
+                          <span>{p.name}</span>
+                          {protected2fa && (
+                            <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+                              🔐 2FA
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-slate-500">{p.email}</p>
+                      </div>
+                      <span className="font-semibold text-blue-700 dark:text-blue-400">
+                        {protected2fa ? 'Vérifier 2FA →' : 'Ouvrir →'}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             )}
             <button

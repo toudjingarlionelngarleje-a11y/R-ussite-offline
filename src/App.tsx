@@ -25,10 +25,11 @@ import { SecurityCenterScreen } from './screens/SecurityCenterScreen';
 import { StatsScreen } from './screens/StatsScreen';
 import { StorageSyncScreen } from './screens/StorageSyncScreen';
 import { TeacherScreen } from './screens/TeacherScreen';
+import { TwoFactorGateScreen } from './screens/TwoFactorGateScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 
 const ScreenRouter: React.FC = () => {
-  const { screen, hydrated } = useApp();
+  const { screen, hydrated, requiresTwoFactorGate } = useApp();
 
   if (!hydrated) {
     return (
@@ -36,6 +37,11 @@ const ScreenRouter: React.FC = () => {
         Chargement de ton espace hors ligne...
       </div>
     );
+  }
+
+  // Hard 2FA Security Gate: blocks all screens until the second factor is verified
+  if (requiresTwoFactorGate) {
+    return <TwoFactorGateScreen />;
   }
 
   const renderScreen = () => {

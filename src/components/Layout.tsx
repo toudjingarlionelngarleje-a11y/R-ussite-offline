@@ -16,6 +16,7 @@ import {
   Home,
   Layers,
   LayoutGrid,
+  Lock,
   Menu,
   Moon,
   PenTool,
@@ -48,6 +49,8 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     state,
     activeProfile,
     isOwner,
+    twoFactorMandatory,
+    lockTwoFactorSessionNow,
     screen,
     navigate,
     isOnline,
@@ -241,6 +244,18 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               >
                 {state.accessibility.darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
+
+              {twoFactorMandatory && (
+                <button
+                  type="button"
+                  onClick={lockTwoFactorSessionNow}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 dark:border-amber-700/60 dark:bg-amber-950/50 dark:text-amber-300"
+                  aria-label="Verrouiller la session 2FA"
+                  title="Verrouiller immédiatement mon compte (Double Authentification 2FA)"
+                >
+                  <Lock className="h-4 w-4" />
+                </button>
+              )}
 
               {isOwner ? (
                 <button

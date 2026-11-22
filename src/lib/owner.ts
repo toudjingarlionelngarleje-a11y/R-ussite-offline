@@ -41,6 +41,17 @@ export function applyOwnerEntitlements(profile: UserProfile): UserProfile {
       ...profile,
       role: 'owner',
       plan: 'premium',
+      twoFactor: {
+        required: true,
+        enabled: profile.twoFactor?.enabled ?? false,
+        method: profile.twoFactor?.method ?? 'totp',
+        secretEncrypted: profile.twoFactor?.secretEncrypted,
+        pinHash: profile.twoFactor?.pinHash,
+        recoveryCodeHashes: profile.twoFactor?.recoveryCodeHashes ?? [],
+        configuredAt: profile.twoFactor?.configuredAt,
+        lastVerifiedAt: profile.twoFactor?.lastVerifiedAt,
+        lastUsedTimeStep: profile.twoFactor?.lastUsedTimeStep,
+      },
     };
   }
   return {

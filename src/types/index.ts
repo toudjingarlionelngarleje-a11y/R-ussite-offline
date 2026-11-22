@@ -74,6 +74,24 @@ export interface PrivacySettings {
 
 export type AccountRole = 'user' | 'teacher' | 'admin' | 'owner';
 
+export type TwoFactorMethod = 'totp' | 'pin';
+
+export interface TwoFactorConfig {
+  required: boolean;
+  enabled: boolean;
+  method: TwoFactorMethod;
+  /** AES-256-GCM encrypted Base32 TOTP secret (when method === 'totp') */
+  secretEncrypted?: string;
+  /** PBKDF2-SHA256 hash of secondary 6-digit Master PIN (when method === 'pin') */
+  pinHash?: string;
+  /** PBKDF2-SHA256 hashes of one-time 8-char recovery codes */
+  recoveryCodeHashes: string[];
+  configuredAt?: string;
+  lastVerifiedAt?: string;
+  /** Anti-replay guard for TOTP 30-second time step */
+  lastUsedTimeStep?: number;
+}
+
 export interface OwnerGlobalSettings {
   announcementEnabled: boolean;
   announcementText: string;
@@ -91,6 +109,7 @@ export interface UserProfile {
   email: string;
   passwordHash: string;
   role?: AccountRole;
+  twoFactor?: TwoFactorConfig;
   category: UserCategory;
   country: string;
   studyLevel: string;

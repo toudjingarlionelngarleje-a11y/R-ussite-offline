@@ -26,11 +26,28 @@ import {
   isOwnerProfile,
 } from '../lib/owner';
 import {
+  fetchProfileMfaFromCloud,
   isSupabaseConfigured,
   publishOwnerCloudQuestion,
   saveOwnerGlobalSettingsToCloud,
   syncStateWithSupabase,
+  syncTwoFactorConfigToCloud,
 } from '../lib/supabaseSync';
+import {
+  clearTwoFactorSessionVerification,
+  decryptTotpSecret,
+  encryptTotpSecret,
+  generateRecoveryCodes,
+  hashRecoveryCodes,
+  hashTwoFactorPin,
+  isTwoFactorConfigured,
+  isTwoFactorMandatoryForProfile,
+  isTwoFactorSessionVerified,
+  markTwoFactorSessionVerified,
+  verifyAndConsumeRecoveryCode,
+  verifyTotpCode,
+  verifyTwoFactorPin,
+} from '../lib/twoFactor';
 import {
   AccessibilitySettings,
   AppState,
@@ -56,6 +73,8 @@ import {
   SyncStatus,
   TeacherDraft,
   TrainingMode,
+  TwoFactorConfig,
+  TwoFactorMethod,
   UserCategory,
   UserProfile,
 } from '../types';
@@ -663,6 +682,31 @@ interface AppContextValue {
   exportMasterBackup: () => void;
   purgeReportedGroupMessages: () => void;
 
+  // Two-Factor Authentication (2FA / MFA)
+  requiresTwoFactorGate: boolean;
+  twoFactorConfigured: boolean;
+  twoFactorMandatory: boolean;
+  completeTwoFactorEnrollment: (input: {
+    method: TwoFactorMethod;
+    totpSecret?: string;
+    verificationCode?: string;
+    pin?: string;
+    recoveryCodes: string[];
+  }) => Promise<{ ok: boolean; error?: string }>;
+  verifyTwoFactorChallenge: (
+    code: string,
+    mode: 'primary' | 'recovery',
+    rememberHours?: number
+  ) => Promise<{ ok: boolean; error?: string; remainingRecoveryCodes?: number }>;
+  lockTwoFactorSessionNow: () => void;
+  regenerateTwoFactorRecoveryCodes: (
+    currentCode: string
+  ) => Promise<{ ok: boolean; codes?: string[]; error?: string }>;
+  resetTwoFactorMethod: (
+    currentCodeOrRecovery: string
+  ) => Promise<{ ok: boolean; error?: string }>;
+  toggleOptionalTwoFactorForUser: (enable: boolean) => void;
+
   // Notifications / Toasts
   toasts: ToastMessage[];
   notify: (text: string, tone?: ToastMessage['tone']) => void;
@@ -687,6 +731,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [downloadingIds, setDownloadingIds] = useState<Record<string, number>>({});
   const [syncingNow, setSyncingNow] = useState(false);
   const [syncFailed, setSyncFailed] = useState(false);
+  const [twoFactorVerifiedProfileId, setTwoFactorVerifiedProfileId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const saveTimerRef = useRef<number | null>(null);
@@ -815,6 +860,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (!autoLockMinutes || !state.activeProfileId) return;
     let timer = window.setTimeout(() => {
+      clearTwoFactorSessionVerification();
+      setTwoFactorVerifiedProfileId(null);
       setState((prev) => ({ ...prev, activeProfileId: null }));
       setScreen('welcome');
       notify('Session verrouillée automatiquement après inactivité (sécurité).', 'warning');
@@ -823,6 +870,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const resetTimer = () => {
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
+        clearTwoFactorSessionVerification();
+        setTwoFactorVerifiedProfileId(null);
         setState((prev) => ({ ...prev, activeProfileId: null }));
         setScreen('welcome');
         notify('Session verrouillée automatiquement après inactivité (sécurité).', 'warning');
@@ -876,6 +925,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [state.profiles, state.activeProfileId]);
 
   const isOwner = useMemo(() => isOwnerProfile(activeProfile), [activeProfile]);
+
+  const twoFactorMandatory = useMemo(
+    () => isTwoFactorMandatoryForProfile(activeProfile),
+    [activeProfile]
+  );
+
+  const twoFactorConfigured = useMemo(
+    () => isTwoFactorConfigured(activeProfile),
+    [activeProfile]
+  );
+
+  const requiresTwoFactorGate = useMemo(() => {
+    if (!activeProfile || !twoFactorMandatory) return false;
+    if (twoFactorVerifiedProfileId === activeProfile.id) return false;
+    if (twoFactorConfigured && isTwoFactorSessionVerified(activeProfile.id)) return false;
+    return true;
+  }, [activeProfile, twoFactorMandatory, twoFactorConfigured, twoFactorVerifiedProfileId]);
+
+  // Pull existing 2FA config from Supabase if a protected account opens on a fresh device
+  useEffect(() => {
+    if (!hydrated || !activeProfile || !isOnline || !isSupabaseConfigured) return;
+    if (!twoFactorMandatory || twoFactorConfigured) return;
+    let cancelled = false;
+    fetchProfileMfaFromCloud(activeProfile.email).then((cloudMfa) => {
+      if (cancelled || !cloudMfa || !cloudMfa.enabled) return;
+      setState((prev) => ({
+        ...prev,
+        profiles: prev.profiles.map((p) =>
+          p.id === activeProfile.id
+            ? {
+                ...p,
+                twoFactor: {
+                  ...cloudMfa,
+                  required: isOwnerProfile(p) ? true : cloudMfa.required,
+                },
+              }
+            : p
+        ),
+      }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, activeProfile?.id, activeProfile?.email, isOnline, twoFactorMandatory, twoFactorConfigured]);
 
   const allQuestions = useMemo(
     () => [...QUESTIONS, ...state.customQuestions],
@@ -1264,6 +1357,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       }
 
+      const normalizedFound = applyOwnerEntitlements(found);
+      const needs2fa = isTwoFactorMandatoryForProfile(normalizedFound);
+      if (needs2fa) {
+        clearTwoFactorSessionVerification();
+        setTwoFactorVerifiedProfileId(null);
+      }
+
       setState((prev) => {
         const pSec = prev.security ?? createInitialSecurityState();
         return {
@@ -1273,7 +1373,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       });
       setScreen(found.onboardingCompleted ? 'dashboard' : 'onboarding-exam');
-      notify(`Bon retour, ${found.name} ! Connexion sécurisée.`, 'success');
+      notify(
+        needs2fa
+          ? `Mot de passe vérifié pour ${found.name}. Valide maintenant ta double authentification (2FA).`
+          : `Bon retour, ${found.name} ! Connexion sécurisée.`,
+        needs2fa ? 'info' : 'success'
+      );
       return { ok: true };
     },
     [state.profiles, state.security, guardInput, notify]
@@ -1283,14 +1388,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     (profileId: string) => {
       const target = state.profiles.find((p) => p.id === profileId);
       if (!target) return;
+      const normalizedTarget = applyOwnerEntitlements(target);
+      const needs2fa = isTwoFactorMandatoryForProfile(normalizedTarget);
+      if (needs2fa) {
+        clearTwoFactorSessionVerification();
+        setTwoFactorVerifiedProfileId(null);
+      }
       setState((prev) => ({ ...prev, activeProfileId: profileId }));
       setScreen(target.onboardingCompleted ? 'dashboard' : 'onboarding-exam');
-      notify(`Profil actif : ${target.name}`, 'info');
+      notify(
+        needs2fa
+          ? `Double authentification requise avant d’ouvrir le compte ${target.name}.`
+          : `Profil actif : ${target.name}`,
+        'info'
+      );
     },
     [state.profiles, notify]
   );
 
   const logout = useCallback(() => {
+    clearTwoFactorSessionVerification();
+    setTwoFactorVerifiedProfileId(null);
     setState((prev) => ({ ...prev, activeProfileId: null }));
     setScreen('welcome');
     notify('Session fermée. Tes fichiers hors ligne restent conservés sur cet appareil.', 'info');
@@ -2288,6 +2406,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [notify]);
 
   const triggerPanicLockdown = useCallback(() => {
+    clearTwoFactorSessionVerification();
+    setTwoFactorVerifiedProfileId(null);
     setState((prev) => {
       const sec = prev.security ?? createInitialSecurityState();
       const ev: SecurityEvent = {
@@ -2492,6 +2612,456 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   }, [isOwner, notify]);
 
+  // ==================== TWO-FACTOR AUTHENTICATION (2FA / MFA) ====================
+  const completeTwoFactorEnrollment = useCallback(
+    async (input: {
+      method: TwoFactorMethod;
+      totpSecret?: string;
+      verificationCode?: string;
+      pin?: string;
+      recoveryCodes: string[];
+    }): Promise<{ ok: boolean; error?: string }> => {
+      if (!activeProfile) {
+        return { ok: false, error: 'Aucun compte actif.' };
+      }
+
+      const nowIso = new Date().toISOString();
+      const recoveryCodeHashes = await hashRecoveryCodes(input.recoveryCodes);
+      let nextConfig: TwoFactorConfig;
+
+      if (input.method === 'totp') {
+        const cleanSecret = (input.totpSecret ?? '').replace(/[^A-Z2-7]/gi, '').toUpperCase();
+        if (cleanSecret.length < 16) {
+          return { ok: false, error: 'Clé secrète TOTP invalide.' };
+        }
+        const check = await verifyTotpCode(cleanSecret, input.verificationCode ?? '');
+        if (!check.valid) {
+          return {
+            ok: false,
+            error:
+              'Code à 6 chiffres invalide. Vérifie l’heure de ton téléphone et saisis le code actuel affiché dans ton application Authenticator.',
+          };
+        }
+        const secretEncrypted = await encryptTotpSecret(cleanSecret);
+        nextConfig = {
+          required: isOwnerProfile(activeProfile) ? true : true,
+          enabled: true,
+          method: 'totp',
+          secretEncrypted,
+          recoveryCodeHashes,
+          configuredAt: nowIso,
+          lastVerifiedAt: nowIso,
+          lastUsedTimeStep: check.matchedTimeStep,
+        };
+      } else {
+        const cleanPin = (input.pin ?? '').replace(/\D/g, '');
+        if (cleanPin.length !== 6) {
+          return { ok: false, error: 'Le Code PIN Maître 2FA doit contenir exactement 6 chiffres.' };
+        }
+        const weakPins = new Set([
+          '000000',
+          '111111',
+          '222222',
+          '333333',
+          '444444',
+          '555555',
+          '666666',
+          '777777',
+          '888888',
+          '999999',
+          '123456',
+          '654321',
+          '123123',
+          '012345',
+        ]);
+        if (weakPins.has(cleanPin)) {
+          return {
+            ok: false,
+            error: 'Ce Code PIN est trop prévisible. Choisis 6 chiffres uniques et non séquentiels.',
+          };
+        }
+        const pinHash = await hashTwoFactorPin(cleanPin);
+        nextConfig = {
+          required: isOwnerProfile(activeProfile) ? true : true,
+          enabled: true,
+          method: 'pin',
+          pinHash,
+          recoveryCodeHashes,
+          configuredAt: nowIso,
+          lastVerifiedAt: nowIso,
+        };
+      }
+
+      const updatedProfile: UserProfile = {
+        ...activeProfile,
+        twoFactor: nextConfig,
+      };
+
+      setState((prev) => {
+        const pSec = prev.security ?? createInitialSecurityState();
+        const ev: SecurityEvent = {
+          id: `sec-2fa-enroll-${Date.now()}`,
+          timestamp: nowIso,
+          category: 'SYSTEM_AUDIT',
+          severity: 'low',
+          source: 'Double Authentification (2FA)',
+          ruleId: 'MFA-ENROLLED',
+          description: `2FA (${nextConfig.method === 'totp' ? 'TOTP Authenticator RFC 6238' : 'Code PIN Maître PBKDF2'}) activée et verrouillée sur ${activeProfile.email}.`,
+          blocked: false,
+        };
+        return {
+          ...prev,
+          profiles: prev.profiles.map((p) =>
+            p.id === activeProfile.id ? { ...p, twoFactor: nextConfig } : p
+          ),
+          security: {
+            ...pSec,
+            failedLoginAttempts: 0,
+            lockoutUntil: null,
+            events: [ev, ...pSec.events].slice(0, 60),
+          },
+        };
+      });
+
+      markTwoFactorSessionVerified(activeProfile.id, 0);
+      setTwoFactorVerifiedProfileId(activeProfile.id);
+
+      if (isOnline && isSupabaseConfigured) {
+        await syncTwoFactorConfigToCloud(updatedProfile);
+      }
+
+      notify('🔐 Double authentification activée ! Ton compte est maintenant doublement protégé.', 'success');
+      return { ok: true };
+    },
+    [activeProfile, isOnline, notify]
+  );
+
+  const verifyTwoFactorChallenge = useCallback(
+    async (
+      code: string,
+      mode: 'primary' | 'recovery',
+      rememberHours = 0
+    ): Promise<{ ok: boolean; error?: string; remainingRecoveryCodes?: number }> => {
+      if (!activeProfile?.twoFactor?.enabled) {
+        return { ok: false, error: 'Double authentification non configurée.' };
+      }
+      const sec = state.security ?? createInitialSecurityState();
+      if (sec.config.bruteForceProtection && sec.lockoutUntil) {
+        const remainingMs = new Date(sec.lockoutUntil).getTime() - Date.now();
+        if (remainingMs > 0) {
+          const mins = Math.ceil(remainingMs / 60000);
+          return {
+            ok: false,
+            error: `Verrouillage anti-bruteforce 2FA actif (${mins} min restante(s)).`,
+          };
+        }
+      }
+
+      const nowIso = new Date().toISOString();
+      const cfg = activeProfile.twoFactor;
+
+      const record2faFailure = (reason: string) => {
+        const nextFails = sec.failedLoginAttempts + 1;
+        const triggerLock = sec.config.bruteForceProtection && nextFails >= 5;
+        const lockUntil = triggerLock ? new Date(Date.now() + 5 * 60 * 1000).toISOString() : null;
+        setState((prev) => {
+          const pSec = prev.security ?? createInitialSecurityState();
+          const ev: SecurityEvent = {
+            id: `sec-2fa-fail-${Date.now()}`,
+            timestamp: nowIso,
+            category: 'BRUTEFORCE_AUTH',
+            severity: triggerLock ? 'critical' : 'high',
+            source: 'Défi Double Authentification (2FA)',
+            ruleId: triggerLock ? 'MFA-BF-LOCKOUT' : 'MFA-VERIFY-FAIL',
+            description: triggerLock
+              ? 'Verrouillage 2FA (5 min) après 5 codes 2FA erronés consécutifs.'
+              : `${reason} (${nextFails}/5 tentatives).`,
+            blocked: true,
+          };
+          return {
+            ...prev,
+            security: {
+              ...pSec,
+              failedLoginAttempts: triggerLock ? 0 : nextFails,
+              lockoutUntil: lockUntil,
+              blockedCount: pSec.blockedCount + 1,
+              events: [ev, ...pSec.events].slice(0, 60),
+            },
+          };
+        });
+        return triggerLock
+          ? '5 codes invalides détectés : accès bloqué pendant 5 minutes par le pare-feu anti-bruteforce.'
+          : reason;
+      };
+
+      if (mode === 'recovery') {
+        const res = await verifyAndConsumeRecoveryCode(code, cfg.recoveryCodeHashes ?? []);
+        if (!res.valid) {
+          return { ok: false, error: record2faFailure('Code de secours 2FA invalide ou déjà utilisé.') };
+        }
+        const nextCfg: TwoFactorConfig = {
+          ...cfg,
+          recoveryCodeHashes: res.remainingHashes,
+          lastVerifiedAt: nowIso,
+        };
+        const updatedProfile = { ...activeProfile, twoFactor: nextCfg };
+        setState((prev) => {
+          const pSec = prev.security ?? createInitialSecurityState();
+          const ev: SecurityEvent = {
+            id: `sec-2fa-rec-${Date.now()}`,
+            timestamp: nowIso,
+            category: 'SYSTEM_AUDIT',
+            severity: 'medium',
+            source: 'Double Authentification (2FA)',
+            ruleId: 'MFA-RECOVERY-USED',
+            description: `Connexion validée par code de secours unique (${res.remainingHashes.length} restant(s)).`,
+            blocked: false,
+          };
+          return {
+            ...prev,
+            profiles: prev.profiles.map((p) =>
+              p.id === activeProfile.id ? { ...p, twoFactor: nextCfg } : p
+            ),
+            security: {
+              ...pSec,
+              failedLoginAttempts: 0,
+              lockoutUntil: null,
+              events: [ev, ...pSec.events].slice(0, 60),
+            },
+          };
+        });
+        markTwoFactorSessionVerified(activeProfile.id, rememberHours);
+        setTwoFactorVerifiedProfileId(activeProfile.id);
+        if (isOnline && isSupabaseConfigured) {
+          await syncTwoFactorConfigToCloud(updatedProfile);
+        }
+        notify(
+          `🔐 Code de secours accepté ! Il te reste ${res.remainingHashes.length} code(s) de secours.`,
+          'warning'
+        );
+        return { ok: true, remainingRecoveryCodes: res.remainingHashes.length };
+      }
+
+      // Primary mode: TOTP or Master PIN
+      let nextCfg: TwoFactorConfig = { ...cfg, lastVerifiedAt: nowIso };
+      if (cfg.method === 'totp') {
+        const secret = await decryptTotpSecret(cfg.secretEncrypted);
+        if (!secret) {
+          return {
+            ok: false,
+            error: 'Impossible de déchiffrer la clé TOTP locale. Utilise un code de secours.',
+          };
+        }
+        const check = await verifyTotpCode(secret, code, cfg.lastUsedTimeStep);
+        if (!check.valid) {
+          const msg = check.replayed
+            ? 'Code TOTP déjà utilisé dans ce créneau de 30s (protection anti-rejeu). Attends le prochain code.'
+            : 'Code Authenticator à 6 chiffres incorrect.';
+          return { ok: false, error: record2faFailure(msg) };
+        }
+        nextCfg = {
+          ...cfg,
+          lastVerifiedAt: nowIso,
+          lastUsedTimeStep: check.matchedTimeStep,
+        };
+      } else {
+        const pinOk = await verifyTwoFactorPin(code, cfg.pinHash);
+        if (!pinOk) {
+          return { ok: false, error: record2faFailure('Code PIN Maître 2FA incorrect.') };
+        }
+      }
+
+      const updatedProfile = { ...activeProfile, twoFactor: nextCfg };
+      setState((prev) => {
+        const pSec = prev.security ?? createInitialSecurityState();
+        const ev: SecurityEvent = {
+          id: `sec-2fa-ok-${Date.now()}`,
+          timestamp: nowIso,
+          category: 'SYSTEM_AUDIT',
+          severity: 'low',
+          source: 'Double Authentification (2FA)',
+          ruleId: 'MFA-VERIFIED',
+          description: `Double authentification validée avec succès pour ${activeProfile.email}.`,
+          blocked: false,
+        };
+        return {
+          ...prev,
+          profiles: prev.profiles.map((p) =>
+            p.id === activeProfile.id ? { ...p, twoFactor: nextCfg } : p
+          ),
+          security: {
+            ...pSec,
+            failedLoginAttempts: 0,
+            lockoutUntil: null,
+            events: [ev, ...pSec.events].slice(0, 60),
+          },
+        };
+      });
+
+      markTwoFactorSessionVerified(activeProfile.id, rememberHours);
+      setTwoFactorVerifiedProfileId(activeProfile.id);
+
+      if (isOnline && isSupabaseConfigured) {
+        await syncTwoFactorConfigToCloud(updatedProfile);
+      }
+
+      notify(`🔐 Identité confirmée ! Bienvenue, ${activeProfile.name}.`, 'success');
+      return { ok: true };
+    },
+    [activeProfile, state.security, isOnline, notify]
+  );
+
+  const lockTwoFactorSessionNow = useCallback(() => {
+    clearTwoFactorSessionVerification();
+    setTwoFactorVerifiedProfileId(null);
+    notify('🔒 Session 2FA verrouillée : un nouveau code est requis pour reprendre.', 'info');
+  }, [notify]);
+
+  const regenerateTwoFactorRecoveryCodes = useCallback(
+    async (
+      currentCode: string
+    ): Promise<{ ok: boolean; codes?: string[]; error?: string }> => {
+      if (!activeProfile?.twoFactor?.enabled) {
+        return { ok: false, error: '2FA non active.' };
+      }
+      const cfg = activeProfile.twoFactor;
+      let valid = false;
+      if (cfg.method === 'totp') {
+        const secret = await decryptTotpSecret(cfg.secretEncrypted);
+        if (secret) {
+          const check = await verifyTotpCode(secret, currentCode);
+          valid = check.valid;
+        }
+      } else {
+        valid = await verifyTwoFactorPin(currentCode, cfg.pinHash);
+      }
+      if (!valid) {
+        return { ok: false, error: 'Code 2FA actuel invalide. Régénération refusée.' };
+      }
+
+      const freshCodes = generateRecoveryCodes(8);
+      const freshHashes = await hashRecoveryCodes(freshCodes);
+      const nextCfg: TwoFactorConfig = {
+        ...cfg,
+        recoveryCodeHashes: freshHashes,
+      };
+      const updatedProfile = { ...activeProfile, twoFactor: nextCfg };
+      setState((prev) => ({
+        ...prev,
+        profiles: prev.profiles.map((p) =>
+          p.id === activeProfile.id ? { ...p, twoFactor: nextCfg } : p
+        ),
+      }));
+      if (isOnline && isSupabaseConfigured) {
+        await syncTwoFactorConfigToCloud(updatedProfile);
+      }
+      notify('🔑 8 nouveaux codes de secours générés (les anciens sont révoqués).', 'success');
+      return { ok: true, codes: freshCodes };
+    },
+    [activeProfile, isOnline, notify]
+  );
+
+  const resetTwoFactorMethod = useCallback(
+    async (currentCodeOrRecovery: string): Promise<{ ok: boolean; error?: string }> => {
+      if (!activeProfile?.twoFactor?.enabled) {
+        return { ok: false, error: '2FA non active.' };
+      }
+      const cfg = activeProfile.twoFactor;
+      let valid = false;
+      if (cfg.method === 'totp') {
+        const secret = await decryptTotpSecret(cfg.secretEncrypted);
+        if (secret) {
+          const check = await verifyTotpCode(secret, currentCodeOrRecovery);
+          valid = check.valid;
+        }
+      } else {
+        valid = await verifyTwoFactorPin(currentCodeOrRecovery, cfg.pinHash);
+      }
+      if (!valid) {
+        const rec = await verifyAndConsumeRecoveryCode(
+          currentCodeOrRecovery,
+          cfg.recoveryCodeHashes ?? []
+        );
+        valid = rec.valid;
+      }
+      if (!valid) {
+        return {
+          ok: false,
+          error: 'Code 2FA actuel ou code de secours invalide. Réinitialisation bloquée.',
+        };
+      }
+
+      const resetCfg: TwoFactorConfig = {
+        required: isOwnerProfile(activeProfile),
+        enabled: false,
+        method: 'totp',
+        recoveryCodeHashes: [],
+      };
+      const updatedProfile = { ...activeProfile, twoFactor: resetCfg };
+      clearTwoFactorSessionVerification();
+      setTwoFactorVerifiedProfileId(null);
+
+      setState((prev) => ({
+        ...prev,
+        profiles: prev.profiles.map((p) =>
+          p.id === activeProfile.id ? { ...p, twoFactor: resetCfg } : p
+        ),
+      }));
+      if (isOnline && isSupabaseConfigured) {
+        await syncTwoFactorConfigToCloud(updatedProfile);
+      }
+      notify(
+        '🔄 Méthode 2FA réinitialisée. Configure immédiatement ton nouvel appareil Authenticator ou Code PIN.',
+        'warning'
+      );
+      return { ok: true };
+    },
+    [activeProfile, isOnline, notify]
+  );
+
+  const toggleOptionalTwoFactorForUser = useCallback(
+    (enable: boolean) => {
+      if (!activeProfile) return;
+      if (isOwnerProfile(activeProfile) && !enable) {
+        notify('La double authentification est obligatoire et protégée sur le compte Propriétaire.', 'warning');
+        return;
+      }
+      if (enable) {
+        const nextCfg: TwoFactorConfig = {
+          required: true,
+          enabled: activeProfile.twoFactor?.enabled ?? false,
+          method: activeProfile.twoFactor?.method ?? 'totp',
+          secretEncrypted: activeProfile.twoFactor?.secretEncrypted,
+          pinHash: activeProfile.twoFactor?.pinHash,
+          recoveryCodeHashes: activeProfile.twoFactor?.recoveryCodeHashes ?? [],
+        };
+        clearTwoFactorSessionVerification();
+        setTwoFactorVerifiedProfileId(null);
+        setState((prev) => ({
+          ...prev,
+          profiles: prev.profiles.map((p) =>
+            p.id === activeProfile.id ? { ...p, twoFactor: nextCfg } : p
+          ),
+        }));
+      } else {
+        const nextCfg: TwoFactorConfig = {
+          required: false,
+          enabled: false,
+          method: 'totp',
+          recoveryCodeHashes: [],
+        };
+        setState((prev) => ({
+          ...prev,
+          profiles: prev.profiles.map((p) =>
+            p.id === activeProfile.id ? { ...p, twoFactor: nextCfg } : p
+          ),
+        }));
+        notify('Double authentification désactivée sur ce compte standard.', 'info');
+      }
+    },
+    [activeProfile, notify]
+  );
+
   const triggerLocalReminder = useCallback(() => {
     const nextSession = state.studyPlan.find((p) => !p.completed && p.type !== 'pause');
     const body = nextSession
@@ -2604,6 +3174,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     publishOwnerQuickQuestion,
     exportMasterBackup,
     purgeReportedGroupMessages,
+    requiresTwoFactorGate,
+    twoFactorConfigured,
+    twoFactorMandatory,
+    completeTwoFactorEnrollment,
+    verifyTwoFactorChallenge,
+    lockTwoFactorSessionNow,
+    regenerateTwoFactorRecoveryCodes,
+    resetTwoFactorMethod,
+    toggleOptionalTwoFactorForUser,
     toasts,
     notify,
     dismissToast,
