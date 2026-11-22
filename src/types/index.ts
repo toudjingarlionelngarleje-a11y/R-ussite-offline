@@ -133,7 +133,10 @@ export interface CourseSection {
     | 'separation_pouvoirs'
     | 'mitose'
     | 'offre_demande'
-    | 'cycle_projet';
+    | 'cycle_projet'
+    | 'sql_relations'
+    | 'bilan_syscohada'
+    | 'reaction_chimique';
 }
 
 export interface Course {
@@ -185,6 +188,9 @@ export interface Annale {
   sizeKb: number;
   isPremium?: boolean;
   shareable: boolean;
+  countryOrZone?: string;
+  instructions?: string;
+  bareme?: string;
 }
 
 export interface FicheTableRow {

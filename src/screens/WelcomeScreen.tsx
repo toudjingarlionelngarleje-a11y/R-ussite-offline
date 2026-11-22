@@ -115,10 +115,15 @@ export const WelcomeScreen: React.FC = () => {
           {/* Right Highlight Card */}
           <div className="lg:col-span-5">
             <div className="hc-card rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-              <p className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                Choisis un parcours pour démarrer
-              </p>
-              <div className="mt-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                  Choisis un parcours pour démarrer
+                </p>
+                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-800 dark:bg-blue-950 dark:text-blue-200">
+                  {EXAMS.length} examens
+                </span>
+              </div>
+              <div className="mt-4 max-h-[440px] space-y-2.5 overflow-y-auto pr-1">
                 {EXAMS.map((exam) => (
                   <button
                     key={exam.id}

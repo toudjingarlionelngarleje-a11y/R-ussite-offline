@@ -3,6 +3,8 @@ import {
   CheckCircle2,
   Clock,
   Download,
+  FileDown,
+  FileText,
   Heart,
   Play,
   RotateCcw,
@@ -11,11 +13,13 @@ import {
   Trash2,
 } from 'lucide-react';
 import { ANNALES, EXAMS, SUBJECTS, useApp } from '../context/AppContext';
+import { downloadExamPaperFile } from '../lib/examPaperDownload';
 import { Difficulty } from '../types';
 
 export const AnnalesScreen: React.FC = () => {
   const {
     state,
+    allQuestions,
     isDownloaded,
     downloadItem,
     removeDownloadedItem,
@@ -28,6 +32,7 @@ export const AnnalesScreen: React.FC = () => {
   } = useApp();
 
   const [query, setQuery] = useState('');
+  const [examFilter, setExamFilter] = useState('all');
   const [subjectFilter, setSubjectFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
   const [difficultyFilter, setDifficultyFilter] = useState<'all' | Difficulty>('all');
@@ -53,6 +58,7 @@ export const AnnalesScreen: React.FC = () => {
   };
 
   const filtered = ANNALES.filter((a) => {
+    if (examFilter !== 'all' && a.examId !== examFilter) return false;
     if (subjectFilter !== 'all' && a.subjectId !== subjectFilter) return false;
     if (yearFilter !== 'all' && String(a.year) !== yearFilter) return false;
     if (difficultyFilter !== 'all' && a.difficulty !== difficultyFilter) return false;
@@ -66,11 +72,32 @@ export const AnnalesScreen: React.FC = () => {
     if (quickTag === 'review' && !a.questionIds.some((qid) => mistakeIds.has(qid))) return false;
 
     if (query.trim()) {
-      const hay = `${a.title} ${a.examType} ${a.year}`.toLowerCase();
+      const hay = `${a.title} ${a.examType} ${a.year} ${a.countryOrZone ?? ''}`.toLowerCase();
       if (!hay.includes(query.trim().toLowerCase())) return false;
     }
     return true;
   });
+
+  const handleDownloadPaper = (annaleId: string, includeCorrection: boolean) => {
+    const annale = ANNALES.find((a) => a.id === annaleId);
+    if (!annale) return;
+    const questions = annale.questionIds
+      .map((id) => allQuestions.find((q) => q.id === id))
+      .filter((q): q is NonNullable<typeof q> => Boolean(q));
+    downloadExamPaperFile({
+      annale,
+      subject: SUBJECTS.find((s) => s.id === annale.subjectId),
+      exam: EXAMS.find((e) => e.id === annale.examId),
+      questions,
+      includeCorrection,
+    });
+    notify(
+      includeCorrection
+        ? `Sujet + corrigé « ${annale.title} » téléchargé (imprimable en PDF).`
+        : `Sujet à traiter « ${annale.title} » téléchargé sur ton appareil (prêt à imprimer ou traiter hors ligne).`,
+      'success'
+    );
+  };
 
   const handleShare = (title: string) => {
     const shareText = `Sujet d'entraînement Réussite Offline : ${title}`;
@@ -93,24 +120,37 @@ export const AnnalesScreen: React.FC = () => {
 
       {/* Filters Panel */}
       <div className="hc-card space-y-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-6">
           <div className="relative lg:col-span-2">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Rechercher par mot-clé..."
+              placeholder="Rechercher un ancien sujet (BEPC, Bac, BTS, Santé...)"
               className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2 pl-9 pr-3 text-sm dark:border-slate-700 dark:bg-slate-800"
             />
           </div>
+          <select
+            aria-label="Filtrer par examen"
+            value={examFilter}
+            onChange={(e) => setExamFilter(e.target.value)}
+            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold dark:border-slate-700 dark:bg-slate-800"
+          >
+            <option value="all">Tous les examens ({EXAMS.length})</option>
+            {EXAMS.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.shortName}
+              </option>
+            ))}
+          </select>
           <select
             aria-label="Filtrer par matière"
             value={subjectFilter}
             onChange={(e) => setSubjectFilter(e.target.value)}
             className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold dark:border-slate-700 dark:bg-slate-800"
           >
-            <option value="all">Toutes les matières</option>
+            <option value="all">Toutes les matières ({SUBJECTS.length})</option>
             {SUBJECTS.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
@@ -241,11 +281,13 @@ export const AnnalesScreen: React.FC = () => {
 
                     <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-400">
                       <span>{exam?.shortName} · {a.examType}</span>
+                      {a.countryOrZone && <span>{a.countryOrZone}</span>}
                       <span className="inline-flex items-center gap-1">
                         <Clock className="h-3.5 w-3.5" />
                         {a.durationMinutes} min · {a.questionIds.length} questions ({a.responseFormat})
                       </span>
                       <span>Taille : {a.sizeKb} Ko · {a.language}</span>
+                      {a.bareme && <span>{a.bareme}</span>}
                       {downloadedMeta && (
                         <span>
                           Téléchargé le {new Date(downloadedMeta.downloadedAt).toLocaleDateString('fr-FR')}
@@ -256,6 +298,28 @@ export const AnnalesScreen: React.FC = () => {
                           Meilleur score : {st.best} %
                         </span>
                       )}
+                    </div>
+
+                    {/* Offline Printable Paper Download Bar */}
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadPaper(a.id, false)}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-[11px] font-bold text-slate-800 hover:bg-blue-50 hover:text-blue-800 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-blue-950 dark:hover:text-blue-200"
+                        title="Télécharger l'énoncé seul en fichier hors ligne (imprimable en PDF) pour le traiter sur papier"
+                      >
+                        <FileDown className="h-3.5 w-3.5 text-blue-700 dark:text-blue-400" />
+                        Télécharger l’énoncé à traiter
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadPaper(a.id, true)}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-200"
+                        title="Télécharger le sujet complet accompagné de son corrigé détaillé"
+                      >
+                        <FileText className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" />
+                        Énoncé + Corrigé (PDF/HTML)
+                      </button>
                     </div>
                   </div>
 
