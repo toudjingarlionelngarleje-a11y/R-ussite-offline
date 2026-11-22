@@ -141,7 +141,11 @@ export interface CourseSection {
     | 'cycle_projet'
     | 'sql_relations'
     | 'bilan_syscohada'
-    | 'reaction_chimique';
+    | 'reaction_chimique'
+    | 'loi_normale'
+    | 'cycle_cardiaque'
+    | 'architecture_ia'
+    | 'pyramide_normes';
 }
 
 export interface Course {

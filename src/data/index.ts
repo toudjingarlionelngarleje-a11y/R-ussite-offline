@@ -31,6 +31,16 @@ import {
   MEGA_QUESTIONS,
   MEGA_SUBJECTS,
 } from './megaCatalog';
+import {
+  ULTRA_ANNALES,
+  ULTRA_CHAPTERS,
+  ULTRA_COURSES,
+  ULTRA_EXAMS,
+  ULTRA_FICHES,
+  ULTRA_FLASHCARDS,
+  ULTRA_QUESTIONS,
+  ULTRA_SUBJECTS,
+} from './ultraCatalog';
 
 export { COUNTRIES, USER_CATEGORIES };
 
@@ -39,33 +49,45 @@ export const STUDY_LEVELS: string[] = [
   ...BASE_STUDY_LEVELS,
 ];
 
-export const EXAMS = [...BASE_EXAMS, ...EXTRA_EXAMS, ...MEGA_EXAMS];
+export const EXAMS = [...BASE_EXAMS, ...EXTRA_EXAMS, ...MEGA_EXAMS, ...ULTRA_EXAMS];
 
 const EXTRA_EXAM_LINKS: Record<string, string[]> = {
   maths: ['bepc', 'concours-medecine', 'concours-ingenieur', 'concours-ens-enseignement'],
-  physique: ['concours-medecine', 'concours-ingenieur'],
-  svt: ['bepc', 'concours-medecine'],
+  physique: ['concours-medecine', 'concours-ingenieur', 'concours-paramedical'],
+  svt: ['bepc', 'concours-medecine', 'concours-paramedical'],
   philo: ['bac-litteraire'],
-  droit: ['bts-compta-info', 'concours-police-douanes'],
-  culture_gen: ['concours-police-douanes'],
-  economie: ['bac-litteraire', 'bts-compta-info'],
+  droit: ['bts-compta-info', 'concours-police-douanes', 'concours-magistrature'],
+  culture_gen: ['concours-police-douanes', 'concours-magistrature'],
+  economie: ['bac-litteraire', 'bts-compta-info', 'concours-finances-banque'],
   gestion_projet: ['certif-entrepreneuriat'],
-  cybersecurite: ['certif-entrepreneuriat'],
-  francais: ['concours-police-douanes', 'concours-ens-enseignement'],
+  cybersecurite: ['certif-entrepreneuriat', 'certif-data-ia'],
+  francais: [
+    'concours-police-douanes',
+    'concours-ens-enseignement',
+    'concours-magistrature',
+    'concours-paramedical',
+  ],
   histoire_geo: ['concours-ens-enseignement'],
-  anglais: ['concours-ingenieur'],
-  informatique: ['concours-ingenieur', 'certif-entrepreneuriat'],
-  comptabilite: ['certif-entrepreneuriat'],
+  anglais: ['concours-ingenieur', 'certif-data-ia'],
+  informatique: ['concours-ingenieur', 'certif-entrepreneuriat', 'certif-data-ia'],
+  comptabilite: ['certif-entrepreneuriat', 'concours-finances-banque'],
+  psychotechnique: ['concours-magistrature', 'concours-paramedical', 'concours-finances-banque'],
+  statistiques: ['certif-data-ia', 'concours-finances-banque'],
 };
 
-export const SUBJECTS = [...BASE_SUBJECTS, ...EXTRA_SUBJECTS, ...MEGA_SUBJECTS].map((s) => ({
+export const SUBJECTS = [
+  ...BASE_SUBJECTS,
+  ...EXTRA_SUBJECTS,
+  ...MEGA_SUBJECTS,
+  ...ULTRA_SUBJECTS,
+].map((s) => ({
   ...s,
   examIds: Array.from(new Set([...s.examIds, ...(EXTRA_EXAM_LINKS[s.id] ?? [])])),
 }));
 
-export const CHAPTERS = [...BASE_CHAPTERS, ...EXTRA_CHAPTERS, ...MEGA_CHAPTERS];
-export const COURSES = [...BASE_COURSES, ...EXTRA_COURSES, ...MEGA_COURSES];
-export const QUESTIONS = [...BASE_QUESTIONS, ...EXTRA_QUESTIONS, ...MEGA_QUESTIONS];
-export const ANNALES = [...BASE_ANNALES, ...EXTRA_ANNALES, ...MEGA_ANNALES];
-export const FICHES = [...BASE_FICHES, ...EXTRA_FICHES, ...MEGA_FICHES];
-export const FLASHCARDS = [...BASE_FLASHCARDS, ...EXTRA_FLASHCARDS, ...MEGA_FLASHCARDS];
+export const CHAPTERS = [...BASE_CHAPTERS, ...EXTRA_CHAPTERS, ...MEGA_CHAPTERS, ...ULTRA_CHAPTERS];
+export const COURSES = [...BASE_COURSES, ...EXTRA_COURSES, ...MEGA_COURSES, ...ULTRA_COURSES];
+export const QUESTIONS = [...BASE_QUESTIONS, ...EXTRA_QUESTIONS, ...MEGA_QUESTIONS, ...ULTRA_QUESTIONS];
+export const ANNALES = [...BASE_ANNALES, ...EXTRA_ANNALES, ...MEGA_ANNALES, ...ULTRA_ANNALES];
+export const FICHES = [...BASE_FICHES, ...EXTRA_FICHES, ...MEGA_FICHES, ...ULTRA_FICHES];
+export const FLASHCARDS = [...BASE_FLASHCARDS, ...EXTRA_FLASHCARDS, ...MEGA_FLASHCARDS, ...ULTRA_FLASHCARDS];

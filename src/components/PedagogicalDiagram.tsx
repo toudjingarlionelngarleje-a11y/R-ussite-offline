@@ -221,6 +221,111 @@ export const PedagogicalDiagram: React.FC<{
     );
   }
 
+  if (diagramId === 'loi_normale') {
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 165" className="mx-auto h-40 w-full max-w-md" role="img" aria-label="Courbe de Gauss de la loi normale avec intervalles 68%, 95% et 99,7%">
+          <line x1="20" y1="132" x2="340" y2="132" stroke="#64748B" strokeWidth="1.5" />
+          <path d="M 30 130 C 90 130, 125 25, 180 25 C 235 25, 270 130, 330 130" fill="#DBEAFE" fillOpacity="0.45" stroke="#1D4ED8" strokeWidth="2.8" />
+          <line x1="180" y1="22" x2="180" y2="132" stroke="#1E3A8A" strokeDasharray="4 3" strokeWidth="1.5" />
+          <line x1="130" y1="58" x2="130" y2="132" stroke="#059669" strokeDasharray="3 3" strokeWidth="1.4" />
+          <line x1="230" y1="58" x2="230" y2="132" stroke="#059669" strokeDasharray="3 3" strokeWidth="1.4" />
+          <line x1="85" y1="110" x2="85" y2="132" stroke="#D97706" strokeDasharray="3 3" strokeWidth="1.4" />
+          <line x1="275" y1="110" x2="275" y2="132" stroke="#D97706" strokeDasharray="3 3" strokeWidth="1.4" />
+          <text x="180" y="90" textAnchor="middle" fontSize="11.5" fontWeight="bold" fill="#065F46">68,3 %</text>
+          <text x="180" y="108" textAnchor="middle" fontSize="10" fill="#B45309">95,4 % (±2σ)</text>
+          <text x="180" y="148" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#1E3A8A">μ</text>
+          <text x="130" y="148" textAnchor="middle" fontSize="10" fill="#059669">μ−σ</text>
+          <text x="230" y="148" textAnchor="middle" fontSize="10" fill="#059669">μ+σ</text>
+          <text x="85" y="148" textAnchor="middle" fontSize="9.5" fill="#D97706">μ−2σ</text>
+          <text x="275" y="148" textAnchor="middle" fontSize="9.5" fill="#D97706">μ+2σ</text>
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : règle empirique de la loi normale N(μ, σ²) — 68 % dans [μ−σ ; μ+σ], 95 % dans [μ−2σ ; μ+2σ].
+        </figcaption>
+      </figure>
+    );
+  }
+
+  if (diagramId === 'cycle_cardiaque') {
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 165" className="mx-auto h-40 w-full max-w-md" role="img" aria-label="Double circulation sanguine : petite circulation pulmonaire et grande circulation systémique">
+          <rect x="130" y="8" width="100" height="34" rx="8" fill="#EFF6FF" stroke="#0284C7" strokeWidth="2" />
+          <text x="180" y="29" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#0369A1">POUMONS (O₂)</text>
+          <rect x="36" y="64" width="112" height="44" rx="8" fill="#DBEAFE" stroke="#2563EB" strokeWidth="2" />
+          <text x="92" y="83" textAnchor="middle" fontSize="10.5" fontWeight="bold" fill="#1E3A8A">Cœur Droit</text>
+          <text x="92" y="98" textAnchor="middle" fontSize="9" fill="#1E40AF">Sang pauvre en O₂</text>
+          <rect x="212" y="64" width="112" height="44" rx="8" fill="#FEE2E2" stroke="#DC2626" strokeWidth="2" />
+          <text x="268" y="83" textAnchor="middle" fontSize="10.5" fontWeight="bold" fill="#991B1B">Cœur Gauche</text>
+          <text x="268" y="98" textAnchor="middle" fontSize="9" fill="#B91C1C">Sang riche en O₂</text>
+          <rect x="122" y="126" width="116" height="32" rx="8" fill="#ECFDF5" stroke="#059669" strokeWidth="2" />
+          <text x="180" y="146" textAnchor="middle" fontSize="10.5" fontWeight="bold" fill="#065F46">ORGANES &amp; TISSUS</text>
+          <path d="M 92 64 L 130 28" stroke="#2563EB" strokeWidth="2" fill="none" />
+          <path d="M 230 28 L 268 64" stroke="#DC2626" strokeWidth="2" fill="none" />
+          <path d="M 268 108 L 238 140" stroke="#DC2626" strokeWidth="2" fill="none" />
+          <path d="M 122 140 L 92 108" stroke="#2563EB" strokeWidth="2" fill="none" />
+          <text x="64" y="42" fontSize="9" fill="#1D4ED8">Artère pulm.</text>
+          <text x="255" y="42" fontSize="9" fill="#DC2626">Veines pulm.</text>
+          <text x="264" y="132" fontSize="9" fill="#DC2626">Aorte</text>
+          <text x="48" y="132" fontSize="9" fill="#1D4ED8">Veines caves</text>
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : double circulation sanguine (petite circulation pulmonaire + grande circulation systémique).
+        </figcaption>
+      </figure>
+    );
+  }
+
+  if (diagramId === 'architecture_ia') {
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 128" className="mx-auto h-32 w-full max-w-md" role="img" aria-label="Pipeline Machine Learning : Données, Features, Entraînement, Évaluation, Inférence">
+          {[
+            { x: 10, label: '1. Données', sub: 'Nettoyage', fill: '#EFF6FF', stroke: '#2563EB', text: '#1E3A8A' },
+            { x: 96, label: '2. Split', sub: 'Train / Test', fill: '#F5F3FF', stroke: '#7C3AED', text: '#5B21B6' },
+            { x: 182, label: '3. Modèle', sub: 'Apprentissage', fill: '#ECFDF5', stroke: '#059669', text: '#065F46' },
+            { x: 268, label: '4. Inférence', sub: 'F1 / Suivi', fill: '#FFFBEB', stroke: '#D97706', text: '#92400E' },
+          ].map((box, i) => (
+            <g key={box.label}>
+              <rect x={box.x} y="34" width="76" height="54" rx="8" fill={box.fill} stroke={box.stroke} strokeWidth="1.8" />
+              <text x={box.x + 38} y="57" textAnchor="middle" fontSize="10" fontWeight="bold" fill={box.text}>
+                {box.label}
+              </text>
+              <text x={box.x + 38} y="73" textAnchor="middle" fontSize="9" fill="#475569">
+                {box.sub}
+              </text>
+              {i < 3 && <line x1={box.x + 76} y1="61" x2={box.x + 86} y2="61" stroke="#64748B" strokeWidth="2" />}
+            </g>
+          ))}
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : cycle de vie d’un projet Machine Learning (de la donnée brute à la mise en production).
+        </figcaption>
+      </figure>
+    );
+  }
+
+  if (diagramId === 'pyramide_normes') {
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 165" className="mx-auto h-40 w-full max-w-md" role="img" aria-label="Pyramide de Kelsen : Constitution, Traités et Actes uniformes OHADA, Lois, Règlements">
+          <polygon points="180,10 120,46 240,46" fill="#1D4ED8" />
+          <text x="180" y="37" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#FFFFFF">CONSTITUTION</text>
+          <polygon points="116,50 244,50 274,84 86,84" fill="#0284C7" />
+          <text x="180" y="71" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#FFFFFF">TRAITÉS &amp; ACTES UNIFORMES OHADA</text>
+          <polygon points="82,88 278,88 308,122 52,122" fill="#059669" />
+          <text x="180" y="109" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#FFFFFF">LOIS ORGANIQUES &amp; ORDINAIRES</text>
+          <polygon points="48,126 312,126 340,156 20,156" fill="#D97706" />
+          <text x="180" y="145" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#FFFFFF">DÉCRETS, ARRÊTÉS &amp; ACTES ADMINISTRATIFS</text>
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : hiérarchie des normes (Pyramide de Kelsen &amp; supranationalité des Actes uniformes OHADA).
+        </figcaption>
+      </figure>
+    );
+  }
+
   return (
     <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
       <svg viewBox="0 0 360 130" className="mx-auto h-32 w-full max-w-md" role="img" aria-label="Boucle itérative Scrum Sprint">
