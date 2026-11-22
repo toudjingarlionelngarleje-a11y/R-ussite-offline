@@ -1,24 +1,22 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AlertTriangle,
   Check,
   Copy,
   Crown,
   Download,
+  Fingerprint,
   KeyRound,
   Lock,
   LogOut,
-  RefreshCw,
   ShieldCheck,
   Smartphone,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import {
-  buildOtpAuthUri,
-  formatSecretForDisplay,
-  generateQrDataUrl,
+  checkDeviceLockAvailability,
+  DeviceLockSupportInfo,
   generateRecoveryCodes,
-  generateTotpSecret,
 } from '../lib/twoFactor';
 import { TwoFactorMethod } from '../types';
 
@@ -33,71 +31,48 @@ export const TwoFactorGateScreen: React.FC = () => {
     notify,
   } = useApp();
 
-  // Enrollment state
-  const [enrollMethod, setEnrollMethod] = useState<TwoFactorMethod>('totp');
-  const [totpSecret, setTotpSecret] = useState<string>(() => generateTotpSecret(20));
-  const [qrDataUrl, setQrDataUrl] = useState<string>('');
-  const [recoveryCodes, setRecoveryCodes] = useState<string[]>(() => generateRecoveryCodes(8));
+  // Device WebAuthn availability detection
+  const [deviceSupport, setDeviceSupport] = useState<DeviceLockSupportInfo>({
+    available: true,
+    inIframe: false,
+  });
+
+  // Enrollment state (NO QR code)
+  const [enrollMethod, setEnrollMethod] = useState<TwoFactorMethod>('device');
+  const [recoveryCodes] = useState<string[]>(() => generateRecoveryCodes(8));
   const [savedRecoveryAck, setSavedRecoveryAck] = useState(false);
-  const [enrollCode, setEnrollCode] = useState('');
   const [pin1, setPin1] = useState('');
   const [pin2, setPin2] = useState('');
-  const [copiedSecret, setCopiedSecret] = useState(false);
   const [copiedRecovery, setCopiedRecovery] = useState(false);
 
   // Challenge state
   const [challengeMode, setChallengeMode] = useState<'primary' | 'recovery'>('primary');
   const [challengeInput, setChallengeInput] = useState('');
   const [rememberDevice, setRememberDevice] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState<number>(() => 30 - (Math.floor(Date.now() / 1000) % 30));
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const otpUri = useMemo(() => {
-    if (!activeProfile) return '';
-    return buildOtpAuthUri(activeProfile.email, totpSecret, 'Reussite Offline');
-  }, [activeProfile, totpSecret]);
-
-  // Generate local offline QR code SVG/PNG data URL whenever secret changes
   useEffect(() => {
-    if (twoFactorConfigured || !otpUri) return;
     let cancelled = false;
-    generateQrDataUrl(otpUri)
-      .then((url) => {
-        if (!cancelled) setQrDataUrl(url);
-      })
-      .catch(() => {
-        if (!cancelled) setQrDataUrl('');
-      });
+    checkDeviceLockAvailability().then((info) => {
+      if (cancelled) return;
+      setDeviceSupport(info);
+      if (!info.available) {
+        setEnrollMethod('pin');
+      }
+    });
     return () => {
       cancelled = true;
     };
-  }, [twoFactorConfigured, otpUri]);
-
-  // 30-second TOTP countdown indicator
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      setSecondsLeft(30 - (Math.floor(Date.now() / 1000) % 30));
-    }, 1000);
-    return () => window.clearInterval(interval);
   }, []);
 
   if (!activeProfile) return null;
 
-  const currentMethod: TwoFactorMethod = activeProfile.twoFactor?.method ?? 'totp';
+  const currentMethod: TwoFactorMethod = activeProfile.twoFactor?.method ?? 'device';
+  const enrolledDeviceLabel =
+    activeProfile.twoFactor?.webauthnDeviceLabel ?? 'Verrouillage natif de cet appareil';
   const remainingRecoveryCount = activeProfile.twoFactor?.recoveryCodeHashes?.length ?? 0;
-
-  const handleCopySecret = async () => {
-    try {
-      await navigator.clipboard.writeText(totpSecret);
-      setCopiedSecret(true);
-      notify('Clé secrète TOTP copiée dans le presse-papiers.', 'info');
-      window.setTimeout(() => setCopiedSecret(false), 2500);
-    } catch {
-      notify('Sélectionne et copie la clé manuellement.', 'warning');
-    }
-  };
 
   const handleCopyRecoveryCodes = async () => {
     const text = [
@@ -126,7 +101,7 @@ export const TwoFactorGateScreen: React.FC = () => {
       `Date   : ${new Date().toLocaleString('fr-FR')}`,
       '',
       'Conserve ce fichier en lieu sûr (hors ligne).',
-      'Chaque code permet de débloquer ton compte 1 seule fois si tu perds ton appareil :',
+      'Chaque code permet de débloquer ton compte 1 seule fois si tu changes d’appareil :',
       '',
       ...recoveryCodes.map((c, idx) => `  [${idx + 1}]  ${c}`),
       '',
@@ -144,19 +119,12 @@ export const TwoFactorGateScreen: React.FC = () => {
     notify('Fichier des 8 codes de secours téléchargé !', 'success');
   };
 
-  const handleRegenerateSecret = () => {
-    setTotpSecret(generateTotpSecret(20));
-    setRecoveryCodes(generateRecoveryCodes(8));
-    setEnrollCode('');
-    setError(null);
-  };
-
   const handleEnrollSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     if (!savedRecoveryAck) {
-      setError('Confirme d’abord que tu as sauvegardé tes 8 codes de secours en lieu sûr.');
+      setError('Confirme d’abord que tu as copié ou téléchargé tes 8 codes de secours.');
       return;
     }
 
@@ -174,8 +142,6 @@ export const TwoFactorGateScreen: React.FC = () => {
     setBusy(true);
     const res = await completeTwoFactorEnrollment({
       method: enrollMethod,
-      totpSecret: enrollMethod === 'totp' ? totpSecret : undefined,
-      verificationCode: enrollMethod === 'totp' ? enrollCode : undefined,
       pin: enrollMethod === 'pin' ? pin1 : undefined,
       recoveryCodes,
     });
@@ -186,7 +152,17 @@ export const TwoFactorGateScreen: React.FC = () => {
     }
   };
 
-  const handleChallengeSubmit = async (e: React.FormEvent) => {
+  const handleDeviceUnlockClick = async () => {
+    setError(null);
+    setBusy(true);
+    const res = await verifyTwoFactorChallenge('', 'primary', rememberDevice ? 12 : 0);
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error ?? 'Vérification par verrouillage de l’appareil refusée.');
+    }
+  };
+
+  const handleCodeChallengeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setBusy(true);
@@ -240,17 +216,18 @@ export const TwoFactorGateScreen: React.FC = () => {
           </button>
         </div>
 
-        {/* ================= MODE 1: FIRST-TIME ENROLLMENT ================= */}
+        {/* ================= MODE 1: FIRST-TIME ENROLLMENT (ZERO QR CODE) ================= */}
         {!twoFactorConfigured ? (
           <div className="mt-6 space-y-5">
             <div className="rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4 text-xs leading-relaxed text-amber-100">
               <p className="flex items-center gap-2 font-bold text-amber-300">
                 <Lock className="h-4 w-4" />
-                Sécurité obligatoire avant d’utiliser ton compte
+                Sécurité obligatoire sans QR code ni application tierce
               </p>
               <p className="mt-1">
-                Configure ta double authentification une seule fois. Ensuite, un second facteur sera exigé{' '}
-                <strong>à chaque connexion</strong> (100 % fonctionnel même hors ligne et synchronisé sur Supabase).
+                Choisis le <strong>mot de passe / verrouillage natif de ton appareil</strong> (empreinte, Face ID,
+                Windows Hello ou code d’écran) ou un <strong>Code PIN Maître 2FA</strong>. Cette vérification sera exigée
+                avant toute utilisation de ton compte.
               </p>
             </div>
 
@@ -259,21 +236,21 @@ export const TwoFactorGateScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
-                  setEnrollMethod('totp');
+                  setEnrollMethod('device');
                   setError(null);
                 }}
-                className={`rounded-2xl border p-3.5 text-left transition ${
-                  enrollMethod === 'totp'
+                className={`rounded-2xl border p-4 text-left transition ${
+                  enrollMethod === 'device'
                     ? 'border-amber-400 bg-amber-400/15 text-white'
                     : 'border-slate-700 bg-slate-800/50 text-slate-300 hover:border-slate-600'
                 }`}
               >
                 <div className="flex items-center gap-2 font-bold">
-                  <Smartphone className="h-4 w-4 text-amber-400" />
-                  App Authenticator (Recommandé)
+                  <Fingerprint className="h-5 w-5 text-amber-400" />
+                  Mot de passe / Verrouillage de l’appareil
                 </div>
                 <p className="mt-1 text-[11px] text-slate-400">
-                  Google Authenticator, Microsoft Authenticator, Authy ou FreeOTP (standard RFC 6238 TOTP).
+                  Utilise le code PIN d’écran, le mot de passe Windows/Mac, l’empreinte digitale ou Face ID de ton appareil.
                 </p>
               </button>
 
@@ -283,102 +260,64 @@ export const TwoFactorGateScreen: React.FC = () => {
                   setEnrollMethod('pin');
                   setError(null);
                 }}
-                className={`rounded-2xl border p-3.5 text-left transition ${
+                className={`rounded-2xl border p-4 text-left transition ${
                   enrollMethod === 'pin'
-                    ? 'border-amber-400 bg-amber-400/15 text-white'
+                    ? 'border-emerald-400 bg-emerald-400/15 text-white'
                     : 'border-slate-700 bg-slate-800/50 text-slate-300 hover:border-slate-600'
                 }`}
               >
                 <div className="flex items-center gap-2 font-bold">
-                  <KeyRound className="h-4 w-4 text-emerald-400" />
+                  <KeyRound className="h-5 w-5 text-emerald-400" />
                   Code PIN Maître 2FA (6 chiffres)
                 </div>
                 <p className="mt-1 text-[11px] text-slate-400">
-                  Second code personnel chiffré PBKDF2-SHA256 si tu n’as pas d’app Authenticator sous la main.
+                  Second code personnel chiffré PBKDF2-SHA256, fonctionne partout même sur plusieurs appareils.
                 </p>
               </button>
             </div>
 
             <form onSubmit={handleEnrollSubmit} className="space-y-5">
-              {enrollMethod === 'totp' ? (
-                <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-xs font-bold uppercase tracking-wider text-amber-300">
-                      Étape 1 — Scanne ce QR Code dans ton application Authenticator
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleRegenerateSecret}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-white"
-                    >
-                      <RefreshCw className="h-3 w-3" />
-                      Nouvelle clé
-                    </button>
-                  </div>
-
-                  <div className="mt-4 flex flex-col items-center gap-5 sm:flex-row">
-                    <div className="shrink-0 rounded-2xl bg-white p-3 shadow-md">
-                      {qrDataUrl ? (
-                        <img
-                          src={qrDataUrl}
-                          alt="QR Code 2FA Réussite Offline"
-                          className="h-44 w-44"
-                        />
-                      ) : (
-                        <div className="flex h-44 w-44 items-center justify-center text-xs text-slate-500">
-                          Génération QR...
-                        </div>
-                      )}
+              {enrollMethod === 'device' ? (
+                <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
+                  <div className="flex items-start gap-3.5">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-400/15 text-amber-300 ring-1 ring-amber-400/30">
+                      <Smartphone className="h-6 w-6" />
                     </div>
-
-                    <div className="w-full space-y-3 text-xs">
-                      <p className="text-slate-300">
-                        Ouvre <strong>Google Authenticator</strong>, <strong>Authy</strong> ou{' '}
-                        <strong>Microsoft Authenticator</strong>, appuie sur <strong>+</strong> et scanne le QR Code.
+                    <div className="space-y-1.5 text-xs">
+                      <p className="text-sm font-bold text-white">
+                        Étape 1 — Associer le verrouillage natif de cet appareil
                       </p>
-                      <div>
-                        <p className="text-[11px] font-semibold text-slate-400">
-                          Ou saisis manuellement cette clé secrète :
-                        </p>
-                        <div className="mt-1 flex items-center gap-2">
-                          <code className="flex-1 break-all rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 font-mono text-xs font-bold tracking-wider text-amber-300">
-                            {formatSecretForDisplay(totpSecret)}
-                          </code>
+                      <p className="text-slate-300 leading-relaxed">
+                        En cliquant sur le bouton ci-dessous, ton téléphone ou ton ordinateur va afficher sa fenêtre
+                        de sécurité officielle pour confirmer ton <strong>mot de passe système, code d’écran, empreinte ou Face ID</strong>.
+                      </p>
+                      {!deviceSupport.available && (
+                        <p className="mt-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-2.5 text-amber-200">
+                          ⚠️ {deviceSupport.reason}{' '}
                           <button
                             type="button"
-                            onClick={handleCopySecret}
-                            className="inline-flex items-center gap-1 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700"
+                            onClick={() => setEnrollMethod('pin')}
+                            className="font-bold underline"
                           >
-                            {copiedSecret ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-                            {copiedSecret ? 'Copié' : 'Copier'}
+                            Passer au Code PIN Maître 2FA →
                           </button>
-                        </div>
-                      </div>
-                      <p className="text-[11px] text-slate-400">
-                        Généré 100 % localement sur ton appareil — jamais envoyé à un service externe.
-                      </p>
+                        </p>
+                      )}
+                      {deviceSupport.available && deviceSupport.inIframe && (
+                        <p className="mt-2 rounded-xl border border-sky-500/40 bg-sky-500/10 p-2.5 text-sky-200">
+                          ℹ️ Astuce : si le verrouillage natif est bloqué dans cet aperçu intégré, ouvre{' '}
+                          <strong>reussite-offline.vercel.app</strong> directement dans ton navigateur, ou utilise le{' '}
+                          <button
+                            type="button"
+                            onClick={() => setEnrollMethod('pin')}
+                            className="font-bold underline"
+                          >
+                            Code PIN Maître 2FA
+                          </button>
+                          .
+                        </p>
+                      )}
                     </div>
-                  </div>
-
-                  <div className="mt-5 border-t border-slate-800 pt-4">
-                    <label
-                      htmlFor="totp-enroll-code"
-                      className="block text-xs font-bold text-slate-200"
-                    >
-                      Étape 2 — Saisis le code à 6 chiffres affiché dans ton Authenticator
-                    </label>
-                    <input
-                      id="totp-enroll-code"
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      maxLength={6}
-                      required
-                      value={enrollCode}
-                      onChange={(e) => setEnrollCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      placeholder="000000"
-                      className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-center font-mono text-2xl font-extrabold tracking-[0.45em] text-white focus:border-amber-400 focus:outline-none"
-                    />
                   </div>
                 </div>
               ) : (
@@ -431,10 +370,10 @@ export const TwoFactorGateScreen: React.FC = () => {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-sky-300">
-                      Étape 3 — Sauvegarde tes 8 codes de secours à usage unique
+                      Étape 2 — Sauvegarde tes 8 codes de secours à usage unique
                     </p>
                     <p className="mt-0.5 text-[11px] text-slate-400">
-                      Indispensables si tu perds ou changes de téléphone. Ils ne seront plus affichés en clair ensuite.
+                      Indispensables si tu te connectes un jour depuis un autre appareil.
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -489,108 +428,170 @@ export const TwoFactorGateScreen: React.FC = () => {
               <button
                 type="submit"
                 disabled={busy}
-                className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 px-5 py-3 text-sm font-extrabold text-slate-950 shadow-lg hover:from-amber-300 hover:to-orange-400 disabled:opacity-60"
+                className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 px-5 py-3 text-sm font-extrabold text-slate-950 shadow-lg hover:from-amber-300 hover:to-orange-400 disabled:opacity-60"
               >
-                <ShieldCheck className="h-5 w-5" />
+                {enrollMethod === 'device' ? (
+                  <Fingerprint className="h-5 w-5" />
+                ) : (
+                  <ShieldCheck className="h-5 w-5" />
+                )}
                 {busy
-                  ? 'Activation cryptographique en cours...'
-                  : 'Activer la Double Authentification et ouvrir mon compte'}
+                  ? 'Validation avec ton appareil en cours...'
+                  : enrollMethod === 'device'
+                  ? 'Activer avec le mot de passe / biométrie de mon appareil'
+                  : 'Activer le Code PIN Maître 2FA et ouvrir mon compte'}
               </button>
             </form>
           </div>
         ) : (
           /* ================= MODE 2: 2FA VERIFICATION CHALLENGE ================= */
-          <form onSubmit={handleChallengeSubmit} className="mt-6 space-y-5">
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-bold text-white">
-                  {challengeMode === 'recovery'
-                    ? 'Saisis un code de secours à usage unique'
-                    : currentMethod === 'totp'
-                    ? 'Saisis le code à 6 chiffres de ton application Authenticator'
-                    : 'Saisis ton Code PIN Maître 2FA (6 chiffres)'}
-                </p>
-                {challengeMode === 'primary' && currentMethod === 'totp' && (
-                  <span className="rounded-full bg-slate-800 px-2.5 py-1 font-mono text-[11px] font-bold text-amber-300">
-                    Nouveau code dans {secondsLeft}s
-                  </span>
+          <div className="mt-6 space-y-5">
+            {challengeMode === 'primary' && currentMethod === 'device' ? (
+              <div className="space-y-5">
+                <div className="rounded-2xl border border-amber-400/30 bg-slate-950/60 p-6 text-center">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400/20 to-orange-500/20 text-amber-300 ring-1 ring-amber-400/40">
+                    <Fingerprint className="h-9 w-9" />
+                  </div>
+                  <h2 className="mt-4 text-base font-extrabold text-white">
+                    Confirme ton identité avec ton appareil
+                  </h2>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Appareil enregistré : <strong className="text-slate-200">{enrolledDeviceLabel}</strong>
+                  </p>
+                  <p className="mt-2 text-xs text-slate-400">
+                    Clique ci-dessous pour entrer le mot de passe, le code d’écran, l’empreinte digitale ou Face ID de ton appareil.
+                  </p>
+
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={handleDeviceUnlockClick}
+                    className="mt-5 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 px-6 py-3.5 text-sm font-extrabold text-slate-950 shadow-lg hover:from-amber-300 hover:to-orange-400 disabled:opacity-60"
+                  >
+                    <Fingerprint className="h-5 w-5" />
+                    {busy
+                      ? 'En attente de confirmation système...'
+                      : 'Déverrouiller avec le mot de passe / biométrie de l’appareil'}
+                  </button>
+
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-left">
+                    <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={rememberDevice}
+                        onChange={(e) => setRememberDevice(e.target.checked)}
+                        className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-amber-500"
+                      />
+                      Faire confiance à cet appareil pendant 12h
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setChallengeMode('recovery');
+                        setChallengeInput('');
+                        setError(null);
+                      }}
+                      className="text-xs font-semibold text-amber-300 underline-offset-2 hover:underline"
+                    >
+                      Autre appareil ? Utiliser un code de secours
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="flex items-start gap-2 rounded-xl border border-red-500/40 bg-red-950/60 p-3 text-xs font-semibold text-red-200">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+                    <span>{error}</span>
+                  </div>
                 )}
               </div>
+            ) : (
+              <form onSubmit={handleCodeChallengeSubmit} className="space-y-5">
+                <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
+                  <p className="text-sm font-bold text-white">
+                    {challengeMode === 'recovery'
+                      ? 'Saisis un code de secours à usage unique'
+                      : 'Saisis ton Code PIN Maître 2FA (6 chiffres)'}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {challengeMode === 'recovery'
+                      ? `Format XXXX-XXXX (${remainingRecoveryCount} code(s) de secours encore disponible(s)).`
+                      : 'Entre ton Code PIN Maître personnel à 6 chiffres pour déverrouiller ton accès.'}
+                  </p>
 
-              <p className="mt-1 text-xs text-slate-400">
-                {challengeMode === 'recovery'
-                  ? `Format XXXX-XXXX (${remainingRecoveryCount} code(s) de secours encore disponible(s)).`
-                  : currentMethod === 'totp'
-                  ? 'Ouvre Google Authenticator, Authy ou Microsoft Authenticator et entre le code Réussite Offline.'
-                  : 'Entre ton Code PIN Maître personnel à 6 chiffres pour déverrouiller ton accès.'}
-              </p>
-
-              <input
-                type={challengeMode === 'primary' && currentMethod === 'pin' ? 'password' : 'text'}
-                inputMode={challengeMode === 'recovery' ? 'text' : 'numeric'}
-                autoComplete="one-time-code"
-                autoFocus
-                required
-                maxLength={challengeMode === 'recovery' ? 9 : 6}
-                value={challengeInput}
-                onChange={(e) => {
-                  if (challengeMode === 'recovery') {
-                    setChallengeInput(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 9));
-                  } else {
-                    setChallengeInput(e.target.value.replace(/\D/g, '').slice(0, 6));
-                  }
-                }}
-                placeholder={challengeMode === 'recovery' ? 'XXXX-XXXX' : '000000'}
-                className="mt-4 w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-4 text-center font-mono text-3xl font-extrabold tracking-[0.45em] text-white focus:border-amber-400 focus:outline-none"
-              />
-
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-300">
                   <input
-                    type="checkbox"
-                    checked={rememberDevice}
-                    onChange={(e) => setRememberDevice(e.target.checked)}
-                    className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-amber-500"
+                    type={challengeMode === 'primary' ? 'password' : 'text'}
+                    inputMode={challengeMode === 'recovery' ? 'text' : 'numeric'}
+                    autoComplete="one-time-code"
+                    autoFocus
+                    required
+                    maxLength={challengeMode === 'recovery' ? 9 : 6}
+                    value={challengeInput}
+                    onChange={(e) => {
+                      if (challengeMode === 'recovery') {
+                        setChallengeInput(
+                          e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 9)
+                        );
+                      } else {
+                        setChallengeInput(e.target.value.replace(/\D/g, '').slice(0, 6));
+                      }
+                    }}
+                    placeholder={challengeMode === 'recovery' ? 'XXXX-XXXX' : '••••••'}
+                    className="mt-4 w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-4 text-center font-mono text-3xl font-extrabold tracking-[0.45em] text-white focus:border-amber-400 focus:outline-none"
                   />
-                  Faire confiance à cet appareil pendant 12h
-                </label>
+
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={rememberDevice}
+                        onChange={(e) => setRememberDevice(e.target.checked)}
+                        className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-amber-500"
+                      />
+                      Faire confiance à cet appareil pendant 12h
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setChallengeMode((m) => (m === 'primary' ? 'recovery' : 'primary'));
+                        setChallengeInput('');
+                        setError(null);
+                      }}
+                      className="text-xs font-semibold text-amber-300 underline-offset-2 hover:underline"
+                    >
+                      {challengeMode === 'primary'
+                        ? 'Code oublié ? Utiliser un code de secours'
+                        : currentMethod === 'device'
+                        ? 'Revenir au verrouillage de l’appareil'
+                        : 'Revenir au Code PIN Maître 2FA'}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="flex items-start gap-2 rounded-xl border border-red-500/40 bg-red-950/60 p-3 text-xs font-semibold text-red-200">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+                    <span>{error}</span>
+                  </div>
+                )}
 
                 <button
-                  type="button"
-                  onClick={() => {
-                    setChallengeMode((m) => (m === 'primary' ? 'recovery' : 'primary'));
-                    setChallengeInput('');
-                    setError(null);
-                  }}
-                  className="text-xs font-semibold text-amber-300 underline-offset-2 hover:underline"
+                  type="submit"
+                  disabled={busy || (challengeMode === 'primary' && challengeInput.length < 6)}
+                  className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 px-5 py-3 text-sm font-extrabold text-slate-950 shadow-lg hover:from-amber-300 hover:to-orange-400 disabled:opacity-60"
                 >
-                  {challengeMode === 'primary'
-                    ? 'Appareil indisponible ? Utiliser un code de secours'
-                    : 'Revenir au code 2FA principal'}
+                  <Lock className="h-4 w-4" />
+                  {busy ? 'Vérification cryptographique...' : 'Vérifier et déverrouiller mon compte'}
                 </button>
-              </div>
-            </div>
-
-            {error && (
-              <div className="flex items-start gap-2 rounded-xl border border-red-500/40 bg-red-950/60 p-3 text-xs font-semibold text-red-200">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
-                <span>{error}</span>
-              </div>
+              </form>
             )}
 
-            <button
-              type="submit"
-              disabled={busy || (challengeMode === 'primary' && challengeInput.length < 6)}
-              className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 px-5 py-3 text-sm font-extrabold text-slate-950 shadow-lg hover:from-amber-300 hover:to-orange-400 disabled:opacity-60"
-            >
-              <Lock className="h-4 w-4" />
-              {busy ? 'Vérification cryptographique...' : 'Vérifier et déverrouiller mon compte'}
-            </button>
-
             <p className="text-center text-[11px] text-slate-500">
-              Protection anti-bruteforce active : 5 tentatives maximum avant verrouillage automatique de 5 minutes.
+              Protection anti-bruteforce active : 5 tentatives échouées maximum avant verrouillage automatique de 5 minutes.
             </p>
-          </form>
+          </div>
         )}
       </div>
     </div>

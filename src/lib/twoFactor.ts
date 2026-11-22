@@ -1,14 +1,7 @@
-import QRCode from 'qrcode';
 import { TwoFactorConfig, UserProfile } from '../types';
 import { isOwnerProfile } from './owner';
-import {
-  decryptVaultString,
-  encryptVaultString,
-  hashPasswordPBKDF2,
-  verifyPasswordPBKDF2,
-} from './securityFirewall';
+import { hashPasswordPBKDF2, verifyPasswordPBKDF2 } from './securityFirewall';
 
-const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 const RECOVERY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const SESSION_2FA_KEY = 'reussite_offline_2fa_session_v1';
 const TRUSTED_DEVICE_2FA_KEY = 'reussite_offline_2fa_trusted_v1';
@@ -35,155 +28,303 @@ function constantTimeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-/**
- * Generates a cryptographically strong 160-bit Base32 TOTP secret (32 chars).
- */
-export function generateTotpSecret(byteLength = 20): string {
-  const bytes = new Uint8Array(byteLength);
-  const c = getCryptoObj();
-  if (c && c.getRandomValues) {
-    c.getRandomValues(bytes);
-  } else {
-    for (let i = 0; i < byteLength; i++) {
-      bytes[i] = Math.floor(Math.random() * 256);
-    }
-  }
-  return base32Encode(bytes);
-}
-
-export function base32Encode(bytes: Uint8Array): string {
-  let bits = 0;
-  let value = 0;
-  let output = '';
+export function base64UrlEncode(bytes: Uint8Array): string {
+  let binary = '';
   for (let i = 0; i < bytes.length; i++) {
-    value = (value << 8) | bytes[i];
-    bits += 8;
-    while (bits >= 5) {
-      output += BASE32_ALPHABET[(value >>> (bits - 5)) & 31];
-      bits -= 5;
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const b64 =
+    typeof btoa === 'function'
+      ? btoa(binary)
+      : Buffer.from(bytes).toString('base64');
+  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+export function base64UrlDecode(str: string): Uint8Array {
+  const padded = str.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((str.length + 3) % 4);
+  if (typeof atob === 'function') {
+    const binary = atob(padded);
+    const out = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      out[i] = binary.charCodeAt(i);
     }
+    return out;
   }
-  if (bits > 0) {
-    output += BASE32_ALPHABET[(value << (5 - bits)) & 31];
-  }
-  return output;
+  return new Uint8Array(Buffer.from(padded, 'base64'));
 }
 
-export function base32Decode(input: string): Uint8Array {
-  const cleaned = input.toUpperCase().replace(/[^A-Z2-7]/g, '');
-  let bits = 0;
-  let value = 0;
-  const out: number[] = [];
-  for (let i = 0; i < cleaned.length; i++) {
-    const idx = BASE32_ALPHABET.indexOf(cleaned[i]);
-    if (idx === -1) continue;
-    value = (value << 5) | idx;
-    bits += 5;
-    if (bits >= 8) {
-      out.push((value >>> (bits - 8)) & 0xff);
-      bits -= 8;
-    }
-  }
-  return new Uint8Array(out);
+export function detectFriendlyDeviceLabel(): string {
+  if (typeof navigator === 'undefined') return 'Cet appareil';
+  const ua = navigator.userAgent || '';
+  if (/Android/i.test(ua)) return 'Téléphone / Tablette Android (Verrouillage écran)';
+  if (/iPhone|iPad|iPod/i.test(ua)) return 'iPhone / iPad (Face ID / Touch ID / Code)';
+  if (/Windows/i.test(ua)) return 'PC Windows (Windows Hello / Mot de passe)';
+  if (/Macintosh|Mac OS X/i.test(ua)) return 'Mac (Touch ID / Mot de passe macOS)';
+  if (/Linux/i.test(ua)) return 'Appareil Linux (Mot de passe système)';
+  return 'Cet appareil (Verrouillage natif)';
 }
 
-export function formatSecretForDisplay(secret: string): string {
-  return secret.replace(/[^A-Z2-7]/gi, '').toUpperCase().replace(/(.{4})/g, '$1 ').trim();
-}
-
-export function buildOtpAuthUri(
-  email: string,
-  secret: string,
-  issuer = 'Reussite Offline'
-): string {
-  const cleanSecret = secret.replace(/[^A-Z2-7]/gi, '').toUpperCase();
-  const label = `${encodeURIComponent(issuer)}:${encodeURIComponent(email.trim().toLowerCase())}`;
-  return `otpauth://totp/${label}?secret=${cleanSecret}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`;
-}
-
-export async function generateQrDataUrl(otpAuthUri: string): Promise<string> {
-  return QRCode.toDataURL(otpAuthUri, {
-    errorCorrectionLevel: 'M',
-    width: 220,
-    margin: 2,
-    color: {
-      dark: '#0f172a',
-      light: '#ffffff',
-    },
-  });
+export interface DeviceLockSupportInfo {
+  available: boolean;
+  inIframe: boolean;
+  reason?: string;
 }
 
 /**
- * RFC 6238 TOTP generator using Web Crypto HMAC-SHA1 (100% offline-capable).
+ * Checks whether the browser & OS expose a native platform authenticator
+ * (device password / screen PIN / fingerprint / Face ID / Windows Hello).
  */
-export async function computeTotpAtStep(
-  secretBase32: string,
-  timeStep: number
-): Promise<string> {
-  const c = getCryptoObj();
-  if (!c || !c.subtle) {
-    throw new Error('Web Crypto API indisponible pour la génération TOTP.');
+export async function checkDeviceLockAvailability(): Promise<DeviceLockSupportInfo> {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return { available: false, inIframe: false, reason: 'Navigateur indisponible.' };
   }
-  const keyBytes = base32Decode(secretBase32);
-  const counterBuf = new ArrayBuffer(8);
-  const view = new DataView(counterBuf);
-  const high = Math.floor(timeStep / 0x100000000);
-  const low = timeStep >>> 0;
-  view.setUint32(0, high, false);
-  view.setUint32(4, low, false);
 
-  const cryptoKey = await c.subtle.importKey(
-    'raw',
-    keyBytes.buffer as ArrayBuffer,
-    { name: 'HMAC', hash: 'SHA-1' },
-    false,
-    ['sign']
-  );
-  const sig = new Uint8Array(await c.subtle.sign('HMAC', cryptoKey, counterBuf));
-  const offset = sig[sig.length - 1] & 0x0f;
-  const binary =
-    ((sig[offset] & 0x7f) << 24) |
-    ((sig[offset + 1] & 0xff) << 16) |
-    ((sig[offset + 2] & 0xff) << 8) |
-    (sig[offset + 3] & 0xff);
-  return String(binary % 1_000_000).padStart(6, '0');
-}
-
-export async function computeCurrentTotp(
-  secretBase32: string,
-  nowMs = Date.now(),
-  periodSec = 30
-): Promise<{ code: string; timeStep: number; remainingSec: number }> {
-  const epochSec = Math.floor(nowMs / 1000);
-  const timeStep = Math.floor(epochSec / periodSec);
-  const remainingSec = periodSec - (epochSec % periodSec);
-  const code = await computeTotpAtStep(secretBase32, timeStep);
-  return { code, timeStep, remainingSec };
-}
-
-export async function verifyTotpCode(
-  secretBase32: string,
-  inputCode: string,
-  lastUsedTimeStep?: number,
-  nowMs = Date.now(),
-  windowSteps = 1
-): Promise<{ valid: boolean; matchedTimeStep?: number; replayed?: boolean }> {
-  const normalized = inputCode.replace(/\D/g, '');
-  if (normalized.length !== 6) {
-    return { valid: false };
+  let inIframe = false;
+  try {
+    inIframe = window.self !== window.top;
+  } catch {
+    inIframe = true;
   }
-  const currentStep = Math.floor(nowMs / 1000 / 30);
-  for (let delta = -windowSteps; delta <= windowSteps; delta++) {
-    const step = currentStep + delta;
-    const expected = await computeTotpAtStep(secretBase32, step);
-    if (constantTimeEqual(normalized, expected)) {
-      if (typeof lastUsedTimeStep === 'number' && step <= lastUsedTimeStep) {
-        return { valid: false, replayed: true };
-      }
-      return { valid: true, matchedTimeStep: step };
+
+  if (!window.isSecureContext) {
+    return {
+      available: false,
+      inIframe,
+      reason: 'Le verrouillage natif nécessite une connexion HTTPS sécurisée.',
+    };
+  }
+
+  if (
+    typeof window.PublicKeyCredential === 'undefined' ||
+    !navigator.credentials ||
+    typeof navigator.credentials.create !== 'function'
+  ) {
+    return {
+      available: false,
+      inIframe,
+      reason: 'Ce navigateur ne prend pas en charge WebAuthn. Utilise le Code PIN Maître 2FA.',
+    };
+  }
+
+  try {
+    const platformOk =
+      typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function'
+        ? await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+        : true;
+    if (!platformOk) {
+      return {
+        available: false,
+        inIframe,
+        reason:
+          'Aucun verrouillage système (empreinte, Face ID, Windows Hello ou PIN écran) n’est détecté sur cet appareil.',
+      };
     }
+    return { available: true, inIframe };
+  } catch {
+    return { available: true, inIframe };
   }
-  return { valid: false };
+}
+
+/**
+ * Enrolls the device's native lock screen / OS password / biometrics via WebAuthn
+ * with strict userVerification='required' (zero QR code, zero external app).
+ */
+export async function registerDeviceLockCredential(profile: {
+  id: string;
+  email: string;
+  name: string;
+}): Promise<{ ok: boolean; credentialId?: string; deviceLabel?: string; error?: string }> {
+  const c = getCryptoObj();
+  if (!c || typeof navigator === 'undefined' || !navigator.credentials?.create) {
+    return {
+      ok: false,
+      error: 'Verrouillage natif non supporté par ce navigateur. Choisis le Code PIN Maître 2FA.',
+    };
+  }
+
+  try {
+    const challenge = new Uint8Array(32);
+    c.getRandomValues(challenge);
+    const userIdBytes = new TextEncoder().encode(profile.id).slice(0, 64);
+
+    const credential = (await navigator.credentials.create({
+      publicKey: {
+        challenge: challenge.buffer as ArrayBuffer,
+        rp: {
+          name: 'Réussite Offline',
+        },
+        user: {
+          id: userIdBytes.buffer as ArrayBuffer,
+          name: profile.email,
+          displayName: profile.name,
+        },
+        pubKeyCredParams: [
+          { type: 'public-key', alg: -7 }, // ES256
+          { type: 'public-key', alg: -257 }, // RS256
+        ],
+        authenticatorSelection: {
+          authenticatorAttachment: 'platform',
+          userVerification: 'required',
+          residentKey: 'preferred',
+        },
+        timeout: 60_000,
+        attestation: 'none',
+      },
+    })) as PublicKeyCredential | null;
+
+    if (!credential || !credential.rawId) {
+      return {
+        ok: false,
+        error: 'Enregistrement annulé avant validation du verrouillage de l’appareil.',
+      };
+    }
+
+    const credentialId = base64UrlEncode(new Uint8Array(credential.rawId));
+    return {
+      ok: true,
+      credentialId,
+      deviceLabel: detectFriendlyDeviceLabel(),
+    };
+  } catch (err) {
+    const name = err instanceof Error ? err.name : '';
+    if (name === 'NotAllowedError') {
+      return {
+        ok: false,
+        error:
+          'Vérification annulée ou bloquée dans cette fenêtre. Si tu es dans un aperçu intégré, ouvre le site directement ou utilise le Code PIN Maître 2FA.',
+      };
+    }
+    if (name === 'SecurityError') {
+      return {
+        ok: false,
+        error:
+          'Le navigateur restreint le verrouillage de l’appareil dans un cadre intégré. Ouvre https://reussite-offline.vercel.app directement ou utilise le Code PIN Maître 2FA.',
+      };
+    }
+    return {
+      ok: false,
+      error:
+        'Impossible d’activer le verrouillage de l’appareil sur ce navigateur. Utilise le Code PIN Maître 2FA juste à côté.',
+    };
+  }
+}
+
+/**
+ * Validates WebAuthn assertion payload (challenge + UP/UV user-verified flags).
+ * Exported separately for unit testing.
+ */
+export function verifyAssertionPayload(
+  clientDataBytes: Uint8Array,
+  authenticatorDataBytes: Uint8Array,
+  signatureBytes: Uint8Array,
+  expectedChallengeBase64Url: string
+): { valid: boolean; reason?: string } {
+  if (signatureBytes.length === 0) {
+    return { valid: false, reason: 'Signature cryptographique de l’appareil manquante.' };
+  }
+  if (authenticatorDataBytes.length < 37) {
+    return { valid: false, reason: 'Données d’authentification de l’appareil incomplètes.' };
+  }
+
+  // Byte 32 holds authenticator flags: bit 0 = UP (User Present), bit 2 = UV (User Verified)
+  const flags = authenticatorDataBytes[32];
+  const userPresent = (flags & 0x01) !== 0;
+  const userVerified = (flags & 0x04) !== 0;
+  if (!userPresent || !userVerified) {
+    return {
+      valid: false,
+      reason: 'Le mot de passe ou la biométrie de l’appareil n’a pas été confirmé (drapeau UV absent).',
+    };
+  }
+
+  try {
+    const decoded = new TextDecoder().decode(clientDataBytes);
+    const parsed = JSON.parse(decoded) as { type?: string; challenge?: string };
+    if (parsed.type !== 'webauthn.get') {
+      return { valid: false, reason: 'Type de défi WebAuthn invalide.' };
+    }
+    if (!parsed.challenge || !constantTimeEqual(parsed.challenge, expectedChallengeBase64Url)) {
+      return { valid: false, reason: 'Défi cryptographique non concordant (protection anti-rejeu).' };
+    }
+    return { valid: true };
+  } catch {
+    return { valid: false, reason: 'Réponse clientDataJSON illisible.' };
+  }
+}
+
+/**
+ * Prompts the OS native device password / PIN / fingerprint / Face ID / Windows Hello
+ * to verify ownership before unlocking the account.
+ */
+export async function verifyDeviceLockAssertion(
+  credentialIdBase64Url: string
+): Promise<{ ok: boolean; error?: string }> {
+  const c = getCryptoObj();
+  if (!c || typeof navigator === 'undefined' || !navigator.credentials?.get) {
+    return {
+      ok: false,
+      error: 'Verrouillage natif indisponible sur ce navigateur. Utilise un code de secours.',
+    };
+  }
+
+  try {
+    const challenge = new Uint8Array(32);
+    c.getRandomValues(challenge);
+    const expectedChallenge = base64UrlEncode(challenge);
+    const credIdBytes = base64UrlDecode(credentialIdBase64Url);
+
+    const assertion = (await navigator.credentials.get({
+      publicKey: {
+        challenge: challenge.buffer as ArrayBuffer,
+        allowCredentials: [
+          {
+            id: credIdBytes.buffer as ArrayBuffer,
+            type: 'public-key',
+            transports: ['internal'],
+          },
+        ],
+        userVerification: 'required',
+        timeout: 60_000,
+      },
+    })) as PublicKeyCredential | null;
+
+    if (!assertion) {
+      return { ok: false, error: 'Déverrouillage de l’appareil annulé.' };
+    }
+
+    const response = assertion.response as AuthenticatorAssertionResponse;
+    const check = verifyAssertionPayload(
+      new Uint8Array(response.clientDataJSON),
+      new Uint8Array(response.authenticatorData),
+      new Uint8Array(response.signature),
+      expectedChallenge
+    );
+    if (!check.valid) {
+      return { ok: false, error: check.reason ?? 'Signature de l’appareil refusée.' };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    const name = err instanceof Error ? err.name : '';
+    if (name === 'NotAllowedError') {
+      return {
+        ok: false,
+        error:
+          'Vérification de l’appareil annulée ou appareil différent. Réessaie ou utilise un code de secours.',
+      };
+    }
+    if (name === 'SecurityError') {
+      return {
+        ok: false,
+        error:
+          'Vérification bloquée dans un cadre intégré. Ouvre le site directement ou utilise un code de secours.',
+      };
+    }
+    return {
+      ok: false,
+      error: 'Échec de la vérification par verrouillage de l’appareil. Utilise un code de secours si tu as changé d’appareil.',
+    };
+  }
 }
 
 /**
@@ -247,18 +388,6 @@ export async function verifyTwoFactorPin(pin: string, pinHash?: string): Promise
   return verifyPasswordPBKDF2(`2fa-pin::${pin.trim()}`, pinHash);
 }
 
-export async function encryptTotpSecret(secretBase32: string): Promise<string> {
-  return encryptVaultString(secretBase32.replace(/[^A-Z2-7]/gi, '').toUpperCase());
-}
-
-export async function decryptTotpSecret(encrypted?: string): Promise<string | null> {
-  if (!encrypted) return null;
-  const plain = await decryptVaultString(encrypted);
-  if (!plain) return null;
-  const cleaned = plain.replace(/[^A-Z2-7]/gi, '').toUpperCase();
-  return cleaned.length >= 16 ? cleaned : null;
-}
-
 /**
  * Determines whether a profile requires 2FA verification (mandatory for Owner account).
  */
@@ -270,29 +399,10 @@ export function isTwoFactorMandatoryForProfile(profile?: UserProfile | null): bo
 
 export function isTwoFactorConfigured(profile?: UserProfile | null): boolean {
   if (!profile?.twoFactor?.enabled) return false;
-  if (profile.twoFactor.method === 'totp') {
-    return Boolean(profile.twoFactor.secretEncrypted);
+  if (profile.twoFactor.method === 'device') {
+    return Boolean(profile.twoFactor.webauthnCredentialId);
   }
   return Boolean(profile.twoFactor.pinHash);
-}
-
-export function normalizeTwoFactorProfile(profile: UserProfile): UserProfile {
-  if (isOwnerProfile(profile)) {
-    const existing: TwoFactorConfig = profile.twoFactor ?? {
-      required: true,
-      enabled: false,
-      method: 'totp',
-      recoveryCodeHashes: [],
-    };
-    return {
-      ...profile,
-      twoFactor: {
-        ...existing,
-        required: true,
-      },
-    };
-  }
-  return profile;
 }
 
 // ==================== SESSION 2FA GATE TOKENS ====================

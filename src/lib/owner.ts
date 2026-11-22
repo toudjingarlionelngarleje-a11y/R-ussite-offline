@@ -37,6 +37,8 @@ export function isOwnerProfile(profile?: UserProfile | null): boolean {
  */
 export function applyOwnerEntitlements(profile: UserProfile): UserProfile {
   if (isOwnerProfile(profile)) {
+    const rawMethod = profile.twoFactor?.method;
+    const normalizedMethod = rawMethod === 'pin' ? 'pin' : 'device';
     return {
       ...profile,
       role: 'owner',
@@ -44,13 +46,13 @@ export function applyOwnerEntitlements(profile: UserProfile): UserProfile {
       twoFactor: {
         required: true,
         enabled: profile.twoFactor?.enabled ?? false,
-        method: profile.twoFactor?.method ?? 'totp',
-        secretEncrypted: profile.twoFactor?.secretEncrypted,
+        method: normalizedMethod,
+        webauthnCredentialId: profile.twoFactor?.webauthnCredentialId,
+        webauthnDeviceLabel: profile.twoFactor?.webauthnDeviceLabel,
         pinHash: profile.twoFactor?.pinHash,
         recoveryCodeHashes: profile.twoFactor?.recoveryCodeHashes ?? [],
         configuredAt: profile.twoFactor?.configuredAt,
         lastVerifiedAt: profile.twoFactor?.lastVerifiedAt,
-        lastUsedTimeStep: profile.twoFactor?.lastUsedTimeStep,
       },
     };
   }

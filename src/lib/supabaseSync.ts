@@ -152,8 +152,9 @@ export async function syncStateWithSupabase(
       streak_days: state.streakDays,
       mfa_required: ownerFlag ? true : Boolean(activeProfile.twoFactor?.required),
       mfa_enabled: Boolean(activeProfile.twoFactor?.enabled),
-      mfa_method: activeProfile.twoFactor?.method ?? 'totp',
-      mfa_secret_encrypted: activeProfile.twoFactor?.secretEncrypted ?? null,
+      mfa_method: activeProfile.twoFactor?.method ?? 'device',
+      mfa_webauthn_credential_id: activeProfile.twoFactor?.webauthnCredentialId ?? null,
+      mfa_webauthn_device_label: activeProfile.twoFactor?.webauthnDeviceLabel ?? null,
       mfa_pin_hash: activeProfile.twoFactor?.pinHash ?? null,
       mfa_recovery_hashes: activeProfile.twoFactor?.recoveryCodeHashes ?? [],
       mfa_configured_at: activeProfile.twoFactor?.configuredAt ?? null,
@@ -576,7 +577,8 @@ export async function syncTwoFactorConfigToCloud(
         mfa_required: ownerFlag ? true : profile.twoFactor.required,
         mfa_enabled: profile.twoFactor.enabled,
         mfa_method: profile.twoFactor.method,
-        mfa_secret_encrypted: profile.twoFactor.secretEncrypted ?? null,
+        mfa_webauthn_credential_id: profile.twoFactor.webauthnCredentialId ?? null,
+        mfa_webauthn_device_label: profile.twoFactor.webauthnDeviceLabel ?? null,
         mfa_pin_hash: profile.twoFactor.pinHash ?? null,
         mfa_recovery_hashes: profile.twoFactor.recoveryCodeHashes ?? [],
         mfa_configured_at: profile.twoFactor.configuredAt ?? null,
@@ -603,7 +605,7 @@ export async function fetchProfileMfaFromCloud(
     const { data, error } = await sb
       .from('user_profiles')
       .select(
-        'mfa_required, mfa_enabled, mfa_method, mfa_secret_encrypted, mfa_pin_hash, mfa_recovery_hashes, mfa_configured_at, mfa_last_verified_at'
+        'mfa_required, mfa_enabled, mfa_method, mfa_webauthn_credential_id, mfa_webauthn_device_label, mfa_pin_hash, mfa_recovery_hashes, mfa_configured_at, mfa_last_verified_at'
       )
       .eq('email', email.trim().toLowerCase())
       .maybeSingle();
@@ -612,8 +614,9 @@ export async function fetchProfileMfaFromCloud(
     return {
       required: Boolean(data.mfa_required),
       enabled: Boolean(data.mfa_enabled),
-      method: data.mfa_method === 'pin' ? 'pin' : 'totp',
-      secretEncrypted: data.mfa_secret_encrypted ?? undefined,
+      method: data.mfa_method === 'pin' ? 'pin' : 'device',
+      webauthnCredentialId: data.mfa_webauthn_credential_id ?? undefined,
+      webauthnDeviceLabel: data.mfa_webauthn_device_label ?? undefined,
       pinHash: data.mfa_pin_hash ?? undefined,
       recoveryCodeHashes: Array.isArray(data.mfa_recovery_hashes)
         ? (data.mfa_recovery_hashes as string[])

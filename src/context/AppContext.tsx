@@ -35,8 +35,6 @@ import {
 } from '../lib/supabaseSync';
 import {
   clearTwoFactorSessionVerification,
-  decryptTotpSecret,
-  encryptTotpSecret,
   generateRecoveryCodes,
   hashRecoveryCodes,
   hashTwoFactorPin,
@@ -44,8 +42,9 @@ import {
   isTwoFactorMandatoryForProfile,
   isTwoFactorSessionVerified,
   markTwoFactorSessionVerified,
+  registerDeviceLockCredential,
   verifyAndConsumeRecoveryCode,
-  verifyTotpCode,
+  verifyDeviceLockAssertion,
   verifyTwoFactorPin,
 } from '../lib/twoFactor';
 import {
@@ -688,8 +687,6 @@ interface AppContextValue {
   twoFactorMandatory: boolean;
   completeTwoFactorEnrollment: (input: {
     method: TwoFactorMethod;
-    totpSecret?: string;
-    verificationCode?: string;
     pin?: string;
     recoveryCodes: string[];
   }) => Promise<{ ok: boolean; error?: string }>;
@@ -700,10 +697,10 @@ interface AppContextValue {
   ) => Promise<{ ok: boolean; error?: string; remainingRecoveryCodes?: number }>;
   lockTwoFactorSessionNow: () => void;
   regenerateTwoFactorRecoveryCodes: (
-    currentCode: string
+    currentCode?: string
   ) => Promise<{ ok: boolean; codes?: string[]; error?: string }>;
   resetTwoFactorMethod: (
-    currentCodeOrRecovery: string
+    currentCodeOrRecovery?: string
   ) => Promise<{ ok: boolean; error?: string }>;
   toggleOptionalTwoFactorForUser: (enable: boolean) => void;
 
@@ -2612,12 +2609,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   }, [isOwner, notify]);
 
-  // ==================== TWO-FACTOR AUTHENTICATION (2FA / MFA) ====================
+  // ==================== TWO-FACTOR AUTHENTICATION (2FA / MFA — DEVICE LOCK & MASTER PIN) ====================
   const completeTwoFactorEnrollment = useCallback(
     async (input: {
       method: TwoFactorMethod;
-      totpSecret?: string;
-      verificationCode?: string;
       pin?: string;
       recoveryCodes: string[];
     }): Promise<{ ok: boolean; error?: string }> => {
@@ -2629,29 +2624,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const recoveryCodeHashes = await hashRecoveryCodes(input.recoveryCodes);
       let nextConfig: TwoFactorConfig;
 
-      if (input.method === 'totp') {
-        const cleanSecret = (input.totpSecret ?? '').replace(/[^A-Z2-7]/gi, '').toUpperCase();
-        if (cleanSecret.length < 16) {
-          return { ok: false, error: 'Clé secrète TOTP invalide.' };
-        }
-        const check = await verifyTotpCode(cleanSecret, input.verificationCode ?? '');
-        if (!check.valid) {
+      if (input.method === 'device') {
+        const reg = await registerDeviceLockCredential({
+          id: activeProfile.id,
+          email: activeProfile.email,
+          name: activeProfile.name,
+        });
+        if (!reg.ok || !reg.credentialId) {
           return {
             ok: false,
             error:
-              'Code à 6 chiffres invalide. Vérifie l’heure de ton téléphone et saisis le code actuel affiché dans ton application Authenticator.',
+              reg.error ??
+              'Impossible de valider le verrouillage de cet appareil. Essaie le Code PIN Maître 2FA.',
           };
         }
-        const secretEncrypted = await encryptTotpSecret(cleanSecret);
         nextConfig = {
-          required: isOwnerProfile(activeProfile) ? true : true,
+          required: true,
           enabled: true,
-          method: 'totp',
-          secretEncrypted,
+          method: 'device',
+          webauthnCredentialId: reg.credentialId,
+          webauthnDeviceLabel: reg.deviceLabel,
           recoveryCodeHashes,
           configuredAt: nowIso,
           lastVerifiedAt: nowIso,
-          lastUsedTimeStep: check.matchedTimeStep,
         };
       } else {
         const cleanPin = (input.pin ?? '').replace(/\D/g, '');
@@ -2682,7 +2677,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         const pinHash = await hashTwoFactorPin(cleanPin);
         nextConfig = {
-          required: isOwnerProfile(activeProfile) ? true : true,
+          required: true,
           enabled: true,
           method: 'pin',
           pinHash,
@@ -2706,7 +2701,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           severity: 'low',
           source: 'Double Authentification (2FA)',
           ruleId: 'MFA-ENROLLED',
-          description: `2FA (${nextConfig.method === 'totp' ? 'TOTP Authenticator RFC 6238' : 'Code PIN Maître PBKDF2'}) activée et verrouillée sur ${activeProfile.email}.`,
+          description: `2FA (${nextConfig.method === 'device' ? `Verrouillage appareil WebAuthn : ${nextConfig.webauthnDeviceLabel}` : 'Code PIN Maître PBKDF2'}) activée et verrouillée sur ${activeProfile.email}.`,
           blocked: false,
         };
         return {
@@ -2730,7 +2725,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         await syncTwoFactorConfigToCloud(updatedProfile);
       }
 
-      notify('🔐 Double authentification activée ! Ton compte est maintenant doublement protégé.', 'success');
+      notify(
+        nextConfig.method === 'device'
+          ? '🔐 Verrouillage de l’appareil activé ! Ton compte exige désormais ton mot de passe / biométrie d’appareil.'
+          : '🔐 Code PIN Maître 2FA activé ! Ton compte est maintenant doublement protégé.',
+        'success'
+      );
       return { ok: true };
     },
     [activeProfile, isOnline, notify]
@@ -2774,7 +2774,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             source: 'Défi Double Authentification (2FA)',
             ruleId: triggerLock ? 'MFA-BF-LOCKOUT' : 'MFA-VERIFY-FAIL',
             description: triggerLock
-              ? 'Verrouillage 2FA (5 min) après 5 codes 2FA erronés consécutifs.'
+              ? 'Verrouillage 2FA (5 min) après 5 vérifications 2FA échouées consécutives.'
               : `${reason} (${nextFails}/5 tentatives).`,
             blocked: true,
           };
@@ -2790,7 +2790,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           };
         });
         return triggerLock
-          ? '5 codes invalides détectés : accès bloqué pendant 5 minutes par le pare-feu anti-bruteforce.'
+          ? '5 échecs détectés : accès bloqué pendant 5 minutes par le pare-feu anti-bruteforce.'
           : reason;
       };
 
@@ -2842,28 +2842,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return { ok: true, remainingRecoveryCodes: res.remainingHashes.length };
       }
 
-      // Primary mode: TOTP or Master PIN
-      let nextCfg: TwoFactorConfig = { ...cfg, lastVerifiedAt: nowIso };
-      if (cfg.method === 'totp') {
-        const secret = await decryptTotpSecret(cfg.secretEncrypted);
-        if (!secret) {
+      // Primary mode: Native Device Lock (WebAuthn) or Master PIN
+      const nextCfg: TwoFactorConfig = { ...cfg, lastVerifiedAt: nowIso };
+      if (cfg.method === 'device') {
+        if (!cfg.webauthnCredentialId) {
           return {
             ok: false,
-            error: 'Impossible de déchiffrer la clé TOTP locale. Utilise un code de secours.',
+            error: 'Aucun appareil enregistré. Utilise un code de secours pour réinitialiser la 2FA.',
           };
         }
-        const check = await verifyTotpCode(secret, code, cfg.lastUsedTimeStep);
-        if (!check.valid) {
-          const msg = check.replayed
-            ? 'Code TOTP déjà utilisé dans ce créneau de 30s (protection anti-rejeu). Attends le prochain code.'
-            : 'Code Authenticator à 6 chiffres incorrect.';
-          return { ok: false, error: record2faFailure(msg) };
+        const check = await verifyDeviceLockAssertion(cfg.webauthnCredentialId);
+        if (!check.ok) {
+          return {
+            ok: false,
+            error: record2faFailure(
+              check.error ?? 'Vérification par mot de passe / biométrie de l’appareil échouée.'
+            ),
+          };
         }
-        nextCfg = {
-          ...cfg,
-          lastVerifiedAt: nowIso,
-          lastUsedTimeStep: check.matchedTimeStep,
-        };
       } else {
         const pinOk = await verifyTwoFactorPin(code, cfg.pinHash);
         if (!pinOk) {
@@ -2881,7 +2877,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           severity: 'low',
           source: 'Double Authentification (2FA)',
           ruleId: 'MFA-VERIFIED',
-          description: `Double authentification validée avec succès pour ${activeProfile.email}.`,
+          description: `Double authentification (${cfg.method === 'device' ? 'Verrouillage appareil' : 'Code PIN Maître'}) validée pour ${activeProfile.email}.`,
           blocked: false,
         };
         return {
@@ -2914,29 +2910,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const lockTwoFactorSessionNow = useCallback(() => {
     clearTwoFactorSessionVerification();
     setTwoFactorVerifiedProfileId(null);
-    notify('🔒 Session 2FA verrouillée : un nouveau code est requis pour reprendre.', 'info');
+    notify('🔒 Session 2FA verrouillée : ton verrouillage 2FA est requis pour reprendre.', 'info');
   }, [notify]);
 
   const regenerateTwoFactorRecoveryCodes = useCallback(
     async (
-      currentCode: string
+      currentCode = ''
     ): Promise<{ ok: boolean; codes?: string[]; error?: string }> => {
       if (!activeProfile?.twoFactor?.enabled) {
         return { ok: false, error: '2FA non active.' };
       }
       const cfg = activeProfile.twoFactor;
       let valid = false;
-      if (cfg.method === 'totp') {
-        const secret = await decryptTotpSecret(cfg.secretEncrypted);
-        if (secret) {
-          const check = await verifyTotpCode(secret, currentCode);
-          valid = check.valid;
+      if (cfg.method === 'device') {
+        if (cfg.webauthnCredentialId) {
+          const res = await verifyDeviceLockAssertion(cfg.webauthnCredentialId);
+          valid = res.ok;
+          if (!valid && res.error) {
+            return { ok: false, error: res.error };
+          }
         }
       } else {
         valid = await verifyTwoFactorPin(currentCode, cfg.pinHash);
       }
       if (!valid) {
-        return { ok: false, error: 'Code 2FA actuel invalide. Régénération refusée.' };
+        return { ok: false, error: 'Vérification 2FA invalide. Régénération refusée.' };
       }
 
       const freshCodes = generateRecoveryCodes(8);
@@ -2962,39 +2960,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 
   const resetTwoFactorMethod = useCallback(
-    async (currentCodeOrRecovery: string): Promise<{ ok: boolean; error?: string }> => {
+    async (currentCodeOrRecovery = ''): Promise<{ ok: boolean; error?: string }> => {
       if (!activeProfile?.twoFactor?.enabled) {
         return { ok: false, error: '2FA non active.' };
       }
       const cfg = activeProfile.twoFactor;
       let valid = false;
-      if (cfg.method === 'totp') {
-        const secret = await decryptTotpSecret(cfg.secretEncrypted);
-        if (secret) {
-          const check = await verifyTotpCode(secret, currentCodeOrRecovery);
-          valid = check.valid;
+      if (cfg.method === 'device') {
+        if (currentCodeOrRecovery.trim().length >= 8) {
+          const rec = await verifyAndConsumeRecoveryCode(
+            currentCodeOrRecovery,
+            cfg.recoveryCodeHashes ?? []
+          );
+          valid = rec.valid;
+        }
+        if (!valid && cfg.webauthnCredentialId) {
+          const res = await verifyDeviceLockAssertion(cfg.webauthnCredentialId);
+          valid = res.ok;
         }
       } else {
         valid = await verifyTwoFactorPin(currentCodeOrRecovery, cfg.pinHash);
-      }
-      if (!valid) {
-        const rec = await verifyAndConsumeRecoveryCode(
-          currentCodeOrRecovery,
-          cfg.recoveryCodeHashes ?? []
-        );
-        valid = rec.valid;
+        if (!valid) {
+          const rec = await verifyAndConsumeRecoveryCode(
+            currentCodeOrRecovery,
+            cfg.recoveryCodeHashes ?? []
+          );
+          valid = rec.valid;
+        }
       }
       if (!valid) {
         return {
           ok: false,
-          error: 'Code 2FA actuel ou code de secours invalide. Réinitialisation bloquée.',
+          error: 'Vérification de l’appareil, Code PIN ou code de secours invalide. Réinitialisation bloquée.',
         };
       }
 
       const resetCfg: TwoFactorConfig = {
         required: isOwnerProfile(activeProfile),
         enabled: false,
-        method: 'totp',
+        method: 'device',
         recoveryCodeHashes: [],
       };
       const updatedProfile = { ...activeProfile, twoFactor: resetCfg };
@@ -3011,7 +3015,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         await syncTwoFactorConfigToCloud(updatedProfile);
       }
       notify(
-        '🔄 Méthode 2FA réinitialisée. Configure immédiatement ton nouvel appareil Authenticator ou Code PIN.',
+        '🔄 Méthode 2FA réinitialisée. Configure immédiatement le verrouillage de ton appareil ou un nouveau Code PIN.',
         'warning'
       );
       return { ok: true };
@@ -3030,8 +3034,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const nextCfg: TwoFactorConfig = {
           required: true,
           enabled: activeProfile.twoFactor?.enabled ?? false,
-          method: activeProfile.twoFactor?.method ?? 'totp',
-          secretEncrypted: activeProfile.twoFactor?.secretEncrypted,
+          method: activeProfile.twoFactor?.method ?? 'device',
+          webauthnCredentialId: activeProfile.twoFactor?.webauthnCredentialId,
+          webauthnDeviceLabel: activeProfile.twoFactor?.webauthnDeviceLabel,
           pinHash: activeProfile.twoFactor?.pinHash,
           recoveryCodeHashes: activeProfile.twoFactor?.recoveryCodeHashes ?? [],
         };
@@ -3047,7 +3052,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const nextCfg: TwoFactorConfig = {
           required: false,
           enabled: false,
-          method: 'totp',
+          method: 'device',
           recoveryCodeHashes: [],
         };
         setState((prev) => ({

@@ -791,14 +791,14 @@ export const OwnerHubScreen: React.FC = () => {
               <div>
                 <h2 className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-white">
                   <Lock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                  Double Authentification Propriétaire (2FA Obligatoire)
+                  Double Authentification Propriétaire (2FA Obligatoire — Sans QR Code)
                 </h2>
                 <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
                   Méthode active :{' '}
                   <strong className="text-slate-900 dark:text-white">
                     {activeProfile?.twoFactor?.method === 'pin'
                       ? 'Code PIN Maître 6 chiffres (PBKDF2-SHA256)'
-                      : 'Application Authenticator (TOTP RFC 6238)'}
+                      : `Verrouillage natif de l’appareil (${activeProfile?.twoFactor?.webauthnDeviceLabel ?? 'WebAuthn'})`}
                   </strong>{' '}
                   • Codes de secours restants :{' '}
                   <strong className="text-emerald-700 dark:text-emerald-400">
@@ -818,19 +818,28 @@ export const OwnerHubScreen: React.FC = () => {
 
             <div className="rounded-xl border border-slate-200 bg-white/80 p-3.5 dark:border-slate-800 dark:bg-slate-950/60">
               <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                Opérations sensibles 2FA (saisis ton code 2FA actuel pour confirmer)
+                {activeProfile?.twoFactor?.method === 'device'
+                  ? 'Opérations sensibles 2FA (confirmées par le mot de passe / biométrie de ton appareil, ou un code de secours)'
+                  : 'Opérations sensibles 2FA (saisis ton Code PIN Maître ou un code de secours pour confirmer)'}
               </p>
               <div className="mt-2.5 flex flex-wrap items-center gap-2">
                 <input
                   type="text"
                   value={mfaConfirmCode}
                   onChange={(e) => setMfaConfirmCode(e.target.value.toUpperCase().slice(0, 9))}
-                  placeholder="Code 6 chiffres ou secours"
-                  className="w-52 rounded-xl border border-slate-300 bg-white px-3 py-2 font-mono text-xs font-bold tracking-widest text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                  placeholder={
+                    activeProfile?.twoFactor?.method === 'device'
+                      ? 'Optionnel : code de secours'
+                      : 'Code PIN 6 chiffres ou secours'
+                  }
+                  className="w-56 rounded-xl border border-slate-300 bg-white px-3 py-2 font-mono text-xs font-bold tracking-widest text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                 />
                 <button
                   type="button"
-                  disabled={mfaBusy || mfaConfirmCode.length < 6}
+                  disabled={
+                    mfaBusy ||
+                    (activeProfile?.twoFactor?.method === 'pin' && mfaConfirmCode.length < 6)
+                  }
                   onClick={async () => {
                     setMfaBusy(true);
                     const res = await regenerateTwoFactorRecoveryCodes(mfaConfirmCode);
@@ -848,7 +857,10 @@ export const OwnerHubScreen: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  disabled={mfaBusy || mfaConfirmCode.length < 6}
+                  disabled={
+                    mfaBusy ||
+                    (activeProfile?.twoFactor?.method === 'pin' && mfaConfirmCode.length < 6)
+                  }
                   onClick={async () => {
                     setMfaBusy(true);
                     const res = await resetTwoFactorMethod(mfaConfirmCode);
@@ -861,7 +873,7 @@ export const OwnerHubScreen: React.FC = () => {
                   }}
                   className="rounded-xl border border-red-300 bg-red-50 px-3.5 py-2 text-xs font-bold text-red-700 hover:bg-red-100 disabled:opacity-50 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300"
                 >
-                  Changer d’Authenticator / Méthode 2FA
+                  Changer d’appareil / Basculer de méthode 2FA
                 </button>
               </div>
 
