@@ -21,6 +21,16 @@ import {
   EXTRA_FLASHCARDS,
   EXTRA_QUESTIONS,
 } from './extendedContent';
+import {
+  MEGA_ANNALES,
+  MEGA_CHAPTERS,
+  MEGA_COURSES,
+  MEGA_EXAMS,
+  MEGA_FICHES,
+  MEGA_FLASHCARDS,
+  MEGA_QUESTIONS,
+  MEGA_SUBJECTS,
+} from './megaCatalog';
 
 export { COUNTRIES, USER_CATEGORIES };
 
@@ -29,28 +39,33 @@ export const STUDY_LEVELS: string[] = [
   ...BASE_STUDY_LEVELS,
 ];
 
-export const EXAMS = [...BASE_EXAMS, ...EXTRA_EXAMS];
+export const EXAMS = [...BASE_EXAMS, ...EXTRA_EXAMS, ...MEGA_EXAMS];
 
 const EXTRA_EXAM_LINKS: Record<string, string[]> = {
-  maths: ['bepc', 'concours-medecine'],
-  physique: ['concours-medecine'],
+  maths: ['bepc', 'concours-medecine', 'concours-ingenieur', 'concours-ens-enseignement'],
+  physique: ['concours-medecine', 'concours-ingenieur'],
   svt: ['bepc', 'concours-medecine'],
   philo: ['bac-litteraire'],
-  droit: ['bts-compta-info'],
+  droit: ['bts-compta-info', 'concours-police-douanes'],
+  culture_gen: ['concours-police-douanes'],
   economie: ['bac-litteraire', 'bts-compta-info'],
+  gestion_projet: ['certif-entrepreneuriat'],
+  cybersecurite: ['certif-entrepreneuriat'],
+  francais: ['concours-police-douanes', 'concours-ens-enseignement'],
+  histoire_geo: ['concours-ens-enseignement'],
+  anglais: ['concours-ingenieur'],
+  informatique: ['concours-ingenieur', 'certif-entrepreneuriat'],
+  comptabilite: ['certif-entrepreneuriat'],
 };
 
-export const SUBJECTS = [
-  ...BASE_SUBJECTS.map((s) => ({
-    ...s,
-    examIds: Array.from(new Set([...s.examIds, ...(EXTRA_EXAM_LINKS[s.id] ?? [])])),
-  })),
-  ...EXTRA_SUBJECTS,
-];
+export const SUBJECTS = [...BASE_SUBJECTS, ...EXTRA_SUBJECTS, ...MEGA_SUBJECTS].map((s) => ({
+  ...s,
+  examIds: Array.from(new Set([...s.examIds, ...(EXTRA_EXAM_LINKS[s.id] ?? [])])),
+}));
 
-export const CHAPTERS = [...BASE_CHAPTERS, ...EXTRA_CHAPTERS];
-export const COURSES = [...BASE_COURSES, ...EXTRA_COURSES];
-export const QUESTIONS = [...BASE_QUESTIONS, ...EXTRA_QUESTIONS];
-export const ANNALES = [...BASE_ANNALES, ...EXTRA_ANNALES];
-export const FICHES = [...BASE_FICHES, ...EXTRA_FICHES];
-export const FLASHCARDS = [...BASE_FLASHCARDS, ...EXTRA_FLASHCARDS];
+export const CHAPTERS = [...BASE_CHAPTERS, ...EXTRA_CHAPTERS, ...MEGA_CHAPTERS];
+export const COURSES = [...BASE_COURSES, ...EXTRA_COURSES, ...MEGA_COURSES];
+export const QUESTIONS = [...BASE_QUESTIONS, ...EXTRA_QUESTIONS, ...MEGA_QUESTIONS];
+export const ANNALES = [...BASE_ANNALES, ...EXTRA_ANNALES, ...MEGA_ANNALES];
+export const FICHES = [...BASE_FICHES, ...EXTRA_FICHES, ...MEGA_FICHES];
+export const FLASHCARDS = [...BASE_FLASHCARDS, ...EXTRA_FLASHCARDS, ...MEGA_FLASHCARDS];
