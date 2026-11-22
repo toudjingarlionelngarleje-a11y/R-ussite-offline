@@ -28,6 +28,7 @@ export type ScreenId =
   | 'community'
   | 'teacher'
   | 'admin'
+  | 'owner-hub'
   | 'security'
   | 'privacy';
 
@@ -71,11 +72,25 @@ export interface PrivacySettings {
   acceptedPolicyDate: string;
 }
 
+export type AccountRole = 'user' | 'teacher' | 'admin' | 'owner';
+
+export interface OwnerGlobalSettings {
+  announcementEnabled: boolean;
+  announcementText: string;
+  announcementTone: 'info' | 'success' | 'warning';
+  maintenanceMode: boolean;
+  registrationsOpen: boolean;
+  freePremiumEvent: boolean;
+  globalFirewallLevel: 'standard' | 'renforce' | 'forteresse';
+  updatedAt: string;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
   email: string;
   passwordHash: string;
+  role?: AccountRole;
   category: UserCategory;
   country: string;
   studyLevel: string;
@@ -562,4 +577,5 @@ export interface AppState {
   accessibility: AccessibilitySettings;
   privacy: PrivacySettings;
   security?: SecurityState;
+  ownerSettings?: OwnerGlobalSettings;
 }

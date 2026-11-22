@@ -1,5 +1,14 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { AppState, Fiche, Question, SecurityEvent, UserProfile } from '../types';
+import {
+  AccountRole,
+  AppState,
+  Fiche,
+  OwnerGlobalSettings,
+  Question,
+  SecurityEvent,
+  UserProfile,
+} from '../types';
+import { isOwnerProfile } from './owner';
 import {
   DEFAULT_SECURITY_CONFIG,
   hasPrototypePollution,
@@ -49,7 +58,52 @@ export interface CloudSyncResult {
   };
   pulledQuestions: Question[];
   pulledFiches: Fiche[];
+  pulledOwnerSettings?: OwnerGlobalSettings;
   blockedCloudThreats: SecurityEvent[];
+  errorMessage?: string;
+}
+
+export interface CloudUserRow {
+  id: string;
+  email: string;
+  name: string;
+  role: AccountRole;
+  category: string;
+  country: string;
+  plan: 'gratuit' | 'premium';
+  streak_days: number;
+  updated_at: string;
+}
+
+export interface CloudTeacherContentRow {
+  id: string;
+  kind: string;
+  subject_id: string;
+  chapter_id: string;
+  title: string;
+  difficulty: string;
+  published_at: string;
+}
+
+export interface CloudSecurityLogRow {
+  id: string;
+  profile_id: string;
+  category: string;
+  severity: string;
+  rule_id: string;
+  source: string;
+  blocked: boolean;
+  created_at: string;
+}
+
+export interface OwnerCloudSnapshot {
+  ok: boolean;
+  users: CloudUserRow[];
+  contents: CloudTeacherContentRow[];
+  securityLogs: CloudSecurityLogRow[];
+  ownerSettings?: OwnerGlobalSettings;
+  totalSessionsCount: number;
+  totalReportsCount: number;
   errorMessage?: string;
 }
 
@@ -76,11 +130,13 @@ export async function syncStateWithSupabase(
   const secCfg = state.security?.config ?? DEFAULT_SECURITY_CONFIG;
 
   try {
-    // 1. Upsert user profile (sanitized)
+    // 1. Upsert user profile (sanitized + preserve Owner entitlements)
+    const ownerFlag = isOwnerProfile(activeProfile);
     const { error: profErr } = await sb.from('user_profiles').upsert({
       id: activeProfile.id,
       email: activeProfile.email,
       name: activeProfile.name,
+      role: ownerFlag ? 'owner' : activeProfile.role ?? 'user',
       category: activeProfile.category,
       country: activeProfile.country,
       study_level: activeProfile.studyLevel,
@@ -91,7 +147,7 @@ export async function syncStateWithSupabase(
       daily_minutes: activeProfile.dailyMinutes,
       rest_days: activeProfile.restDays,
       target_score: activeProfile.targetScore,
-      plan: activeProfile.plan,
+      plan: ownerFlag ? 'premium' : activeProfile.plan,
       streak_days: state.streakDays,
       updated_at: new Date().toISOString(),
     });
@@ -278,6 +334,34 @@ export async function syncStateWithSupabase(
       }
     }
 
+    // 9. Pull global owner settings (announcements, maintenance, free-premium event)
+    let pulledOwnerSettings: OwnerGlobalSettings | undefined;
+    const { data: settingsRow } = await sb
+      .from('app_owner_settings')
+      .select('*')
+      .eq('id', 'global')
+      .maybeSingle();
+
+    if (settingsRow) {
+      pulledOwnerSettings = {
+        announcementEnabled: Boolean(settingsRow.announcement_enabled),
+        announcementText: String(settingsRow.announcement_text ?? ''),
+        announcementTone:
+          settingsRow.announcement_tone === 'success' || settingsRow.announcement_tone === 'warning'
+            ? settingsRow.announcement_tone
+            : 'info',
+        maintenanceMode: Boolean(settingsRow.maintenance_mode),
+        registrationsOpen: settingsRow.registrations_open !== false,
+        freePremiumEvent: Boolean(settingsRow.free_premium_event),
+        globalFirewallLevel:
+          settingsRow.global_firewall_level === 'standard' ||
+          settingsRow.global_firewall_level === 'forteresse'
+            ? settingsRow.global_firewall_level
+            : 'renforce',
+        updatedAt: String(settingsRow.updated_at ?? new Date().toISOString()),
+      };
+    }
+
     return {
       ok: true,
       pushedCounts: {
@@ -289,6 +373,7 @@ export async function syncStateWithSupabase(
       },
       pulledQuestions,
       pulledFiches,
+      pulledOwnerSettings,
       blockedCloudThreats,
     };
   } catch (err) {
@@ -300,5 +385,168 @@ export async function syncStateWithSupabase(
       blockedCloudThreats,
       errorMessage: err instanceof Error ? err.message : 'Erreur réseau Supabase',
     };
+  }
+}
+
+export async function fetchOwnerCloudSnapshot(): Promise<OwnerCloudSnapshot> {
+  const sb = getSupabaseClient();
+  if (!sb) {
+    return {
+      ok: false,
+      users: [],
+      contents: [],
+      securityLogs: [],
+      totalSessionsCount: 0,
+      totalReportsCount: 0,
+      errorMessage: 'Supabase non configuré',
+    };
+  }
+
+  try {
+    const [usersRes, contentsRes, logsRes, settingsRes, sessionsCountRes, reportsCountRes] =
+      await Promise.all([
+        sb
+          .from('user_profiles')
+          .select('id, email, name, role, category, country, plan, streak_days, updated_at')
+          .order('updated_at', { ascending: false })
+          .limit(100),
+        sb
+          .from('teacher_contents')
+          .select('id, kind, subject_id, chapter_id, title, difficulty, published_at')
+          .order('published_at', { ascending: false })
+          .limit(100),
+        sb
+          .from('security_audit_logs')
+          .select('id, profile_id, category, severity, rule_id, source, blocked, created_at')
+          .order('created_at', { ascending: false })
+          .limit(50),
+        sb.from('app_owner_settings').select('*').eq('id', 'global').maybeSingle(),
+        sb.from('study_sessions').select('id', { count: 'exact', head: true }),
+        sb.from('error_reports').select('id', { count: 'exact', head: true }),
+      ]);
+
+    const settingsRow = settingsRes.data;
+    const ownerSettings: OwnerGlobalSettings | undefined = settingsRow
+      ? {
+          announcementEnabled: Boolean(settingsRow.announcement_enabled),
+          announcementText: String(settingsRow.announcement_text ?? ''),
+          announcementTone:
+            settingsRow.announcement_tone === 'success' ||
+            settingsRow.announcement_tone === 'warning'
+              ? settingsRow.announcement_tone
+              : 'info',
+          maintenanceMode: Boolean(settingsRow.maintenance_mode),
+          registrationsOpen: settingsRow.registrations_open !== false,
+          freePremiumEvent: Boolean(settingsRow.free_premium_event),
+          globalFirewallLevel:
+            settingsRow.global_firewall_level === 'standard' ||
+            settingsRow.global_firewall_level === 'forteresse'
+              ? settingsRow.global_firewall_level
+              : 'renforce',
+          updatedAt: String(settingsRow.updated_at ?? new Date().toISOString()),
+        }
+      : undefined;
+
+    return {
+      ok: true,
+      users: (usersRes.data ?? []) as CloudUserRow[],
+      contents: (contentsRes.data ?? []) as CloudTeacherContentRow[],
+      securityLogs: (logsRes.data ?? []) as CloudSecurityLogRow[],
+      ownerSettings,
+      totalSessionsCount: sessionsCountRes.count ?? 0,
+      totalReportsCount: reportsCountRes.count ?? 0,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      users: [],
+      contents: [],
+      securityLogs: [],
+      totalSessionsCount: 0,
+      totalReportsCount: 0,
+      errorMessage: err instanceof Error ? err.message : 'Erreur de lecture Cloud',
+    };
+  }
+}
+
+export async function saveOwnerGlobalSettingsToCloud(
+  settings: OwnerGlobalSettings
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = getSupabaseClient();
+  if (!sb) return { ok: true };
+  try {
+    const { error } = await sb.from('app_owner_settings').upsert({
+      id: 'global',
+      owner_email: 'toudjingarlionelngarleje@gmail.com',
+      announcement_enabled: settings.announcementEnabled,
+      announcement_text: settings.announcementText,
+      announcement_tone: settings.announcementTone,
+      maintenance_mode: settings.maintenanceMode,
+      registrations_open: settings.registrationsOpen,
+      free_premium_event: settings.freePremiumEvent,
+      global_firewall_level: settings.globalFirewallLevel,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Erreur Cloud' };
+  }
+}
+
+export async function updateUserRoleOrPlanInCloud(
+  userId: string,
+  patch: { role?: AccountRole; plan?: 'gratuit' | 'premium' }
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = getSupabaseClient();
+  if (!sb) return { ok: false, error: 'Supabase non configuré' };
+  try {
+    const { error } = await sb
+      .from('user_profiles')
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq('id', userId);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Erreur mise à jour' };
+  }
+}
+
+export async function publishOwnerCloudQuestion(
+  question: Question,
+  authorProfileId: string
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = getSupabaseClient();
+  if (!sb) return { ok: true };
+  try {
+    const { error } = await sb.from('teacher_contents').upsert({
+      id: `tc-owner-${Date.now()}`,
+      kind: 'question',
+      subject_id: question.subjectId,
+      chapter_id: question.chapterId,
+      title: `${question.notion} — Officiel Propriétaire`,
+      difficulty: question.difficulty,
+      payload_json: question,
+      author_profile_id: authorProfileId,
+      published_at: new Date().toISOString(),
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Erreur publication Cloud' };
+  }
+}
+
+export async function deleteCloudTeacherContent(
+  contentId: string
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = getSupabaseClient();
+  if (!sb) return { ok: false, error: 'Supabase non configuré' };
+  try {
+    const { error } = await sb.from('teacher_contents').delete().eq('id', contentId);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Erreur suppression' };
   }
 }

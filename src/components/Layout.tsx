@@ -7,6 +7,7 @@ import {
   Bot,
   Calendar,
   Compass,
+  Crown,
   Download,
   FileText,
   GraduationCap,
@@ -46,6 +47,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const {
     state,
     activeProfile,
+    isOwner,
     screen,
     navigate,
     isOnline,
@@ -125,6 +127,14 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         { id: 'privacy', label: 'Confidentialité & Accès', icon: Shield },
       ],
     },
+    ...(isOwner
+      ? [
+          {
+            label: '👑 Espace Propriétaire',
+            items: [{ id: 'owner-hub' as ScreenId, label: 'Console Propriétaire', icon: Crown }],
+          },
+        ]
+      : []),
   ];
 
   const handleNav = (id: ScreenId) => {
@@ -232,17 +242,51 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 {state.accessibility.darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
 
-              <button
-                type="button"
-                onClick={() => setShowPlanModal(true)}
-                className="hidden h-9 items-center gap-1 rounded-xl bg-amber-100 px-2.5 text-xs font-bold text-amber-900 hover:bg-amber-200 sm:inline-flex dark:bg-amber-900/50 dark:text-amber-100"
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>{activeProfile?.plan === 'premium' ? 'Plus' : 'Gratuit'}</span>
-              </button>
+              {isOwner ? (
+                <button
+                  type="button"
+                  onClick={() => handleNav('owner-hub')}
+                  className="hidden h-9 items-center gap-1 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-300 px-3 text-xs font-extrabold text-slate-950 shadow-sm hover:from-amber-300 hover:to-yellow-200 sm:inline-flex"
+                  title="Ouvrir la Console Propriétaire (Fondateur)"
+                >
+                  <Crown className="h-3.5 w-3.5" />
+                  <span>Propriétaire</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowPlanModal(true)}
+                  className="hidden h-9 items-center gap-1 rounded-xl bg-amber-100 px-2.5 text-xs font-bold text-amber-900 hover:bg-amber-200 sm:inline-flex dark:bg-amber-900/50 dark:text-amber-100"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>{activeProfile?.plan === 'premium' ? 'Plus' : 'Gratuit'}</span>
+                </button>
+              )}
             </div>
           </div>
         </header>
+      )}
+
+      {/* Owner Global Announcement Banner */}
+      {state.ownerSettings?.announcementEnabled && state.ownerSettings.announcementText && !isFocusLocked && (
+        <div
+          className={`no-print px-4 py-2 text-center text-xs font-bold ${
+            state.ownerSettings.announcementTone === 'warning'
+              ? 'bg-amber-400 text-slate-950'
+              : state.ownerSettings.announcementTone === 'success'
+              ? 'bg-emerald-600 text-white'
+              : 'bg-blue-700 text-white'
+          }`}
+        >
+          📢 Annonce officielle : {state.ownerSettings.announcementText}
+        </div>
+      )}
+
+      {/* Maintenance Notice Banner */}
+      {state.ownerSettings?.maintenanceMode && !isFocusLocked && (
+        <div className="no-print bg-red-600 px-4 py-1.5 text-center text-xs font-bold text-white">
+          ⚠️ Mode maintenance activé par le Propriétaire — tes contenus hors ligne restent lisibles.
+        </div>
       )}
 
       {/* Offline Banner when offline */}

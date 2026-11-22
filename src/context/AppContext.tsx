@@ -20,7 +20,17 @@ import {
   runFullSecurityScan,
   startDomTamperingGuard,
 } from '../lib/securityFirewall';
-import { isSupabaseConfigured, syncStateWithSupabase } from '../lib/supabaseSync';
+import {
+  applyOwnerEntitlements,
+  DEFAULT_OWNER_SETTINGS,
+  isOwnerProfile,
+} from '../lib/owner';
+import {
+  isSupabaseConfigured,
+  publishOwnerCloudQuestion,
+  saveOwnerGlobalSettingsToCloud,
+  syncStateWithSupabase,
+} from '../lib/supabaseSync';
 import {
   AccessibilitySettings,
   AppState,
@@ -32,6 +42,7 @@ import {
   HighlightItem,
   InProgressSession,
   MasteryLevel,
+  OwnerGlobalSettings,
   PersonalNote,
   PrivacySettings,
   Question,
@@ -510,6 +521,7 @@ function createDemoState(): AppState {
     accessibility: DEFAULT_ACCESSIBILITY,
     privacy: DEFAULT_PRIVACY,
     security: createInitialSecurityState(),
+    ownerSettings: DEFAULT_OWNER_SETTINGS,
   };
 }
 
@@ -531,6 +543,7 @@ interface AppContextValue {
   state: AppState;
   hydrated: boolean;
   activeProfile: UserProfile | null;
+  isOwner: boolean;
   screen: ScreenId;
   navigate: (screen: ScreenId) => void;
   selectedSubjectId: string;
@@ -643,6 +656,13 @@ interface AppContextValue {
   clearSecurityLogs: () => void;
   triggerPanicLockdown: () => void;
 
+  // Owner / Founder Exclusive Controls
+  updateOwnerSettings: (patch: Partial<OwnerGlobalSettings>) => Promise<void>;
+  downloadFullOfflineCatalog: () => void;
+  publishOwnerQuickQuestion: (q: Question) => Promise<{ ok: boolean; error?: string }>;
+  exportMasterBackup: () => void;
+  purgeReportedGroupMessages: () => void;
+
   // Notifications / Toasts
   toasts: ToastMessage[];
   notify: (text: string, tone?: ToastMessage['tone']) => void;
@@ -711,6 +731,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setState({
           ...defaults,
           ...saved,
+          profiles: (saved.profiles ?? []).map(applyOwnerEntitlements),
           customFlashcards: saved.customFlashcards ?? [],
           diagnosticResult: saved.diagnosticResult ?? null,
           studyGroups: saved.studyGroups?.length
@@ -723,6 +744,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             : defaults.studyGroups,
           fatigueLevel: saved.fatigueLevel ?? 'normal',
           planMode: saved.planMode ?? 'standard',
+          ownerSettings: { ...DEFAULT_OWNER_SETTINGS, ...(saved.ownerSettings ?? {}) },
           security: {
             ...createInitialSecurityState(),
             ...baseSec,
@@ -848,10 +870,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const isOnline = browserOnline && !state.simulatedOffline;
 
-  const activeProfile = useMemo(
-    () => state.profiles.find((p) => p.id === state.activeProfileId) ?? null,
-    [state.profiles, state.activeProfileId]
-  );
+  const activeProfile = useMemo(() => {
+    const raw = state.profiles.find((p) => p.id === state.activeProfileId) ?? null;
+    return raw ? applyOwnerEntitlements(raw) : null;
+  }, [state.profiles, state.activeProfileId]);
+
+  const isOwner = useMemo(() => isOwnerProfile(activeProfile), [activeProfile]);
 
   const allQuestions = useMemo(
     () => [...QUESTIONS, ...state.customQuestions],
@@ -981,6 +1005,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           sessions: prev.sessions.map((s) => ({ ...s, synced: true })),
           customQuestions: [...newQs, ...prev.customQuestions],
           customFiches: [...newFs, ...prev.customFiches],
+          ownerSettings: result.pulledOwnerSettings ?? prev.ownerSettings,
           lastSyncAt: new Date().toISOString(),
           security: {
             ...prevSec,
@@ -1104,6 +1129,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const trimmedEmail = emailGuard.cleanText.toLowerCase();
+      if (state.ownerSettings && !state.ownerSettings.registrationsOpen && trimmedEmail !== 'toudjingarlionelngarleje@gmail.com') {
+        return {
+          ok: false,
+          error: 'Les nouvelles inscriptions sont temporairement fermées par le Propriétaire.',
+        };
+      }
       if (!nameGuard.cleanText || !trimmedEmail || input.password.length < 4) {
         return { ok: false, error: 'Remplis ton nom, un e-mail valide et un mot de passe (4 caractères min.).' };
       }
@@ -1137,7 +1168,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const examDate = new Date();
       examDate.setDate(examDate.getDate() + 60);
 
-      const newProfile: UserProfile = {
+      const newProfile: UserProfile = applyOwnerEntitlements({
         id: `profile-${Date.now()}`,
         name: nameGuard.cleanText,
         email: trimmedEmail,
@@ -1152,10 +1183,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         dailyMinutes: 45,
         restDays: [0],
         targetScore: 70,
-        plan: 'gratuit',
+        plan: state.ownerSettings?.freePremiumEvent ? 'premium' : 'gratuit',
         createdAt: new Date().toISOString(),
         onboardingCompleted: false,
-      };
+      });
 
       setState((prev) => ({
         ...prev,
@@ -2285,6 +2316,182 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     notify('🔒 Mode Verrouillage d’Urgence activé : session fermée et boucliers au niveau maximal !', 'warning');
   }, [notify]);
 
+  // ==================== OWNER / FOUNDER EXCLUSIVE CONTROLS ====================
+  const updateOwnerSettings = useCallback(
+    async (patch: Partial<OwnerGlobalSettings>) => {
+      if (!isOwner) {
+        notify('Action réservée exclusivement au compte Propriétaire.', 'error');
+        return;
+      }
+      if (patch.announcementText !== undefined) {
+        const check = guardInput('Annonce globale Propriétaire', patch.announcementText, 500);
+        if (!check.allowed) return;
+        patch = { ...patch, announcementText: check.cleanText };
+      }
+
+      const nextSettings: OwnerGlobalSettings = {
+        ...(state.ownerSettings ?? DEFAULT_OWNER_SETTINGS),
+        ...patch,
+        updatedAt: new Date().toISOString(),
+      };
+
+      setState((prev) => ({
+        ...prev,
+        ownerSettings: nextSettings,
+        security:
+          patch.globalFirewallLevel && prev.security
+            ? {
+                ...prev.security,
+                config: {
+                  ...prev.security.config,
+                  strictMode: patch.globalFirewallLevel !== 'standard',
+                  domGuardEnabled: true,
+                  autoLockMinutes:
+                    patch.globalFirewallLevel === 'forteresse'
+                      ? 15
+                      : prev.security.config.autoLockMinutes,
+                },
+              }
+            : prev.security,
+      }));
+
+      if (isOnline && isSupabaseConfigured) {
+        const res = await saveOwnerGlobalSettingsToCloud(nextSettings);
+        if (!res.ok) {
+          notify(`Enregistré localement (erreur Cloud : ${res.error}).`, 'warning');
+          return;
+        }
+      }
+      notify('👑 Paramètres globaux Propriétaire enregistrés et synchronisés !', 'success');
+    },
+    [isOwner, guardInput, state.ownerSettings, isOnline, notify]
+  );
+
+  const downloadFullOfflineCatalog = useCallback(() => {
+    if (!isOwner) return;
+    const now = new Date().toISOString();
+    const nextDownloads: Record<string, DownloadedItem> = { ...state.downloadedItems };
+
+    COURSES.forEach((c) => {
+      nextDownloads[`course:${c.id}`] = {
+        id: c.id,
+        type: 'course',
+        title: c.title,
+        subjectId: c.subjectId,
+        sizeKb: c.sizeKb,
+        downloadedAt: now,
+        version: 2,
+      };
+    });
+    FICHES.forEach((f) => {
+      nextDownloads[`fiche:${f.id}`] = {
+        id: f.id,
+        type: 'fiche',
+        title: f.title,
+        subjectId: f.subjectId,
+        sizeKb: f.sizeKb,
+        downloadedAt: now,
+        version: 2,
+      };
+    });
+    ANNALES.forEach((a) => {
+      nextDownloads[`annale:${a.id}`] = {
+        id: a.id,
+        type: 'annale',
+        title: a.title,
+        subjectId: a.subjectId,
+        sizeKb: a.sizeKb,
+        downloadedAt: now,
+        version: 2,
+      };
+    });
+
+    setState((prev) => ({ ...prev, downloadedItems: nextDownloads }));
+    notify(
+      `👑 Pack Propriétaire complet installé hors ligne (${COURSES.length} cours, ${FICHES.length} fiches, ${ANNALES.length} annales) !`,
+      'success'
+    );
+  }, [isOwner, state.downloadedItems, notify]);
+
+  const publishOwnerQuickQuestion = useCallback(
+    async (q: Question): Promise<{ ok: boolean; error?: string }> => {
+      if (!isOwner || !activeProfile) {
+        return { ok: false, error: 'Action réservée au Propriétaire.' };
+      }
+      const pCheck = guardInput('Publication Propriétaire (Énoncé)', q.prompt, 1200);
+      const eCheck = guardInput('Publication Propriétaire (Explication)', q.explanation, 1500);
+      if (!pCheck.allowed || !eCheck.allowed) {
+        return { ok: false, error: 'Contenu bloqué par le pare-feu WAF.' };
+      }
+      const cleanQ: Question = {
+        ...q,
+        prompt: pCheck.cleanText,
+        explanation: eCheck.cleanText,
+      };
+      setState((prev) => ({
+        ...prev,
+        customQuestions: [cleanQ, ...prev.customQuestions],
+      }));
+      if (isOnline && isSupabaseConfigured) {
+        const res = await publishOwnerCloudQuestion(cleanQ, activeProfile.id);
+        if (!res.ok) {
+          notify(`Ajoutée localement, erreur Cloud : ${res.error}`, 'warning');
+          return { ok: true };
+        }
+      }
+      notify('👑 Question officielle publiée localement ET diffusée sur Supabase Cloud !', 'success');
+      return { ok: true };
+    },
+    [isOwner, activeProfile, guardInput, isOnline, notify]
+  );
+
+  const exportMasterBackup = useCallback(() => {
+    if (!isOwner) return;
+    const backup = {
+      exportedAt: new Date().toISOString(),
+      owner: activeProfile?.email,
+      appVersion: 'Réussite Offline v8 + Bouclier 36 + Console Propriétaire',
+      catalogSummary: {
+        exams: EXAMS.length,
+        subjects: SUBJECTS.length,
+        courses: COURSES.length,
+        fiches: FICHES.length,
+        questions: allQuestions.length,
+        annales: ANNALES.length,
+        flashcards: allFlashcards.length,
+      },
+      ownerSettings: state.ownerSettings,
+      profiles: state.profiles.map(({ passwordHash: _ph, ...safe }) => safe),
+      customQuestions: state.customQuestions,
+      customFiches: state.customFiches,
+      studyGroups: state.studyGroups,
+      errorReports: state.errorReports,
+      securityAudit: state.security,
+    };
+    exportJsonDownload(`reussite-offline-master-backup-${new Date().toISOString().slice(0, 10)}.json`, backup);
+    notify('👑 Sauvegarde Maître complète exportée (JSON sécurisé sans mots de passe).', 'success');
+  }, [isOwner, activeProfile, allQuestions.length, allFlashcards.length, state, notify]);
+
+  const purgeReportedGroupMessages = useCallback(() => {
+    if (!isOwner) return;
+    let removed = 0;
+    setState((prev) => ({
+      ...prev,
+      studyGroups: prev.studyGroups.map((g) => {
+        const before = g.messages.length;
+        const kept = g.messages.filter((m) => !m.reported);
+        removed += before - kept.length;
+        return { ...g, messages: kept };
+      }),
+    }));
+    notify(
+      removed > 0
+        ? `👑 Modération globale : ${removed} message(s) signalé(s) supprimé(s) définitivement.`
+        : 'Aucun message signalé à purger dans les groupes d’étude.',
+      'success'
+    );
+  }, [isOwner, notify]);
+
   const triggerLocalReminder = useCallback(() => {
     const nextSession = state.studyPlan.find((p) => !p.completed && p.type !== 'pause');
     const body = nextSession
@@ -2315,6 +2522,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     state,
     hydrated,
     activeProfile,
+    isOwner,
     screen,
     navigate,
     selectedSubjectId,
@@ -2391,6 +2599,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     testSecurityInput,
     clearSecurityLogs,
     triggerPanicLockdown,
+    updateOwnerSettings,
+    downloadFullOfflineCatalog,
+    publishOwnerQuickQuestion,
+    exportMasterBackup,
+    purgeReportedGroupMessages,
     toasts,
     notify,
     dismissToast,

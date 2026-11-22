@@ -17,6 +17,7 @@ import { GeneratorScreen } from './screens/GeneratorScreen';
 import { LibraryScreen } from './screens/LibraryScreen';
 import { MistakesScreen } from './screens/MistakesScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
+import { OwnerHubScreen } from './screens/OwnerHubScreen';
 import { PlannerScreen } from './screens/PlannerScreen';
 import { PracticeScreen } from './screens/PracticeScreen';
 import { PrivacySettingsScreen } from './screens/PrivacySettingsScreen';
@@ -90,6 +91,8 @@ const ScreenRouter: React.FC = () => {
         return <CommunityAdminScreen />;
       case 'teacher':
         return <TeacherScreen />;
+      case 'owner-hub':
+        return <OwnerHubScreen />;
       case 'security':
         return <SecurityCenterScreen />;
       case 'privacy':
