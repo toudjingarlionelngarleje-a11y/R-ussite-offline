@@ -620,6 +620,119 @@ export const PedagogicalDiagram: React.FC<{
     );
   }
 
+  if (diagramId === 'couches_sig') {
+    const layers = [
+      { y: 18, label: 'Couche 4 — Cadastre & Bâti (Polygones)', fill: '#FEF3C7', stroke: '#D97706', text: '#92400E' },
+      { y: 50, label: 'Couche 3 — Réseau routier (Lignes / Vecteur)', fill: '#EFF6FF', stroke: '#2563EB', text: '#1E3A8A' },
+      { y: 82, label: 'Couche 2 — Hydrographie & Forages (Points/Lignes)', fill: '#ECFEFF', stroke: '#0891B2', text: '#155E75' },
+      { y: 114, label: 'Couche 1 — Relief MNT / Image satellite (Raster)', fill: '#ECFDF5', stroke: '#059669', text: '#065F46' },
+    ];
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 162" className="mx-auto h-36 w-full max-w-md" role="img" aria-label="Superposition des couches SIG raster et vecteur géoréférencées en WGS84">
+          {layers.map((l) => (
+            <g key={l.label}>
+              <rect x="30" y={l.y} width="300" height="25" rx="6" fill={l.fill} stroke={l.stroke} strokeWidth="1.6" />
+              <text x="180" y={l.y + 16} textAnchor="middle" fontSize="9.8" fontWeight="bold" fill={l.text}>{l.label}</text>
+            </g>
+          ))}
+          <text x="180" y="153" textAnchor="middle" fontSize="9.2" fill="#475569">Référentiel commun : WGS84 / Projection UTM → Carte thématique</text>
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : principe d’empilement des couches raster et vecteur dans un Système d’Information Géographique (SIG).
+        </figcaption>
+      </figure>
+    );
+  }
+
+  if (diagramId === 'score_apgar') {
+    const items = [
+      { letter: 'A', name: 'Apparence (Coloration)', fill: '#EFF6FF', stroke: '#2563EB', text: '#1E3A8A' },
+      { letter: 'P', name: 'Pouls (Fréq. cardiaque)', fill: '#FEF2F2', stroke: '#DC2626', text: '#991B1B' },
+      { letter: 'G', name: 'Grimace (Réactivité)', fill: '#FFFBEB', stroke: '#D97706', text: '#92400E' },
+      { letter: 'A', name: 'Activité (Tonus)', fill: '#ECFDF5', stroke: '#059669', text: '#065F46' },
+      { letter: 'R', name: 'Respiration (Cri)', fill: '#F5F3FF', stroke: '#7C3AED', text: '#5B21B6' },
+    ];
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 165" className="mx-auto h-40 w-full max-w-md" role="img" aria-label="Score d'Apgar néonatal évalué à 1, 5 et 10 minutes sur 10 points">
+          {items.map((it, idx) => (
+            <g key={it.name}>
+              <rect x="24" y={10 + idx * 27} width="32" height="22" rx="5" fill={it.stroke} />
+              <text x="40" y={25 + idx * 27} textAnchor="middle" fontSize="11" fontWeight="bold" fill="#FFFFFF">{it.letter}</text>
+              <rect x="64" y={10 + idx * 27} width="206" height="22" rx="5" fill={it.fill} stroke={it.stroke} strokeWidth="1.2" />
+              <text x="74" y={25 + idx * 27} fontSize="10" fontWeight="bold" fill={it.text}>{it.name}</text>
+              <rect x="278" y={10 + idx * 27} width="58" height="22" rx="5" fill="#F8FAFC" stroke="#94A3B8" strokeWidth="1.2" />
+              <text x="307" y={25 + idx * 27} textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#334155">0 – 2 pts</text>
+            </g>
+          ))}
+          <text x="180" y="156" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#0F172A">Évalué à 1 min &amp; 5 min : ≥ 7 Normal | 4–6 Modéré | ≤ 3 Urgence réanimation</text>
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : grille mnémotechnique du score d’Apgar pour l’évaluation immédiate du nouveau-né.
+        </figcaption>
+      </figure>
+    );
+  }
+
+  if (diagramId === 'cycle_crise') {
+    const phases = [
+      { x: 24, y: 18, title: '1. Prévention', sub: 'Réduction risques', fill: '#ECFDF5', stroke: '#059669', text: '#065F46' },
+      { x: 196, y: 18, title: '2. Préparation', sub: 'Alerte & stocks', fill: '#EFF6FF', stroke: '#2563EB', text: '#1E3A8A' },
+      { x: 196, y: 92, title: '3. Réponse', sub: 'Secours & Sphère', fill: '#FEF2F2', stroke: '#DC2626', text: '#991B1B' },
+      { x: 24, y: 92, title: '4. Relèvement', sub: 'Reconstruire mieux', fill: '#FFFBEB', stroke: '#D97706', text: '#92400E' },
+    ];
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 156" className="mx-auto h-36 w-full max-w-md" role="img" aria-label="Cycle en 4 phases de gestion des crises et catastrophes">
+          {phases.map((p) => (
+            <g key={p.title}>
+              <rect x={p.x} y={p.y} width="140" height="46" rx="8" fill={p.fill} stroke={p.stroke} strokeWidth="1.8" />
+              <text x={p.x + 70} y={p.y + 20} textAnchor="middle" fontSize="10.5" fontWeight="bold" fill={p.text}>{p.title}</text>
+              <text x={p.x + 70} y={p.y + 36} textAnchor="middle" fontSize="9.2" fill="#475569">{p.sub}</text>
+            </g>
+          ))}
+          <line x1="164" y1="41" x2="194" y2="41" stroke="#64748B" strokeWidth="2" />
+          <line x1="266" y1="64" x2="266" y2="90" stroke="#64748B" strokeWidth="2" />
+          <line x1="194" y1="115" x2="164" y2="115" stroke="#64748B" strokeWidth="2" />
+          <line x1="94" y1="90" x2="94" y2="64" stroke="#64748B" strokeWidth="2" />
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : cycle continu de gestion des catastrophes (Cadre de Sendai — prévention, préparation, réponse, relèvement).
+        </figcaption>
+      </figure>
+    );
+  }
+
+  if (diagramId === 'fonctions_chimie') {
+    const groups = [
+      { y: 12, name: 'Alcool', group: 'R–OH', suffix: '–ol (ex. éthanol)', fill: '#EFF6FF', stroke: '#2563EB', text: '#1E3A8A' },
+      { y: 40, name: 'Aldéhyde', group: 'R–CHO', suffix: '–al (ex. éthanal)', fill: '#ECFEFF', stroke: '#0891B2', text: '#155E75' },
+      { y: 68, name: 'Acide carb.', group: 'R–COOH', suffix: 'acide …–oïque', fill: '#FEF2F2', stroke: '#DC2626', text: '#991B1B' },
+      { y: 96, name: 'Ester', group: 'R–COO–R’', suffix: '…–oate de …–yle', fill: '#FFFBEB', stroke: '#D97706', text: '#92400E' },
+      { y: 124, name: 'Amine', group: 'R–NH₂', suffix: '…–amine', fill: '#ECFDF5', stroke: '#059669', text: '#065F46' },
+    ];
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 156" className="mx-auto h-36 w-full max-w-md" role="img" aria-label="Principales familles fonctionnelles en chimie organique : alcool, aldéhyde, acide carboxylique, ester, amine">
+          {groups.map((g) => (
+            <g key={g.name}>
+              <rect x="18" y={g.y} width="90" height="22" rx="5" fill={g.fill} stroke={g.stroke} strokeWidth="1.4" />
+              <text x="63" y={g.y + 15} textAnchor="middle" fontSize="9.8" fontWeight="bold" fill={g.text}>{g.name}</text>
+              <rect x="116" y={g.y} width="84" height="22" rx="5" fill="#F8FAFC" stroke="#94A3B8" strokeWidth="1.2" />
+              <text x="158" y={g.y + 15} textAnchor="middle" fontSize="9.8" fontWeight="bold" fill="#0F172A">{g.group}</text>
+              <rect x="208" y={g.y} width="134" height="22" rx="5" fill={g.fill} stroke={g.stroke} strokeWidth="1.1" />
+              <text x="275" y={g.y + 15} textAnchor="middle" fontSize="9.5" fill={g.text}>{g.suffix}</text>
+            </g>
+          ))}
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : mémento visuel des 5 groupes fonctionnels majeurs en chimie organique.
+        </figcaption>
+      </figure>
+    );
+  }
+
   return (
     <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
       <svg viewBox="0 0 360 130" className="mx-auto h-32 w-full max-w-md" role="img" aria-label="Boucle itérative Scrum Sprint">

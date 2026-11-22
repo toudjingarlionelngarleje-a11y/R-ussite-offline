@@ -157,7 +157,11 @@ export interface CourseSection {
     | 'forces_vol'
     | 'couches_geologiques'
     | 'pyramide_maslow'
-    | 'flux_fintech';
+    | 'flux_fintech'
+    | 'couches_sig'
+    | 'score_apgar'
+    | 'cycle_crise'
+    | 'fonctions_chimie';
 }
 
 export interface Course {

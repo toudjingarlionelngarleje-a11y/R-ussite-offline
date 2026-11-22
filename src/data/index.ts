@@ -71,6 +71,16 @@ import {
   SUMMIT_QUESTIONS,
   SUMMIT_SUBJECTS,
 } from './summitCatalog';
+import {
+  HORIZON_ANNALES,
+  HORIZON_CHAPTERS,
+  HORIZON_COURSES,
+  HORIZON_EXAMS,
+  HORIZON_FICHES,
+  HORIZON_FLASHCARDS,
+  HORIZON_QUESTIONS,
+  HORIZON_SUBJECTS,
+} from './horizonCatalog';
 
 export { COUNTRIES, USER_CATEGORIES };
 
@@ -87,6 +97,7 @@ export const EXAMS = [
   ...APEX_EXAMS,
   ...ZENITH_EXAMS,
   ...SUMMIT_EXAMS,
+  ...HORIZON_EXAMS,
 ];
 
 const EXTRA_EXAM_LINKS: Record<string, string[]> = {
@@ -100,6 +111,7 @@ const EXTRA_EXAM_LINKS: Record<string, string[]> = {
     'concours-genie-civil',
     'concours-aeronautique',
     'concours-mines-petrole',
+    'concours-urbanisme-sig',
   ],
   physique: [
     'concours-medecine',
@@ -125,6 +137,7 @@ const EXTRA_EXAM_LINKS: Record<string, string[]> = {
     'concours-police-douanes',
     'concours-magistrature',
     'concours-diplomatie',
+    'certif-droit-numerique',
   ],
   culture_gen: [
     'concours-police-douanes',
@@ -137,18 +150,21 @@ const EXTRA_EXAM_LINKS: Record<string, string[]> = {
     'bts-compta-info',
     'concours-finances-banque',
     'concours-diplomatie',
+    'concours-transit-maritime',
   ],
   gestion_projet: [
     'certif-entrepreneuriat',
     'concours-energie-btp',
     'certif-supply-rh',
     'concours-genie-civil',
+    'concours-urbanisme-sig',
   ],
   cybersecurite: [
     'certif-entrepreneuriat',
     'certif-data-ia',
     'concours-telecoms',
     'certif-fintech-microfinance',
+    'certif-droit-numerique',
   ],
   francais: [
     'concours-police-douanes',
@@ -166,6 +182,7 @@ const EXTRA_EXAM_LINKS: Record<string, string[]> = {
     'concours-telecoms',
     'concours-journalisme',
     'concours-aeronautique',
+    'concours-transit-maritime',
   ],
   informatique: [
     'concours-ingenieur',
@@ -173,12 +190,14 @@ const EXTRA_EXAM_LINKS: Record<string, string[]> = {
     'certif-data-ia',
     'concours-energie-btp',
     'concours-telecoms',
+    'concours-urbanisme-sig',
   ],
   comptabilite: [
     'certif-entrepreneuriat',
     'concours-finances-banque',
     'certif-supply-rh',
     'certif-fintech-microfinance',
+    'concours-transit-maritime',
   ],
   psychotechnique: ['concours-magistrature', 'concours-paramedical', 'concours-finances-banque'],
   statistiques: [
@@ -189,17 +208,26 @@ const EXTRA_EXAM_LINKS: Record<string, string[]> = {
   ],
   educ_civique: ['concours-agronomie'],
   marketing_entrep: ['certif-supply-rh'],
-  droit_ohada: ['certif-supply-rh', 'certif-fintech-microfinance'],
+  droit_ohada: ['certif-supply-rh', 'certif-fintech-microfinance', 'concours-transit-maritime'],
   finances_publiques: ['certif-fintech-microfinance'],
   arabe: ['concours-diplomatie'],
   energies_renouv: ['concours-telecoms', 'concours-genie-civil', 'concours-mines-petrole'],
   relations_inter: ['concours-journalisme'],
-  sante_publique: ['concours-nutrition'],
-  anatomie_physio: ['concours-nutrition', 'concours-veterinaire'],
-  pharmacologie: ['concours-veterinaire'],
-  agronomie_env: ['concours-nutrition', 'concours-mines-petrole', 'concours-veterinaire'],
-  nutrition_sante: ['concours-veterinaire'],
+  sante_publique: ['concours-nutrition', 'concours-sante-maternelle'],
+  anatomie_physio: ['concours-nutrition', 'concours-veterinaire', 'concours-sante-maternelle'],
+  pharmacologie: ['concours-veterinaire', 'concours-sante-maternelle'],
+  agronomie_env: [
+    'concours-nutrition',
+    'concours-mines-petrole',
+    'concours-veterinaire',
+    'concours-urbanisme-sig',
+  ],
+  nutrition_sante: ['concours-veterinaire', 'concours-sante-maternelle'],
   reseaux_telecoms: ['concours-aeronautique'],
+  genie_civil_btp: ['concours-urbanisme-sig'],
+  logistique_ci: ['concours-transit-maritime'],
+  data_ia: ['certif-droit-numerique'],
+  ethique_gouvernance: ['certif-droit-numerique'],
 };
 
 export const SUBJECTS = [
@@ -210,6 +238,7 @@ export const SUBJECTS = [
   ...APEX_SUBJECTS,
   ...ZENITH_SUBJECTS,
   ...SUMMIT_SUBJECTS,
+  ...HORIZON_SUBJECTS,
 ].map((s) => ({
   ...s,
   examIds: Array.from(new Set([...s.examIds, ...(EXTRA_EXAM_LINKS[s.id] ?? [])])),
@@ -223,6 +252,7 @@ export const CHAPTERS = [
   ...APEX_CHAPTERS,
   ...ZENITH_CHAPTERS,
   ...SUMMIT_CHAPTERS,
+  ...HORIZON_CHAPTERS,
 ];
 export const COURSES = [
   ...BASE_COURSES,
@@ -232,6 +262,7 @@ export const COURSES = [
   ...APEX_COURSES,
   ...ZENITH_COURSES,
   ...SUMMIT_COURSES,
+  ...HORIZON_COURSES,
 ];
 export const QUESTIONS = [
   ...BASE_QUESTIONS,
@@ -241,6 +272,7 @@ export const QUESTIONS = [
   ...APEX_QUESTIONS,
   ...ZENITH_QUESTIONS,
   ...SUMMIT_QUESTIONS,
+  ...HORIZON_QUESTIONS,
 ];
 export const ANNALES = [
   ...BASE_ANNALES,
@@ -250,6 +282,7 @@ export const ANNALES = [
   ...APEX_ANNALES,
   ...ZENITH_ANNALES,
   ...SUMMIT_ANNALES,
+  ...HORIZON_ANNALES,
 ];
 export const FICHES = [
   ...BASE_FICHES,
@@ -259,6 +292,7 @@ export const FICHES = [
   ...APEX_FICHES,
   ...ZENITH_FICHES,
   ...SUMMIT_FICHES,
+  ...HORIZON_FICHES,
 ];
 export const FLASHCARDS = [
   ...BASE_FLASHCARDS,
@@ -268,4 +302,5 @@ export const FLASHCARDS = [
   ...APEX_FLASHCARDS,
   ...ZENITH_FLASHCARDS,
   ...SUMMIT_FLASHCARDS,
+  ...HORIZON_FLASHCARDS,
 ];
