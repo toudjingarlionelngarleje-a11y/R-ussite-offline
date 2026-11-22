@@ -145,7 +145,11 @@ export interface CourseSection {
     | 'loi_normale'
     | 'cycle_cardiaque'
     | 'architecture_ia'
-    | 'pyramide_normes';
+    | 'pyramide_normes'
+    | 'photovoltaique'
+    | 'cycle_azote'
+    | 'pharmacocinetique'
+    | 'incoterms_chaine';
 }
 
 export interface Course {

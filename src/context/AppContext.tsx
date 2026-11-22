@@ -312,6 +312,66 @@ function createDemoState(): AppState {
           },
         ],
       },
+      {
+        id: 'grp-sante-2026',
+        name: 'Prépa Santé, Médecine & Paramédical (IDE / ENASS)',
+        examId: 'concours-paramedical',
+        inviteCode: 'SANTE-26',
+        membersCount: 16,
+        description: 'Révisions Anatomie-Physiologie, Santé Publique (R₀, hygiène OMS) et Pharmacologie (calcul de doses).',
+        moderated: true,
+        minorSafe: true,
+        sharedFicheIds: ['fiche-anat-cardio', 'fiche-sp-epidemio', 'fiche-pharm-adme'],
+        messages: [
+          {
+            id: 'msg-4',
+            author: 'Dr. Amina Mahamat (Modératrice)',
+            role: 'enseignant',
+            text: 'Rappel concours IDE/Médecine : entraînez-vous chaque jour sur 3 calculs de posologie pédiatrique et sur la règle des 5 demi-vies.',
+            createdAt: new Date(Date.now() - 3600000 * 14).toISOString(),
+          },
+        ],
+      },
+      {
+        id: 'grp-ohada-finances-2026',
+        name: 'Collectif Droit OHADA, Finances Publiques & Diplomatie',
+        examId: 'concours-magistrature',
+        inviteCode: 'OHADA-26',
+        membersCount: 14,
+        description: 'Entraide Magistrature, BEAC/BCEAO, Impôts/Trésor et Affaires Étrangères (OHADA, TVA, ONU/UA/CBLT).',
+        moderated: true,
+        minorSafe: true,
+        sharedFicheIds: ['fiche-ohada-societes', 'fiche-fp-budget', 'fiche-ri-onu'],
+        messages: [
+          {
+            id: 'msg-5',
+            author: 'Me Idriss D. (Modérateur)',
+            role: 'enseignant',
+            text: 'Pensez à maîtriser l’article 10 du Traité OHADA et le circuit ELOP des dépenses publiques : ils tombent presque à chaque session !',
+            createdAt: new Date(Date.now() - 3600000 * 8).toISOString(),
+          },
+        ],
+      },
+      {
+        id: 'grp-tech-green-2026',
+        name: 'Club Ingénieurs, Énergie Solaire, Data/IA & Agro',
+        examId: 'concours-energie-btp',
+        inviteCode: 'SOLAR-IA',
+        membersCount: 11,
+        description: 'Dimensionnement photovoltaïque, Machine Learning/RAG, agroécologie sahélienne et Supply Chain (Incoterms 2020).',
+        moderated: true,
+        minorSafe: true,
+        sharedFicheIds: ['fiche-enr-solaire', 'fiche-ia-ml', 'fiche-agro-sols'],
+        messages: [
+          {
+            id: 'msg-6',
+            author: 'Ing. Rodrigue T.',
+            role: 'enseignant',
+            text: 'Astuce solaire PV : n’oubliez jamais le facteur de rendement global k ≈ 0,70 et la profondeur de décharge batterie dans vos calculs !',
+            createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+          },
+        ],
+      },
     ],
     accessibility: DEFAULT_ACCESSIBILITY,
     privacy: DEFAULT_PRIVACY,
@@ -492,7 +552,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...saved,
           customFlashcards: saved.customFlashcards ?? [],
           diagnosticResult: saved.diagnosticResult ?? null,
-          studyGroups: saved.studyGroups?.length ? saved.studyGroups : defaults.studyGroups,
+          studyGroups: saved.studyGroups?.length
+            ? [
+                ...saved.studyGroups,
+                ...defaults.studyGroups.filter(
+                  (dg) => !saved.studyGroups.some((sg) => sg.id === dg.id)
+                ),
+              ]
+            : defaults.studyGroups,
           fatigueLevel: saved.fatigueLevel ?? 'normal',
           planMode: saved.planMode ?? 'standard',
         });

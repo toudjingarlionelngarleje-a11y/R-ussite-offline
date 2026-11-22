@@ -326,6 +326,116 @@ export const PedagogicalDiagram: React.FC<{
     );
   }
 
+  if (diagramId === 'photovoltaique') {
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 132" className="mx-auto h-32 w-full max-w-md" role="img" aria-label="Chaîne photovoltaïque autonome : Panneau solaire, Régulateur MPPT, Batterie, Onduleur, Charges AC">
+          {[
+            { x: 6, label: 'Panneaux PV', sub: 'DC variable', fill: '#FEF3C7', stroke: '#D97706', text: '#92400E' },
+            { x: 94, label: 'MPPT', sub: 'Régulateur', fill: '#EFF6FF', stroke: '#2563EB', text: '#1E3A8A' },
+            { x: 182, label: 'Batterie', sub: 'Stockage DC', fill: '#ECFDF5', stroke: '#059669', text: '#065F46' },
+            { x: 270, label: 'Onduleur', sub: 'DC → 230V AC', fill: '#F5F3FF', stroke: '#7C3AED', text: '#5B21B6' },
+          ].map((b, i) => (
+            <g key={b.label}>
+              <rect x={b.x} y="34" width="80" height="54" rx="8" fill={b.fill} stroke={b.stroke} strokeWidth="1.8" />
+              <text x={b.x + 40} y="57" textAnchor="middle" fontSize="10" fontWeight="bold" fill={b.text}>
+                {b.label}
+              </text>
+              <text x={b.x + 40} y="73" textAnchor="middle" fontSize="8.8" fill="#475569">
+                {b.sub}
+              </text>
+              {i < 3 && <line x1={b.x + 80} y1="61" x2={b.x + 88} y2="61" stroke="#64748B" strokeWidth="2" />}
+            </g>
+          ))}
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : architecture d’une installation solaire photovoltaïque autonome (site isolé).
+        </figcaption>
+      </figure>
+    );
+  }
+
+  if (diagramId === 'cycle_azote') {
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 155" className="mx-auto h-36 w-full max-w-md" role="img" aria-label="Cycle biologique de l'azote : N2 atmosphérique, Fixation, Nitrification, Assimilation végétale">
+          <rect x="112" y="8" width="136" height="32" rx="8" fill="#EFF6FF" stroke="#0284C7" strokeWidth="2" />
+          <text x="180" y="28" textAnchor="middle" fontSize="10.5" fontWeight="bold" fill="#0369A1">Azote atmosphérique (N₂)</text>
+          <rect x="16" y="64" width="102" height="38" rx="8" fill="#ECFDF5" stroke="#059669" strokeWidth="1.8" />
+          <text x="67" y="81" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#065F46">Fixation (Rhizobium)</text>
+          <text x="67" y="94" textAnchor="middle" fontSize="8.5" fill="#047857">N₂ → NH₄⁺</text>
+          <rect x="130" y="112" width="100" height="34" rx="8" fill="#FEF3C7" stroke="#D97706" strokeWidth="1.8" />
+          <text x="180" y="128" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#92400E">Nitrification</text>
+          <text x="180" y="140" textAnchor="middle" fontSize="8.5" fill="#B45309">NH₄⁺ → NO₃⁻</text>
+          <rect x="242" y="64" width="102" height="38" rx="8" fill="#F0FDF4" stroke="#16A34A" strokeWidth="1.8" />
+          <text x="293" y="81" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#166534">Assimilation</text>
+          <text x="293" y="94" textAnchor="middle" fontSize="8.5" fill="#15803D">Plantes &amp; Protéines</text>
+          <path d="M 118 32 L 72 64" stroke="#0284C7" strokeWidth="1.8" fill="none" />
+          <path d="M 92 102 L 130 124" stroke="#059669" strokeWidth="1.8" fill="none" />
+          <path d="M 230 124 L 270 102" stroke="#D97706" strokeWidth="1.8" fill="none" />
+          <path d="M 286 64 L 240 32" stroke="#64748B" strokeDasharray="4 3" strokeWidth="1.6" fill="none" />
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : cycle de l’azote dans les agrosystèmes (rôle clé des légumineuses et bactéries du sol).
+        </figcaption>
+      </figure>
+    );
+  }
+
+  if (diagramId === 'pharmacocinetique') {
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 128" className="mx-auto h-32 w-full max-w-md" role="img" aria-label="Phases ADME de la pharmacocinétique : Absorption, Distribution, Métabolisme, Élimination">
+          {[
+            { x: 10, letter: 'A', label: 'Absorption', sub: 'Tube digestif', color: '#2563EB', fill: '#EFF6FF' },
+            { x: 96, letter: 'D', label: 'Distribution', sub: 'Sang & tissus', color: '#059669', fill: '#ECFDF5' },
+            { x: 182, letter: 'M', label: 'Métabolisme', sub: 'Foie (CYP450)', color: '#D97706', fill: '#FFFBEB' },
+            { x: 268, letter: 'E', label: 'Élimination', sub: 'Reins / Bile', color: '#DC2626', fill: '#FEF2F2' },
+          ].map((s, i) => (
+            <g key={s.letter}>
+              <rect x={s.x} y="24" width="76" height="72" rx="10" fill={s.fill} stroke={s.color} strokeWidth="2" />
+              <text x={s.x + 38} y="47" textAnchor="middle" fontSize="15" fontWeight="bold" fill={s.color}>{s.letter}</text>
+              <text x={s.x + 38} y="66" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#1E293B">{s.label}</text>
+              <text x={s.x + 38} y="82" textAnchor="middle" fontSize="8.5" fill="#64748B">{s.sub}</text>
+              {i < 3 && <line x1={s.x + 76} y1="60" x2={s.x + 86} y2="60" stroke="#94A3B8" strokeWidth="2" />}
+            </g>
+          ))}
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : les 4 étapes ADME de la pharmacocinétique (devenir du médicament dans l’organisme).
+        </figcaption>
+      </figure>
+    );
+  }
+
+  if (diagramId === 'incoterms_chaine') {
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 135" className="mx-auto h-32 w-full max-w-md" role="img" aria-label="Transfert progressif des frais et risques selon les Incoterms 2020 : EXW, FOB, CIF, DDP">
+          <line x1="25" y1="68" x2="335" y2="68" stroke="#1D4ED8" strokeWidth="3" />
+          {[
+            { x: 35, code: 'EXW', desc: 'Usine vendeur', color: '#059669' },
+            { x: 130, code: 'FOB', desc: 'Bord navire', color: '#0284C7' },
+            { x: 225, code: 'CIF', desc: 'Port arrivée', color: '#D97706' },
+            { x: 320, code: 'DDP', desc: 'Livré dédouané', color: '#DC2626' },
+          ].map((p) => (
+            <g key={p.code}>
+              <circle cx={p.x} cy="68" r="10" fill={p.color} />
+              <text x={p.x} y="42" textAnchor="middle" fontSize="11" fontWeight="bold" fill={p.color}>{p.code}</text>
+              <text x={p.x} y="96" textAnchor="middle" fontSize="9" fill="#475569">{p.desc}</text>
+            </g>
+          ))}
+          <text x="180" y="122" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#1E3A8A">
+            Obligations &amp; frais du Vendeur → croissants de EXW à DDP
+          </text>
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : gradation des obligations vendeur/acheteur selon les Incoterms® 2020.
+        </figcaption>
+      </figure>
+    );
+  }
+
   return (
     <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
       <svg viewBox="0 0 360 130" className="mx-auto h-32 w-full max-w-md" role="img" aria-label="Boucle itérative Scrum Sprint">

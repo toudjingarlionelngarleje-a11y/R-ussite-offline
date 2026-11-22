@@ -41,6 +41,16 @@ import {
   ULTRA_QUESTIONS,
   ULTRA_SUBJECTS,
 } from './ultraCatalog';
+import {
+  APEX_ANNALES,
+  APEX_CHAPTERS,
+  APEX_COURSES,
+  APEX_EXAMS,
+  APEX_FICHES,
+  APEX_FLASHCARDS,
+  APEX_QUESTIONS,
+  APEX_SUBJECTS,
+} from './apexCatalog';
 
 export { COUNTRIES, USER_CATEGORIES };
 
@@ -49,17 +59,45 @@ export const STUDY_LEVELS: string[] = [
   ...BASE_STUDY_LEVELS,
 ];
 
-export const EXAMS = [...BASE_EXAMS, ...EXTRA_EXAMS, ...MEGA_EXAMS, ...ULTRA_EXAMS];
+export const EXAMS = [
+  ...BASE_EXAMS,
+  ...EXTRA_EXAMS,
+  ...MEGA_EXAMS,
+  ...ULTRA_EXAMS,
+  ...APEX_EXAMS,
+];
 
 const EXTRA_EXAM_LINKS: Record<string, string[]> = {
-  maths: ['bepc', 'concours-medecine', 'concours-ingenieur', 'concours-ens-enseignement'],
-  physique: ['concours-medecine', 'concours-ingenieur', 'concours-paramedical'],
-  svt: ['bepc', 'concours-medecine', 'concours-paramedical'],
+  maths: [
+    'bepc',
+    'concours-medecine',
+    'concours-ingenieur',
+    'concours-ens-enseignement',
+    'concours-energie-btp',
+  ],
+  physique: [
+    'concours-medecine',
+    'concours-ingenieur',
+    'concours-paramedical',
+    'concours-agronomie',
+    'concours-energie-btp',
+  ],
+  svt: ['bepc', 'concours-medecine', 'concours-paramedical', 'concours-agronomie'],
   philo: ['bac-litteraire'],
-  droit: ['bts-compta-info', 'concours-police-douanes', 'concours-magistrature'],
-  culture_gen: ['concours-police-douanes', 'concours-magistrature'],
-  economie: ['bac-litteraire', 'bts-compta-info', 'concours-finances-banque'],
-  gestion_projet: ['certif-entrepreneuriat'],
+  droit: [
+    'bts-compta-info',
+    'concours-police-douanes',
+    'concours-magistrature',
+    'concours-diplomatie',
+  ],
+  culture_gen: ['concours-police-douanes', 'concours-magistrature', 'concours-diplomatie'],
+  economie: [
+    'bac-litteraire',
+    'bts-compta-info',
+    'concours-finances-banque',
+    'concours-diplomatie',
+  ],
+  gestion_projet: ['certif-entrepreneuriat', 'concours-energie-btp', 'certif-supply-rh'],
   cybersecurite: ['certif-entrepreneuriat', 'certif-data-ia'],
   francais: [
     'concours-police-douanes',
@@ -68,11 +106,20 @@ const EXTRA_EXAM_LINKS: Record<string, string[]> = {
     'concours-paramedical',
   ],
   histoire_geo: ['concours-ens-enseignement'],
-  anglais: ['concours-ingenieur', 'certif-data-ia'],
-  informatique: ['concours-ingenieur', 'certif-entrepreneuriat', 'certif-data-ia'],
-  comptabilite: ['certif-entrepreneuriat', 'concours-finances-banque'],
+  anglais: ['concours-ingenieur', 'certif-data-ia', 'concours-diplomatie', 'concours-energie-btp'],
+  informatique: [
+    'concours-ingenieur',
+    'certif-entrepreneuriat',
+    'certif-data-ia',
+    'concours-energie-btp',
+  ],
+  comptabilite: ['certif-entrepreneuriat', 'concours-finances-banque', 'certif-supply-rh'],
   psychotechnique: ['concours-magistrature', 'concours-paramedical', 'concours-finances-banque'],
-  statistiques: ['certif-data-ia', 'concours-finances-banque'],
+  statistiques: ['certif-data-ia', 'concours-finances-banque', 'concours-agronomie'],
+  educ_civique: ['concours-agronomie'],
+  marketing_entrep: ['certif-supply-rh'],
+  droit_ohada: ['certif-supply-rh'],
+  arabe: ['concours-diplomatie'],
 };
 
 export const SUBJECTS = [
@@ -80,14 +127,51 @@ export const SUBJECTS = [
   ...EXTRA_SUBJECTS,
   ...MEGA_SUBJECTS,
   ...ULTRA_SUBJECTS,
+  ...APEX_SUBJECTS,
 ].map((s) => ({
   ...s,
   examIds: Array.from(new Set([...s.examIds, ...(EXTRA_EXAM_LINKS[s.id] ?? [])])),
 }));
 
-export const CHAPTERS = [...BASE_CHAPTERS, ...EXTRA_CHAPTERS, ...MEGA_CHAPTERS, ...ULTRA_CHAPTERS];
-export const COURSES = [...BASE_COURSES, ...EXTRA_COURSES, ...MEGA_COURSES, ...ULTRA_COURSES];
-export const QUESTIONS = [...BASE_QUESTIONS, ...EXTRA_QUESTIONS, ...MEGA_QUESTIONS, ...ULTRA_QUESTIONS];
-export const ANNALES = [...BASE_ANNALES, ...EXTRA_ANNALES, ...MEGA_ANNALES, ...ULTRA_ANNALES];
-export const FICHES = [...BASE_FICHES, ...EXTRA_FICHES, ...MEGA_FICHES, ...ULTRA_FICHES];
-export const FLASHCARDS = [...BASE_FLASHCARDS, ...EXTRA_FLASHCARDS, ...MEGA_FLASHCARDS, ...ULTRA_FLASHCARDS];
+export const CHAPTERS = [
+  ...BASE_CHAPTERS,
+  ...EXTRA_CHAPTERS,
+  ...MEGA_CHAPTERS,
+  ...ULTRA_CHAPTERS,
+  ...APEX_CHAPTERS,
+];
+export const COURSES = [
+  ...BASE_COURSES,
+  ...EXTRA_COURSES,
+  ...MEGA_COURSES,
+  ...ULTRA_COURSES,
+  ...APEX_COURSES,
+];
+export const QUESTIONS = [
+  ...BASE_QUESTIONS,
+  ...EXTRA_QUESTIONS,
+  ...MEGA_QUESTIONS,
+  ...ULTRA_QUESTIONS,
+  ...APEX_QUESTIONS,
+];
+export const ANNALES = [
+  ...BASE_ANNALES,
+  ...EXTRA_ANNALES,
+  ...MEGA_ANNALES,
+  ...ULTRA_ANNALES,
+  ...APEX_ANNALES,
+];
+export const FICHES = [
+  ...BASE_FICHES,
+  ...EXTRA_FICHES,
+  ...MEGA_FICHES,
+  ...ULTRA_FICHES,
+  ...APEX_FICHES,
+];
+export const FLASHCARDS = [
+  ...BASE_FLASHCARDS,
+  ...EXTRA_FLASHCARDS,
+  ...MEGA_FLASHCARDS,
+  ...ULTRA_FLASHCARDS,
+  ...APEX_FLASHCARDS,
+];
