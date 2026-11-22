@@ -20,6 +20,7 @@ import { OnboardingScreen } from './screens/OnboardingScreen';
 import { PlannerScreen } from './screens/PlannerScreen';
 import { PracticeScreen } from './screens/PracticeScreen';
 import { PrivacySettingsScreen } from './screens/PrivacySettingsScreen';
+import { SecurityCenterScreen } from './screens/SecurityCenterScreen';
 import { StatsScreen } from './screens/StatsScreen';
 import { StorageSyncScreen } from './screens/StorageSyncScreen';
 import { TeacherScreen } from './screens/TeacherScreen';
@@ -89,6 +90,8 @@ const ScreenRouter: React.FC = () => {
         return <CommunityAdminScreen />;
       case 'teacher':
         return <TeacherScreen />;
+      case 'security':
+        return <SecurityCenterScreen />;
       case 'privacy':
         return <PrivacySettingsScreen />;
       default:

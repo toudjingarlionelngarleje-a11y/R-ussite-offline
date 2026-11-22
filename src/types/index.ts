@@ -28,6 +28,7 @@ export type ScreenId =
   | 'community'
   | 'teacher'
   | 'admin'
+  | 'security'
   | 'privacy';
 
 export type UserCategory =
@@ -460,6 +461,72 @@ export interface StudyGroup {
   sharedFicheIds: string[];
 }
 
+export type SecurityThreatCategory =
+  | 'WAF_XSS'
+  | 'WAF_SQLI'
+  | 'WAF_CMD_TRAVERSAL'
+  | 'WAF_PROTOTYPE_POLLUTION'
+  | 'ANTIVIRUS_SIGNATURE'
+  | 'ANTIVIRUS_HEURISTIC'
+  | 'ANTIVIRUS_FILE'
+  | 'BRUTEFORCE_AUTH'
+  | 'RATE_LIMIT'
+  | 'DOM_TAMPERING'
+  | 'URL_POISONING'
+  | 'STORAGE_INTEGRITY'
+  | 'ZERO_TRUST_CLOUD'
+  | 'SYSTEM_AUDIT';
+
+export type SecuritySeverity = 'info' | 'low' | 'medium' | 'high' | 'critical';
+
+export interface SecurityEvent {
+  id: string;
+  timestamp: string;
+  category: SecurityThreatCategory;
+  severity: SecuritySeverity;
+  source: string;
+  ruleId: string;
+  description: string;
+  blocked: boolean;
+  sampleSnippet?: string;
+}
+
+export interface SecurityConfig {
+  firewallEnabled: boolean;
+  antivirusEnabled: boolean;
+  strictMode: boolean;
+  domGuardEnabled: boolean;
+  rateLimitEnabled: boolean;
+  bruteForceProtection: boolean;
+  zeroTrustCloudValidation: boolean;
+  integrityCheckEnabled: boolean;
+  autoLockMinutes: number; // 0 = disabled, default 30
+}
+
+export interface SecurityScanReport {
+  scannedAt: string;
+  itemsScanned: number;
+  threatsFound: number;
+  threatsQuarantined: number;
+  integrityValid: boolean;
+  securityScore: number; // 0..100
+  checksPassed: number;
+  totalChecks: number;
+  summary: string;
+}
+
+export interface SecurityState {
+  config: SecurityConfig;
+  events: SecurityEvent[];
+  quarantinedCount: number;
+  blockedCount: number;
+  lastScan: SecurityScanReport | null;
+  integrityHash: string | null;
+  integrityStatus: 'verified' | 'tampered' | 'unchecked';
+  failedLoginAttempts: number;
+  lockoutUntil: string | null;
+}
+
 export interface AppState {
   profiles: UserProfile[];
   activeProfileId: string | null;
@@ -494,4 +561,5 @@ export interface AppState {
   planMode: 'standard' | 'express' | 'derniere_semaine' | 'veille';
   accessibility: AccessibilitySettings;
   privacy: PrivacySettings;
+  security?: SecurityState;
 }

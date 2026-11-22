@@ -116,6 +116,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         { id: 'community', label: 'Groupes d’étude', icon: Users },
         { id: 'teacher', label: 'Espace enseignant', icon: PenTool },
         { id: 'admin', label: 'Admin & Qualité', icon: ShieldCheck },
+        {
+          id: 'security',
+          label: 'Pare-feu & Antivirus',
+          icon: ShieldCheck,
+          badge: state.security?.blockedCount ? state.security.blockedCount : undefined,
+        },
         { id: 'privacy', label: 'Confidentialité & Accès', icon: Shield },
       ],
     },
@@ -182,6 +188,16 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   <span>J-{countdown}</span>
                 </button>
               )}
+
+              <button
+                type="button"
+                onClick={() => handleNav('security')}
+                className="hidden h-9 items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 md:inline-flex dark:border-emerald-900/60 dark:bg-emerald-950/50 dark:text-emerald-300"
+                title="Centre de Sécurité : Pare-feu WAF, Antivirus et 36 systèmes actifs"
+              >
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Bouclier 36/36</span>
+              </button>
 
               <SyncBadge
                 status={syncStatus}

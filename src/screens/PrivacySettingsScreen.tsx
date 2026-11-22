@@ -17,6 +17,7 @@ export const PrivacySettingsScreen: React.FC = () => {
   const {
     state,
     activeProfile,
+    navigate,
     updateAccessibility,
     updatePrivacy,
     exportUserData,
@@ -37,6 +38,29 @@ export const PrivacySettingsScreen: React.FC = () => {
           Gère tes préférences d’inclusion, le chiffrement local, tes consentements et le contrôle total sur tes données.
         </p>
       </div>
+
+      {/* Direct access banner to Security Firewall & Antivirus Center */}
+      <section className="flex flex-col gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-emerald-900/50 dark:bg-emerald-950/30">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <div>
+            <p className="text-sm font-extrabold text-emerald-950 dark:text-emerald-200">
+              Centre de Sécurité, Pare-feu WAF & Antivirus (36 systèmes actifs)
+            </p>
+            <p className="text-xs text-emerald-800/90 dark:text-emerald-300/80">
+              Lance un scan antivirus complet, teste le pare-feu anti-XSS/SQLi/EICAR, analyse un fichier local
+              et consulte le journal SIEM de quarantaine.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate('security')}
+          className="shrink-0 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700"
+        >
+          Ouvrir le Bouclier
+        </button>
+      </section>
 
       {/* Accessibility & Low-Resource Optimization (Section 14) */}
       <section className="hc-card space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">

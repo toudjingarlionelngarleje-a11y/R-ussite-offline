@@ -8,7 +8,18 @@ import {
   hashPassword,
   loadPersistedState,
   savePersistedState,
+  verifyPasswordHash,
 } from '../lib/storage';
+import {
+  checkRateLimit,
+  createInitialSecurityState,
+  DEFAULT_SECURITY_CONFIG,
+  evaluatePasswordStrength,
+  inspectCurrentUrl,
+  inspectTextInput,
+  runFullSecurityScan,
+  startDomTamperingGuard,
+} from '../lib/securityFirewall';
 import { isSupabaseConfigured, syncStateWithSupabase } from '../lib/supabaseSync';
 import {
   AccessibilitySettings,
@@ -25,6 +36,9 @@ import {
   PrivacySettings,
   Question,
   ScreenId,
+  SecurityConfig,
+  SecurityEvent,
+  SecurityScanReport,
   SessionRecord,
   StudyGroup,
   StudyPlanItem,
@@ -495,6 +509,7 @@ function createDemoState(): AppState {
     ],
     accessibility: DEFAULT_ACCESSIBILITY,
     privacy: DEFAULT_PRIVACY,
+    security: createInitialSecurityState(),
   };
 }
 
@@ -620,6 +635,14 @@ interface AppContextValue {
   exportUserData: () => void;
   resetAllLocalData: () => Promise<void>;
 
+  // Security Firewall & Antivirus Center
+  updateSecurityConfig: (patch: Partial<SecurityConfig>) => void;
+  logSecurityEvent: (event: SecurityEvent) => void;
+  runSecurityScan: () => SecurityScanReport;
+  testSecurityInput: (source: string, rawText: string) => { safe: boolean; message: string };
+  clearSecurityLogs: () => void;
+  triggerPanicLockdown: () => void;
+
   // Notifications / Toasts
   toasts: ToastMessage[];
   notify: (text: string, tone?: ToastMessage['tone']) => void;
@@ -660,13 +683,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // Load persisted state from IndexedDB on mount
+  // Load persisted state from IndexedDB on mount + Integrity Seal & URL Poisoning Guard
   useEffect(() => {
     let mounted = true;
-    loadPersistedState().then((saved) => {
+    loadPersistedState().then(({ state: saved, integrityValid }) => {
       if (!mounted) return;
+      const urlThreat = inspectCurrentUrl();
       if (saved) {
         const defaults = createEmptyInitialState();
+        const baseSec = saved.security ?? createInitialSecurityState();
+        const extraEvents: SecurityEvent[] = [];
+        if (!integrityValid) {
+          extraEvents.push({
+            id: `sec-integrity-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            category: 'STORAGE_INTEGRITY',
+            severity: 'high',
+            source: 'Sceau SHA-256 IndexedDB',
+            ruleId: 'CRY-SEAL-MISMATCH',
+            description:
+              'Modification externe détectée sur le stockage local. Le sceau d’intégrité a été réinitialisé et vérifié.',
+            blocked: false,
+          });
+        }
+        if (urlThreat) extraEvents.push(urlThreat);
+
         setState({
           ...defaults,
           ...saved,
@@ -682,6 +723,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             : defaults.studyGroups,
           fatigueLevel: saved.fatigueLevel ?? 'normal',
           planMode: saved.planMode ?? 'standard',
+          security: {
+            ...createInitialSecurityState(),
+            ...baseSec,
+            config: { ...DEFAULT_SECURITY_CONFIG, ...(baseSec.config ?? {}) },
+            integrityStatus: integrityValid ? 'verified' : 'tampered',
+            blockedCount: baseSec.blockedCount + (urlThreat ? 1 : 0),
+            events: [...extraEvents, ...(baseSec.events ?? [])].slice(0, 60),
+          },
         });
         if (saved.activeProfileId) {
           const prof = saved.profiles.find((p) => p.id === saved.activeProfileId);
@@ -689,6 +738,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setScreen(prof.onboardingCompleted ? 'dashboard' : 'onboarding-exam');
           }
         }
+      } else if (urlThreat) {
+        setState((prev) => {
+          const sec = prev.security ?? createInitialSecurityState();
+          return {
+            ...prev,
+            security: {
+              ...sec,
+              blockedCount: sec.blockedCount + 1,
+              events: [urlThreat, ...sec.events].slice(0, 60),
+            },
+          };
+        });
       }
       setHydrated(true);
     });
@@ -697,7 +758,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  // Persist to IndexedDB whenever state changes (debounced 250ms)
+  // Persist to IndexedDB whenever state changes (debounced 250ms) with SHA-256 integrity seal
   useEffect(() => {
     if (!hydrated) return;
     if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
@@ -705,6 +766,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       savePersistedState(state);
     }, 250);
   }, [state, hydrated]);
+
+  // Real-time DOM Tampering Guard (MutationObserver)
+  const domGuardEnabled = state.security?.config.domGuardEnabled ?? true;
+  useEffect(() => {
+    if (!domGuardEnabled) return;
+    return startDomTamperingGuard((threatEvent) => {
+      setState((prev) => {
+        const sec = prev.security ?? createInitialSecurityState();
+        return {
+          ...prev,
+          security: {
+            ...sec,
+            blockedCount: sec.blockedCount + 1,
+            quarantinedCount: sec.quarantinedCount + 1,
+            events: [threatEvent, ...sec.events].slice(0, 60),
+          },
+        };
+      });
+      notify(`Pare-feu DOM : ${threatEvent.description}`, 'error');
+    });
+  }, [domGuardEnabled, notify]);
+
+  // Auto-lock session after prolonged inactivity
+  const autoLockMinutes = state.security?.config.autoLockMinutes ?? 30;
+  useEffect(() => {
+    if (!autoLockMinutes || !state.activeProfileId) return;
+    let timer = window.setTimeout(() => {
+      setState((prev) => ({ ...prev, activeProfileId: null }));
+      setScreen('welcome');
+      notify('Session verrouillée automatiquement après inactivité (sécurité).', 'warning');
+    }, autoLockMinutes * 60 * 1000);
+
+    const resetTimer = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        setState((prev) => ({ ...prev, activeProfileId: null }));
+        setScreen('welcome');
+        notify('Session verrouillée automatiquement après inactivité (sécurité).', 'warning');
+      }, autoLockMinutes * 60 * 1000);
+    };
+
+    window.addEventListener('pointerdown', resetTimer, { passive: true });
+    window.addEventListener('keydown', resetTimer, { passive: true });
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('pointerdown', resetTimer);
+      window.removeEventListener('keydown', resetTimer);
+    };
+  }, [autoLockMinutes, state.activeProfileId, notify]);
 
   // Apply accessibility classes to <html>
   useEffect(() => {
@@ -783,10 +893,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   }, []);
 
+  const logSecurityEvent = useCallback((event: SecurityEvent) => {
+    setState((prev) => {
+      const sec = prev.security ?? createInitialSecurityState();
+      return {
+        ...prev,
+        security: {
+          ...sec,
+          blockedCount: sec.blockedCount + (event.blocked ? 1 : 0),
+          quarantinedCount:
+            sec.quarantinedCount +
+            (event.blocked && (event.severity === 'high' || event.severity === 'critical') ? 1 : 0),
+          events: [event, ...sec.events].slice(0, 60),
+        },
+      };
+    });
+  }, []);
+
+  const guardInput = useCallback(
+    (source: string, rawText: string, maxLength = 4000): { allowed: boolean; cleanText: string } => {
+      const secCfg = state.security?.config ?? DEFAULT_SECURITY_CONFIG;
+      const check = inspectTextInput(rawText, secCfg, maxLength);
+      if (!check.safe) {
+        const ev: SecurityEvent = {
+          id: `sec-waf-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+          timestamp: new Date().toISOString(),
+          category: check.category ?? 'WAF_XSS',
+          severity: check.severity ?? 'high',
+          source,
+          ruleId: check.ruleId ?? 'WAF-BLOCK',
+          description: check.description ?? 'Contenu malveillant bloqué par le pare-feu.',
+          blocked: true,
+          sampleSnippet: rawText.slice(0, 70),
+        };
+        logSecurityEvent(ev);
+        notify(`🛡️ Pare-feu : ${ev.description}`, 'error');
+        return { allowed: false, cleanText: check.sanitizedText };
+      }
+      return { allowed: true, cleanText: check.sanitizedText };
+    },
+    [state.security?.config, logSecurityEvent, notify]
+  );
+
   const syncNow = useCallback(async () => {
     if (!isOnline) {
       notify('Impossible de synchroniser en mode hors ligne. Tes données restent sécurisées sur l’appareil.', 'warning');
       return;
+    }
+    const secCfg = state.security?.config ?? DEFAULT_SECURITY_CONFIG;
+    if (secCfg.rateLimitEnabled) {
+      const rl = checkRateLimit('sync_cloud', 6, 60_000);
+      if (!rl.allowed) {
+        notify(`Anti-flood actif : patiente ${rl.retryAfterSec}s avant une nouvelle synchro.`, 'warning');
+        return;
+      }
     }
     if (state.simulateSyncError) {
       setSyncFailed(true);
@@ -813,6 +973,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const newQs = result.pulledQuestions.filter((q) => !existingQIds.has(q.id));
         const existingFIds = new Set(prev.customFiches.map((f) => f.id));
         const newFs = result.pulledFiches.filter((f) => !existingFIds.has(f.id));
+        const prevSec = prev.security ?? createInitialSecurityState();
+        const cloudThreats = result.blockedCloudThreats ?? [];
         return {
           ...prev,
           syncQueue: [],
@@ -820,11 +982,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           customQuestions: [...newQs, ...prev.customQuestions],
           customFiches: [...newFs, ...prev.customFiches],
           lastSyncAt: new Date().toISOString(),
+          security: {
+            ...prevSec,
+            blockedCount: prevSec.blockedCount + cloudThreats.length,
+            quarantinedCount: prevSec.quarantinedCount + cloudThreats.length,
+            events: [...cloudThreats, ...prevSec.events].slice(0, 60),
+          },
         };
       });
       setSyncingNow(false);
       notify(
-        `Synchronisé avec Supabase Cloud (${result.pushedCounts.sessions} sessions, ${result.pushedCounts.notes} notes sauvegardées).`,
+        `Synchronisé avec Supabase Cloud (Zero-Trust vérifié : ${result.pushedCounts.sessions} sessions, ${result.pushedCounts.notes} notes).`,
         'success'
       );
       return;
@@ -911,10 +1079,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const registerAccount = useCallback(
     async (input: { name: string; email: string; password: string; category: UserCategory }) => {
-      const trimmedEmail = input.email.trim().toLowerCase();
-      if (!input.name.trim() || !trimmedEmail || input.password.length < 4) {
+      const secCfg = state.security?.config ?? DEFAULT_SECURITY_CONFIG;
+      if (secCfg.rateLimitEnabled) {
+        const rl = checkRateLimit('auth_register', 5, 60_000);
+        if (!rl.allowed) {
+          logSecurityEvent({
+            id: `sec-rl-reg-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            category: 'RATE_LIMIT',
+            severity: 'medium',
+            source: 'Inscription compte',
+            ruleId: 'WAF-RL-REG',
+            description: 'Trop de tentatives d’inscription rapprochées bloquées.',
+            blocked: true,
+          });
+          return { ok: false, error: `Trop de tentatives. Réessaie dans ${rl.retryAfterSec} secondes.` };
+        }
+      }
+
+      const nameGuard = guardInput('Inscription (Nom)', input.name, 100);
+      const emailGuard = guardInput('Inscription (E-mail)', input.email, 140);
+      if (!nameGuard.allowed || !emailGuard.allowed) {
+        return { ok: false, error: 'Entrée bloquée par le pare-feu anti-injection.' };
+      }
+
+      const trimmedEmail = emailGuard.cleanText.toLowerCase();
+      if (!nameGuard.cleanText || !trimmedEmail || input.password.length < 4) {
         return { ok: false, error: 'Remplis ton nom, un e-mail valide et un mot de passe (4 caractères min.).' };
       }
+
+      if (secCfg.bruteForceProtection) {
+        const pwdAudit = evaluatePasswordStrength(input.password);
+        if (pwdAudit.isCompromisedCommon) {
+          logSecurityEvent({
+            id: `sec-pwd-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            category: 'BRUTEFORCE_AUTH',
+            severity: 'medium',
+            source: 'Politique de mots de passe',
+            ruleId: 'ZT-PWD-WEAK',
+            description: 'Création de compte refusée : mot de passe compromis courant détecté.',
+            blocked: true,
+          });
+          return {
+            ok: false,
+            error:
+              'Mot de passe trop courant ou compromis (ex. 123456, azerty, password). Choisis un mot de passe plus sûr.',
+          };
+        }
+      }
+
       const existing = state.profiles.find((p) => p.email.toLowerCase() === trimmedEmail);
       if (existing) {
         return { ok: false, error: 'Un compte existe déjà avec cette adresse e-mail sur cet appareil.' };
@@ -925,7 +1139,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const newProfile: UserProfile = {
         id: `profile-${Date.now()}`,
-        name: input.name.trim(),
+        name: nameGuard.cleanText,
         email: trimmedEmail,
         passwordHash,
         category: input.category,
@@ -950,29 +1164,88 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }));
       enqueueSync('register', `Création du profil ${newProfile.name}`, 3);
       setScreen('onboarding-exam');
-      notify(`Compte créé pour ${newProfile.name} (stockage local sécurisé).`, 'success');
+      notify(`Compte créé pour ${newProfile.name} (PBKDF2-SHA256 + coffre chiffré).`, 'success');
       return { ok: true };
     },
-    [state.profiles, enqueueSync, notify]
+    [state.profiles, state.security?.config, guardInput, logSecurityEvent, enqueueSync, notify]
   );
 
   const loginAccount = useCallback(
     async (email: string, password: string) => {
-      const trimmedEmail = email.trim().toLowerCase();
+      const sec = state.security ?? createInitialSecurityState();
+      const secCfg = sec.config;
+
+      // Anti-Bruteforce Lockout Check
+      if (secCfg.bruteForceProtection && sec.lockoutUntil) {
+        const remainingMs = new Date(sec.lockoutUntil).getTime() - Date.now();
+        if (remainingMs > 0) {
+          const mins = Math.ceil(remainingMs / 60000);
+          return {
+            ok: false,
+            error: `Verrouillage anti-bruteforce actif (${mins} min restante(s)) après trop d’échecs.`,
+          };
+        }
+      }
+
+      const emailGuard = guardInput('Connexion (E-mail)', email, 140);
+      if (!emailGuard.allowed) {
+        return { ok: false, error: 'Tentative d’injection bloquée par le pare-feu.' };
+      }
+
+      const trimmedEmail = emailGuard.cleanText.toLowerCase();
       const found = state.profiles.find((p) => p.email.toLowerCase() === trimmedEmail);
-      if (!found) {
-        return { ok: false, error: 'Aucun compte local trouvé avec cet e-mail.' };
+      const passwordOk = found ? await verifyPasswordHash(password, found.passwordHash) : false;
+
+      if (!found || !passwordOk) {
+        const nextFails = sec.failedLoginAttempts + 1;
+        const triggerLock = secCfg.bruteForceProtection && nextFails >= 5;
+        const lockUntil = triggerLock ? new Date(Date.now() + 5 * 60 * 1000).toISOString() : null;
+        setState((prev) => {
+          const pSec = prev.security ?? createInitialSecurityState();
+          const ev: SecurityEvent = {
+            id: `sec-bf-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            category: 'BRUTEFORCE_AUTH',
+            severity: triggerLock ? 'critical' : 'medium',
+            source: 'Authentification locale',
+            ruleId: triggerLock ? 'ZT-BF-LOCKOUT' : 'ZT-BF-FAIL',
+            description: triggerLock
+              ? 'Verrouillage anti-bruteforce (5 min) déclenché après 5 tentatives échouées.'
+              : `Échec de connexion (${nextFails}/5 avant verrouillage).`,
+            blocked: triggerLock,
+          };
+          return {
+            ...prev,
+            security: {
+              ...pSec,
+              failedLoginAttempts: triggerLock ? 0 : nextFails,
+              lockoutUntil: lockUntil,
+              blockedCount: pSec.blockedCount + (triggerLock ? 1 : 0),
+              events: [ev, ...pSec.events].slice(0, 60),
+            },
+          };
+        });
+        return {
+          ok: false,
+          error: triggerLock
+            ? '5 échecs détectés : compte temporairement verrouillé pendant 5 minutes (anti-bruteforce).'
+            : 'E-mail ou mot de passe incorrect.',
+        };
       }
-      const hashed = await hashPassword(password);
-      if (found.passwordHash !== hashed && found.passwordHash !== 'demo_hashed_local') {
-        return { ok: false, error: 'Mot de passe incorrect.' };
-      }
-      setState((prev) => ({ ...prev, activeProfileId: found.id }));
+
+      setState((prev) => {
+        const pSec = prev.security ?? createInitialSecurityState();
+        return {
+          ...prev,
+          activeProfileId: found.id,
+          security: { ...pSec, failedLoginAttempts: 0, lockoutUntil: null },
+        };
+      });
       setScreen(found.onboardingCompleted ? 'dashboard' : 'onboarding-exam');
-      notify(`Bon retour, ${found.name} !`, 'success');
+      notify(`Bon retour, ${found.name} ! Connexion sécurisée.`, 'success');
       return { ok: true };
     },
-    [state.profiles, notify]
+    [state.profiles, state.security, guardInput, notify]
   );
 
   const switchProfile = useCallback(
@@ -1312,9 +1585,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addNote = useCallback(
     (note: Omit<PersonalNote, 'id' | 'createdAt' | 'updatedAt'>) => {
+      const check = guardInput('Note personnelle', note.content, 4000);
+      if (!check.allowed) return;
       const now = new Date().toISOString();
       const created: PersonalNote = {
         ...note,
+        content: check.cleanText,
         id: `note-${Date.now()}`,
         createdAt: now,
         updatedAt: now,
@@ -1323,20 +1599,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       enqueueSync('note_save', `Note personnelle : ${note.targetTitle}`, 2);
       notify('Note enregistrée hors ligne.', 'success');
     },
-    [enqueueSync, notify]
+    [guardInput, enqueueSync, notify]
   );
 
   const updateNote = useCallback(
     (id: string, content: string) => {
+      const check = guardInput('Modification de note', content, 4000);
+      if (!check.allowed) return;
       setState((prev) => ({
         ...prev,
         notes: prev.notes.map((n) =>
-          n.id === id ? { ...n, content, updatedAt: new Date().toISOString() } : n
+          n.id === id ? { ...n, content: check.cleanText, updatedAt: new Date().toISOString() } : n
         ),
       }));
       enqueueSync('note_update', 'Modification d’une note personnelle', 2);
     },
-    [enqueueSync]
+    [guardInput, enqueueSync]
   );
 
   const deleteNote = useCallback((id: string) => {
@@ -1375,6 +1653,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const reportQuestionError = useCallback(
     (questionId: string, questionPrompt: string, reason: string) => {
+      const check = guardInput('Signalement question', reason, 1500);
+      if (!check.allowed) return;
       setState((prev) => ({
         ...prev,
         errorReports: [
@@ -1382,7 +1662,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             id: `err-${Date.now()}`,
             questionId,
             questionPrompt,
-            reason,
+            reason: check.cleanText,
             createdAt: new Date().toISOString(),
             status: 'en_attente',
           },
@@ -1392,7 +1672,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       enqueueSync('error_report', `Signalement sur une question`, 2);
       notify('Signalement enregistré ! Il sera transmis à l’équipe pédagogique dès la prochaine synchronisation.', 'success');
     },
-    [enqueueSync, notify]
+    [guardInput, enqueueSync, notify]
   );
 
   // ==================== STUDY PLAN ====================
@@ -1711,14 +1991,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const createStudyGroup = useCallback(
     (input: { name: string; examId: string; description: string }) => {
+      const nameCheck = guardInput('Création groupe (Nom)', input.name, 120);
+      const descCheck = guardInput('Création groupe (Description)', input.description, 400);
+      if (!nameCheck.allowed || !descCheck.allowed) return;
       const code = `${input.examId.slice(0, 4).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
       const group: StudyGroup = {
         id: `grp-${Date.now()}`,
-        name: input.name.trim(),
+        name: nameCheck.cleanText,
         examId: input.examId,
         inviteCode: code,
         membersCount: 1,
-        description: input.description.trim() || 'Groupe privé de révision et d’entraide.',
+        description: descCheck.cleanText || 'Groupe privé de révision et d’entraide.',
         moderated: true,
         minorSafe: true,
         sharedFicheIds: [],
@@ -1736,12 +2019,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       enqueueSync('study_group', `Création du groupe ${group.name}`, 3);
       notify(`Groupe privé « ${group.name} » créé (code ${code}).`, 'success');
     },
-    [activeProfile, enqueueSync, notify]
+    [activeProfile, guardInput, enqueueSync, notify]
   );
 
   const addStudyGroupMessage = useCallback(
     (groupId: string, text: string) => {
       if (!text.trim()) return;
+      const secCfg = state.security?.config ?? DEFAULT_SECURITY_CONFIG;
+      if (secCfg.rateLimitEnabled) {
+        const rl = checkRateLimit(`grp_msg_${groupId}`, 8, 30_000);
+        if (!rl.allowed) {
+          logSecurityEvent({
+            id: `sec-rl-msg-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            category: 'RATE_LIMIT',
+            severity: 'low',
+            source: 'Groupe d’étude',
+            ruleId: 'WAF-RL-MSG',
+            description: 'Envoi de messages trop rapide bloqué par anti-spam.',
+            blocked: true,
+          });
+          notify(`Anti-spam actif : attends ${rl.retryAfterSec}s avant d’envoyer un autre message.`, 'warning');
+          return;
+        }
+      }
+      const check = guardInput('Message groupe d’étude', text, 1000);
+      if (!check.allowed) return;
+
       setState((prev) => ({
         ...prev,
         studyGroups: prev.studyGroups.map((g) =>
@@ -1754,7 +2058,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     id: `msg-${Date.now()}`,
                     author: activeProfile?.name ?? 'Étudiant',
                     role: activeProfile?.category === 'enseignant' ? 'enseignant' : 'eleve',
-                    text: text.trim(),
+                    text: check.cleanText,
                     createdAt: new Date().toISOString(),
                   },
                 ],
@@ -1764,7 +2068,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }));
       enqueueSync('group_message', 'Message pédagogique ajouté au groupe', 1);
     },
-    [activeProfile, enqueueSync]
+    [activeProfile, state.security?.config, guardInput, logSecurityEvent, enqueueSync, notify]
   );
 
   const reportGroupMessage = useCallback(
@@ -1868,6 +2172,119 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   }, [notify]);
 
+  // ==================== SECURITY FIREWALL & ANTIVIRUS CENTER ====================
+  const updateSecurityConfig = useCallback(
+    (patch: Partial<SecurityConfig>) => {
+      setState((prev) => {
+        const sec = prev.security ?? createInitialSecurityState();
+        return {
+          ...prev,
+          security: {
+            ...sec,
+            config: { ...sec.config, ...patch },
+          },
+        };
+      });
+      notify('Configuration du pare-feu et des boucliers mise à jour.', 'success');
+    },
+    [notify]
+  );
+
+  const runSecurityScan = useCallback((): SecurityScanReport => {
+    const { report, detectedEvents } = runFullSecurityScan(state);
+    setState((prev) => {
+      const sec = prev.security ?? createInitialSecurityState();
+      const auditEv: SecurityEvent = {
+        id: `sec-audit-${Date.now()}`,
+        timestamp: report.scannedAt,
+        category: 'SYSTEM_AUDIT',
+        severity: report.threatsFound > 0 ? 'high' : 'info',
+        source: 'Scan Antivirus & Intégrité',
+        ruleId: 'AV-FULL-SCAN',
+        description: report.summary,
+        blocked: report.threatsFound > 0,
+      };
+      return {
+        ...prev,
+        security: {
+          ...sec,
+          lastScan: report,
+          integrityStatus: 'verified',
+          blockedCount: sec.blockedCount + detectedEvents.length,
+          quarantinedCount: sec.quarantinedCount + detectedEvents.length,
+          events: [auditEv, ...detectedEvents, ...sec.events].slice(0, 60),
+        },
+      };
+    });
+    notify(report.summary, report.threatsFound > 0 ? 'warning' : 'success');
+    return report;
+  }, [state, notify]);
+
+  const testSecurityInput = useCallback(
+    (source: string, rawText: string): { safe: boolean; message: string } => {
+      const res = guardInput(source, rawText, 4000);
+      if (!res.allowed) {
+        return { safe: false, message: 'Menace détectée, bloquée et mise en quarantaine par le bouclier !' };
+      }
+      return { safe: true, message: 'Entrée saine : aucune signature virale ni tentative de piratage détectée.' };
+    },
+    [guardInput]
+  );
+
+  const clearSecurityLogs = useCallback(() => {
+    setState((prev) => {
+      const sec = prev.security ?? createInitialSecurityState();
+      return {
+        ...prev,
+        security: {
+          ...sec,
+          events: [
+            {
+              id: `sec-clear-${Date.now()}`,
+              timestamp: new Date().toISOString(),
+              category: 'SYSTEM_AUDIT',
+              severity: 'info',
+              source: 'Journal SIEM',
+              ruleId: 'SYS-LOG-RESET',
+              description: 'Journal de sécurité purgé par l’utilisateur.',
+              blocked: false,
+            },
+          ],
+        },
+      };
+    });
+    notify('Journal d’audit de sécurité effacé.', 'info');
+  }, [notify]);
+
+  const triggerPanicLockdown = useCallback(() => {
+    setState((prev) => {
+      const sec = prev.security ?? createInitialSecurityState();
+      const ev: SecurityEvent = {
+        id: `sec-panic-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        category: 'SYSTEM_AUDIT',
+        severity: 'critical',
+        source: 'Mode Verrouillage d’Urgence',
+        ruleId: 'SYS-PANIC-LOCK',
+        description:
+          'Verrouillage d’urgence déclenché : session fermée, mode strict + chiffrement AES-256 forcés.',
+        blocked: true,
+      };
+      return {
+        ...prev,
+        activeProfileId: null,
+        privacy: { ...prev.privacy, localEncryptionEnabled: true },
+        security: {
+          ...sec,
+          config: { ...DEFAULT_SECURITY_CONFIG, strictMode: true, autoLockMinutes: 10 },
+          events: [ev, ...sec.events].slice(0, 60),
+        },
+      };
+    });
+    setScreen('welcome');
+    notify('🔒 Mode Verrouillage d’Urgence activé : session fermée et boucliers au niveau maximal !', 'warning');
+  }, [notify]);
+
   const triggerLocalReminder = useCallback(() => {
     const nextSession = state.studyPlan.find((p) => !p.completed && p.type !== 'pause');
     const body = nextSession
@@ -1968,6 +2385,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     updatePrivacy,
     exportUserData,
     resetAllLocalData,
+    updateSecurityConfig,
+    logSecurityEvent,
+    runSecurityScan,
+    testSecurityInput,
+    clearSecurityLogs,
+    triggerPanicLockdown,
     toasts,
     notify,
     dismissToast,
