@@ -436,6 +436,94 @@ export const PedagogicalDiagram: React.FC<{
     );
   }
 
+  if (diagramId === 'modele_osi') {
+    const layers = [
+      { n: 7, name: '7. Application (HTTP, DNS, SMTP)', color: '#1D4ED8' },
+      { n: 6, name: '6. Présentation (TLS, encodage)', color: '#2563EB' },
+      { n: 5, name: '5. Session (contrôle dialogue)', color: '#0284C7' },
+      { n: 4, name: '4. Transport (TCP / UDP — Ports)', color: '#059669' },
+      { n: 3, name: '3. Réseau (IP, Routage — Paquets)', color: '#D97706' },
+      { n: 2, name: '2. Liaison (Ethernet, Wi-Fi — MAC)', color: '#EA580C' },
+      { n: 1, name: '1. Physique (Fibre, Ondes, Bits)', color: '#DC2626' },
+    ];
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 185" className="mx-auto h-44 w-full max-w-md" role="img" aria-label="Les 7 couches du modèle OSI de la couche Physique 1 à la couche Application 7">
+          {layers.map((l, idx) => (
+            <g key={l.n}>
+              <rect x="30" y={6 + idx * 25} width="300" height="21" rx="5" fill={l.color} />
+              <text x="180" y={20 + idx * 25} textAnchor="middle" fontSize="10" fontWeight="bold" fill="#FFFFFF">
+                {l.name}
+              </text>
+            </g>
+          ))}
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : pile des 7 couches du modèle OSI (du signal physique aux applications réseau).
+        </figcaption>
+      </figure>
+    );
+  }
+
+  if (diagramId === 'poutre_flexion') {
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 155" className="mx-auto h-36 w-full max-w-md" role="img" aria-label="Poutre isostatique sur appuis simples avec charge concentrée P au milieu et moment maximal PL sur 4">
+          <line x1="180" y1="16" x2="180" y2="62" stroke="#DC2626" strokeWidth="3" />
+          <polygon points="180,68 173,56 187,56" fill="#DC2626" />
+          <text x="192" y="34" fontSize="11" fontWeight="bold" fill="#DC2626">Charge P</text>
+          <rect x="40" y="70" width="280" height="14" rx="3" fill="#CBD5E1" stroke="#334155" strokeWidth="1.8" />
+          <polygon points="48,84 36,104 60,104" fill="#1D4ED8" />
+          <polygon points="312,84 300,104 324,104" fill="#059669" />
+          <text x="48" y="120" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#1E3A8A">R_A = P/2</text>
+          <text x="312" y="120" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#065F46">R_B = P/2</text>
+          <line x1="48" y1="136" x2="312" y2="136" stroke="#64748B" strokeWidth="1.5" />
+          <text x="180" y="132" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#0F172A">Portée L  |  M_max = (P · L) / 4 au centre</text>
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : poutre isostatique chargée au milieu (réactions d’appuis P/2 et moment fléchissant maximal).
+        </figcaption>
+      </figure>
+    );
+  }
+
+  if (diagramId === 'pyramide_alimentaire') {
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 155" className="mx-auto h-36 w-full max-w-md" role="img" aria-label="Répartition équilibrée des apports énergétiques : Glucides 50-55%, Lipides 30-35%, Protéines 12-15%">
+          <rect x="24" y="22" width="312" height="28" rx="6" fill="#FEF3C7" stroke="#D97706" strokeWidth="1.8" />
+          <text x="180" y="40" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#92400E">Glucides complexes : 50 % à 55 % (4 kcal/g)</text>
+          <rect x="52" y="60" width="256" height="28" rx="6" fill="#EFF6FF" stroke="#2563EB" strokeWidth="1.8" />
+          <text x="180" y="78" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#1E3A8A">Lipides (acides gras insaturés) : 30 % à 35 % (9 kcal/g)</text>
+          <rect x="82" y="98" width="196" height="28" rx="6" fill="#ECFDF5" stroke="#059669" strokeWidth="1.8" />
+          <text x="180" y="116" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#065F46">Protéines : 12 % à 15 % (4 kcal/g)</text>
+          <text x="180" y="144" textAnchor="middle" fontSize="9.5" fill="#475569">+ Eau potable (1,5–2 L/j), fibres, vitamines &amp; minéraux</text>
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : repères nutritionnels recommandés (équilibre énergétique des macronutriments).
+        </figcaption>
+      </figure>
+    );
+  }
+
+  if (diagramId === 'pyramide_inversee') {
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 155" className="mx-auto h-36 w-full max-w-md" role="img" aria-label="Pyramide inversée journalistique : Essentiel 5W en tête, détails importants au milieu, contexte en bas">
+          <polygon points="24,14 336,14 294,54 66,54" fill="#1D4ED8" />
+          <text x="180" y="38" textAnchor="middle" fontSize="10.5" fontWeight="bold" fill="#FFFFFF">1. ATTAQUE / CHAPÔ : 5W (Qui, Quoi, Où, Quand, Pourquoi)</text>
+          <polygon points="72,60 288,60 248,100 112,100" fill="#0284C7" />
+          <text x="180" y="84" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#FFFFFF">2. DÉTAILS &amp; CITATIONS VÉRIFIÉES</text>
+          <polygon points="118,106 242,106 180,146" fill="#059669" />
+          <text x="180" y="124" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#FFFFFF">3. CONTEXTE</text>
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : règle journalistique de la pyramide inversée (l’information essentielle dès le premier paragraphe).
+        </figcaption>
+      </figure>
+    );
+  }
+
   return (
     <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
       <svg viewBox="0 0 360 130" className="mx-auto h-32 w-full max-w-md" role="img" aria-label="Boucle itérative Scrum Sprint">

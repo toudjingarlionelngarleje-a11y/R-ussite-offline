@@ -51,6 +51,16 @@ import {
   APEX_QUESTIONS,
   APEX_SUBJECTS,
 } from './apexCatalog';
+import {
+  ZENITH_ANNALES,
+  ZENITH_CHAPTERS,
+  ZENITH_COURSES,
+  ZENITH_EXAMS,
+  ZENITH_FICHES,
+  ZENITH_FLASHCARDS,
+  ZENITH_QUESTIONS,
+  ZENITH_SUBJECTS,
+} from './zenithCatalog';
 
 export { COUNTRIES, USER_CATEGORIES };
 
@@ -65,6 +75,7 @@ export const EXAMS = [
   ...MEGA_EXAMS,
   ...ULTRA_EXAMS,
   ...APEX_EXAMS,
+  ...ZENITH_EXAMS,
 ];
 
 const EXTRA_EXAM_LINKS: Record<string, string[]> = {
@@ -74,6 +85,8 @@ const EXTRA_EXAM_LINKS: Record<string, string[]> = {
     'concours-ingenieur',
     'concours-ens-enseignement',
     'concours-energie-btp',
+    'concours-telecoms',
+    'concours-genie-civil',
   ],
   physique: [
     'concours-medecine',
@@ -81,8 +94,15 @@ const EXTRA_EXAM_LINKS: Record<string, string[]> = {
     'concours-paramedical',
     'concours-agronomie',
     'concours-energie-btp',
+    'concours-genie-civil',
   ],
-  svt: ['bepc', 'concours-medecine', 'concours-paramedical', 'concours-agronomie'],
+  svt: [
+    'bepc',
+    'concours-medecine',
+    'concours-paramedical',
+    'concours-agronomie',
+    'concours-nutrition',
+  ],
   philo: ['bac-litteraire'],
   droit: [
     'bts-compta-info',
@@ -90,36 +110,65 @@ const EXTRA_EXAM_LINKS: Record<string, string[]> = {
     'concours-magistrature',
     'concours-diplomatie',
   ],
-  culture_gen: ['concours-police-douanes', 'concours-magistrature', 'concours-diplomatie'],
+  culture_gen: [
+    'concours-police-douanes',
+    'concours-magistrature',
+    'concours-diplomatie',
+    'concours-journalisme',
+  ],
   economie: [
     'bac-litteraire',
     'bts-compta-info',
     'concours-finances-banque',
     'concours-diplomatie',
   ],
-  gestion_projet: ['certif-entrepreneuriat', 'concours-energie-btp', 'certif-supply-rh'],
-  cybersecurite: ['certif-entrepreneuriat', 'certif-data-ia'],
+  gestion_projet: [
+    'certif-entrepreneuriat',
+    'concours-energie-btp',
+    'certif-supply-rh',
+    'concours-genie-civil',
+  ],
+  cybersecurite: ['certif-entrepreneuriat', 'certif-data-ia', 'concours-telecoms'],
   francais: [
     'concours-police-douanes',
     'concours-ens-enseignement',
     'concours-magistrature',
     'concours-paramedical',
+    'concours-journalisme',
   ],
   histoire_geo: ['concours-ens-enseignement'],
-  anglais: ['concours-ingenieur', 'certif-data-ia', 'concours-diplomatie', 'concours-energie-btp'],
+  anglais: [
+    'concours-ingenieur',
+    'certif-data-ia',
+    'concours-diplomatie',
+    'concours-energie-btp',
+    'concours-telecoms',
+    'concours-journalisme',
+  ],
   informatique: [
     'concours-ingenieur',
     'certif-entrepreneuriat',
     'certif-data-ia',
     'concours-energie-btp',
+    'concours-telecoms',
   ],
   comptabilite: ['certif-entrepreneuriat', 'concours-finances-banque', 'certif-supply-rh'],
   psychotechnique: ['concours-magistrature', 'concours-paramedical', 'concours-finances-banque'],
-  statistiques: ['certif-data-ia', 'concours-finances-banque', 'concours-agronomie'],
+  statistiques: [
+    'certif-data-ia',
+    'concours-finances-banque',
+    'concours-agronomie',
+    'concours-nutrition',
+  ],
   educ_civique: ['concours-agronomie'],
   marketing_entrep: ['certif-supply-rh'],
   droit_ohada: ['certif-supply-rh'],
   arabe: ['concours-diplomatie'],
+  energies_renouv: ['concours-telecoms', 'concours-genie-civil'],
+  relations_inter: ['concours-journalisme'],
+  sante_publique: ['concours-nutrition'],
+  anatomie_physio: ['concours-nutrition'],
+  agronomie_env: ['concours-nutrition'],
 };
 
 export const SUBJECTS = [
@@ -128,6 +177,7 @@ export const SUBJECTS = [
   ...MEGA_SUBJECTS,
   ...ULTRA_SUBJECTS,
   ...APEX_SUBJECTS,
+  ...ZENITH_SUBJECTS,
 ].map((s) => ({
   ...s,
   examIds: Array.from(new Set([...s.examIds, ...(EXTRA_EXAM_LINKS[s.id] ?? [])])),
@@ -139,6 +189,7 @@ export const CHAPTERS = [
   ...MEGA_CHAPTERS,
   ...ULTRA_CHAPTERS,
   ...APEX_CHAPTERS,
+  ...ZENITH_CHAPTERS,
 ];
 export const COURSES = [
   ...BASE_COURSES,
@@ -146,6 +197,7 @@ export const COURSES = [
   ...MEGA_COURSES,
   ...ULTRA_COURSES,
   ...APEX_COURSES,
+  ...ZENITH_COURSES,
 ];
 export const QUESTIONS = [
   ...BASE_QUESTIONS,
@@ -153,6 +205,7 @@ export const QUESTIONS = [
   ...MEGA_QUESTIONS,
   ...ULTRA_QUESTIONS,
   ...APEX_QUESTIONS,
+  ...ZENITH_QUESTIONS,
 ];
 export const ANNALES = [
   ...BASE_ANNALES,
@@ -160,6 +213,7 @@ export const ANNALES = [
   ...MEGA_ANNALES,
   ...ULTRA_ANNALES,
   ...APEX_ANNALES,
+  ...ZENITH_ANNALES,
 ];
 export const FICHES = [
   ...BASE_FICHES,
@@ -167,6 +221,7 @@ export const FICHES = [
   ...MEGA_FICHES,
   ...ULTRA_FICHES,
   ...APEX_FICHES,
+  ...ZENITH_FICHES,
 ];
 export const FLASHCARDS = [
   ...BASE_FLASHCARDS,
@@ -174,4 +229,5 @@ export const FLASHCARDS = [
   ...MEGA_FLASHCARDS,
   ...ULTRA_FLASHCARDS,
   ...APEX_FLASHCARDS,
+  ...ZENITH_FLASHCARDS,
 ];

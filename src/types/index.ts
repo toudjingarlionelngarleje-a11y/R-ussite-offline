@@ -149,7 +149,11 @@ export interface CourseSection {
     | 'photovoltaique'
     | 'cycle_azote'
     | 'pharmacocinetique'
-    | 'incoterms_chaine';
+    | 'incoterms_chaine'
+    | 'modele_osi'
+    | 'poutre_flexion'
+    | 'pyramide_alimentaire'
+    | 'pyramide_inversee';
 }
 
 export interface Course {
