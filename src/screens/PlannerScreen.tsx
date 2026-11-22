@@ -36,6 +36,7 @@ export const PlannerScreen: React.FC = () => {
   const {
     state,
     activeProfile,
+    allQuestions,
     regenerateStudyPlan,
     togglePlanItemComplete,
     movePlanItemDate,
@@ -43,6 +44,9 @@ export const PlannerScreen: React.FC = () => {
     addCustomPlanGoal,
     toggleRestDay,
     updateActiveProfile,
+    setFatigueLevel,
+    setPlanMode,
+    startPractice,
     triggerLocalReminder,
     navigate,
   } = useApp();
@@ -93,6 +97,97 @@ export const PlannerScreen: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Smart Time Management: Fatigue, Special Modes & Quick Sessions */}
+      <section className="hc-card grid gap-4 rounded-2xl border border-blue-200 bg-blue-50/40 p-5 lg:grid-cols-3 dark:border-blue-900 dark:bg-blue-950/20">
+        <div>
+          <p className="text-xs font-bold uppercase text-slate-600 dark:text-slate-300">
+            Niveau d’énergie / fatigue aujourd’hui
+          </p>
+          <div className="mt-2 flex gap-1.5">
+            {(
+              [
+                { id: 'frais', label: 'Frais' },
+                { id: 'normal', label: 'Normal' },
+                { id: 'fatigue', label: 'Fatigué' },
+              ] as const
+            ).map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setFatigueLevel(f.id)}
+                className={`flex-1 rounded-xl px-2.5 py-2 text-xs font-bold transition ${
+                  state.fatigueLevel === f.id
+                    ? 'bg-blue-700 text-white'
+                    : 'border border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-bold uppercase text-slate-600 dark:text-slate-300">
+            Mode de planification
+          </p>
+          <div className="mt-2 grid grid-cols-2 gap-1.5">
+            {(
+              [
+                { id: 'standard', label: 'Standard' },
+                { id: 'express', label: 'Express' },
+                { id: 'derniere_semaine', label: 'Dernière sem.' },
+                { id: 'veille', label: 'Veille d’exam' },
+              ] as const
+            ).map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setPlanMode(m.id)}
+                className={`rounded-xl px-2 py-1.5 text-[11px] font-bold transition ${
+                  state.planMode === m.id
+                    ? 'bg-emerald-700 text-white'
+                    : 'border border-slate-300 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-bold uppercase text-slate-600 dark:text-slate-300">
+            Lancer une session calibrée
+          </p>
+          <div className="mt-2 grid grid-cols-4 gap-1.5">
+            {[
+              { min: 5, count: 3 },
+              { min: 15, count: 6 },
+              { min: 25, count: 10 },
+              { min: 45, count: 15 },
+            ].map((s) => (
+              <button
+                key={s.min}
+                type="button"
+                onClick={() =>
+                  startPractice({
+                    mode: s.min >= 25 ? 'examen_blanc' : 'rapide',
+                    title: `Session calibrée (${s.min} min)`,
+                    questionIds: allQuestions.slice(0, s.count).map((q) => q.id),
+                    durationMinutes: s.min,
+                    timerMode: 'countdown',
+                  })
+                }
+                className="rounded-xl border border-blue-300 bg-white py-2 text-xs font-extrabold text-blue-800 hover:bg-blue-50 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-200"
+              >
+                {s.min}m
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Parameters Card */}
       <section className="hc-card grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:grid-cols-3 dark:border-slate-800 dark:bg-slate-900">

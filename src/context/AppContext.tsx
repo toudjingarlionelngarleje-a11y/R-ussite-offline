@@ -13,8 +13,11 @@ import { isSupabaseConfigured, syncStateWithSupabase } from '../lib/supabaseSync
 import {
   AccessibilitySettings,
   AppState,
+  DiagnosticResult,
   DownloadedItem,
+  ErrorReport,
   Fiche,
+  Flashcard,
   HighlightItem,
   InProgressSession,
   MasteryLevel,
@@ -23,6 +26,7 @@ import {
   Question,
   ScreenId,
   SessionRecord,
+  StudyGroup,
   StudyPlanItem,
   SyncStatus,
   TeacherDraft,
@@ -42,6 +46,8 @@ export interface PracticeLaunchConfig {
   allowBackNavigation?: boolean;
   focusLock?: boolean;
   immediateFeedback?: boolean;
+  penaltyPerWrong?: number;
+  officialSimulation?: boolean;
 }
 
 const DEFAULT_ACCESSIBILITY: AccessibilitySettings = {
@@ -254,6 +260,59 @@ function createDemoState(): AppState {
     teacherDrafts: [],
     customQuestions: [],
     customFiches: [],
+    customFlashcards: [],
+    diagnosticResult: null,
+    fatigueLevel: 'normal',
+    planMode: 'standard',
+    studyGroups: [
+      {
+        id: 'grp-bac-2026',
+        name: 'Entraide Bac Scientifique & Littéraire',
+        examId: 'bac-scientifique',
+        inviteCode: 'BAC-2026',
+        membersCount: 18,
+        description: 'Partage de fiches vérifiées, entraide sur les exercices de Maths, Physique et Français.',
+        moderated: true,
+        minorSafe: true,
+        sharedFicheIds: ['fiche-maths-second-degre', 'fiche-fr-figures'],
+        messages: [
+          {
+            id: 'msg-1',
+            author: 'Prof. Ngarleje (Modérateur)',
+            role: 'enseignant',
+            text: 'Bienvenue dans le groupe privé ! Pensez à relire la fiche Second Degré avant de tenter l’annale 2024.',
+            createdAt: new Date(Date.now() - 86400000).toISOString(),
+          },
+          {
+            id: 'msg-2',
+            author: 'Fatima K.',
+            role: 'eleve',
+            text: 'Astuce qui m’a aidée : vérifier S = -b/a et P = c/a prend 10 secondes et évite les erreurs de signe !',
+            createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+          },
+        ],
+      },
+      {
+        id: 'grp-enam-2026',
+        name: 'Prépa Concours ENAM & Fonction Publique',
+        examId: 'concours-admin',
+        inviteCode: 'ENAM-PRO',
+        membersCount: 12,
+        description: 'Groupe de révision Droit constitutionnel, Économie publique, Histoire contemporaine et Culture générale.',
+        moderated: true,
+        minorSafe: true,
+        sharedFicheIds: ['fiche-droit-pouvoirs', 'fiche-hg-decolonisation'],
+        messages: [
+          {
+            id: 'msg-3',
+            author: 'Moussa Oumar',
+            role: 'eleve',
+            text: 'Je viens de télécharger le sujet ENAM 2024 hors ligne pour le traiter ce soir dans les transports.',
+            createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+          },
+        ],
+      },
+    ],
     accessibility: DEFAULT_ACCESSIBILITY,
     privacy: DEFAULT_PRIVACY,
   };
@@ -290,9 +349,25 @@ interface AppContextValue {
   showPlanModal: boolean;
   setShowPlanModal: (show: boolean) => void;
 
-  // Derived catalogs (base + teacher published)
+  // Derived catalogs (base + teacher published + generated)
   allQuestions: Question[];
   allFiches: Fiche[];
+  allFlashcards: Flashcard[];
+
+  // Coach, Diagnostic, Generator, Collaboration & Admin
+  saveDiagnosticResult: (result: DiagnosticResult, applyToProfile?: boolean) => void;
+  addGeneratedContent: (payload: {
+    fiche?: Fiche;
+    questions?: Question[];
+    flashcards?: Flashcard[];
+  }) => void;
+  setFatigueLevel: (level: AppState['fatigueLevel']) => void;
+  setPlanMode: (mode: AppState['planMode']) => void;
+  createStudyGroup: (input: { name: string; examId: string; description: string }) => void;
+  addStudyGroupMessage: (groupId: string, text: string) => void;
+  reportGroupMessage: (groupId: string, messageId: string) => void;
+  updateErrorReportStatus: (reportId: string, status: ErrorReport['status']) => void;
+  launchEnamDemoScenario: () => void;
 
   // Network & Sync
   isOnline: boolean;
@@ -411,7 +486,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     loadPersistedState().then((saved) => {
       if (!mounted) return;
       if (saved) {
-        setState(saved);
+        const defaults = createEmptyInitialState();
+        setState({
+          ...defaults,
+          ...saved,
+          customFlashcards: saved.customFlashcards ?? [],
+          diagnosticResult: saved.diagnosticResult ?? null,
+          studyGroups: saved.studyGroups?.length ? saved.studyGroups : defaults.studyGroups,
+          fatigueLevel: saved.fatigueLevel ?? 'normal',
+          planMode: saved.planMode ?? 'standard',
+        });
         if (saved.activeProfileId) {
           const prof = saved.profiles.find((p) => p.id === saved.activeProfileId);
           if (prof) {
@@ -480,6 +564,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const allFiches = useMemo(
     () => [...FICHES, ...state.customFiches],
     [state.customFiches]
+  );
+
+  const allFlashcards = useMemo(
+    () => [...FLASHCARDS, ...state.customFlashcards],
+    [state.customFlashcards]
   );
 
   const syncStatus: SyncStatus = useMemo(() => {
@@ -875,6 +964,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         allowBackNavigation: config.allowBackNavigation ?? true,
         focusLock: config.focusLock ?? isExam,
         immediateFeedback: config.immediateFeedback ?? config.mode === 'libre',
+        penaltyPerWrong: config.penaltyPerWrong,
+        officialSimulation: config.officialSimulation,
       };
       setState((prev) => ({ ...prev, inProgressSession: session }));
       setScreen(isExam ? 'mock-exam' : 'training');
@@ -1310,6 +1401,286 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     notify('Toutes les données locales ont été réinitialisées.', 'warning');
   }, [notify]);
 
+  const saveDiagnosticResult = useCallback(
+    (result: DiagnosticResult, applyToProfile = true) => {
+      setState((prev) => {
+        const profiles =
+          applyToProfile && prev.activeProfileId
+            ? prev.profiles.map((p) =>
+                p.id === prev.activeProfileId
+                  ? {
+                      ...p,
+                      currentLevel: result.estimatedLevel,
+                      dailyMinutes: Math.max(20, Math.round((result.recommendedWeeklyHours * 60) / 6)),
+                    }
+                  : p
+              )
+            : prev.profiles;
+        const updatedProfile = profiles.find((p) => p.id === prev.activeProfileId) ?? null;
+        const weakScores: Record<string, number> = {};
+        result.subjectScores.forEach((s) => {
+          weakScores[s.subjectId] = s.score;
+        });
+        const nextPlan =
+          applyToProfile && updatedProfile
+            ? generateAdaptiveStudyPlan(updatedProfile, SUBJECTS, weakScores, 0)
+            : prev.studyPlan;
+        return {
+          ...prev,
+          profiles,
+          diagnosticResult: result,
+          studyPlan: nextPlan,
+        };
+      });
+      enqueueSync('diagnostic', 'Enregistrement du bilan de positionnement adaptatif', 4);
+      notify(
+        applyToProfile
+          ? 'Bilan de positionnement enregistré et programme personnalisé mis à jour !'
+          : 'Bilan de positionnement enregistré hors ligne.',
+        'success'
+      );
+    },
+    [enqueueSync, notify]
+  );
+
+  const addGeneratedContent = useCallback(
+    (payload: { fiche?: Fiche; questions?: Question[]; flashcards?: Flashcard[] }) => {
+      setState((prev) => {
+        const nextFiches = payload.fiche ? [payload.fiche, ...prev.customFiches] : prev.customFiches;
+        const nextQuestions = payload.questions?.length
+          ? [...payload.questions, ...prev.customQuestions]
+          : prev.customQuestions;
+        const nextFlashcards = payload.flashcards?.length
+          ? [...payload.flashcards, ...prev.customFlashcards]
+          : prev.customFlashcards;
+
+        const nextDownloads = { ...prev.downloadedItems };
+        if (payload.fiche) {
+          nextDownloads[`fiche:${payload.fiche.id}`] = {
+            id: payload.fiche.id,
+            type: 'fiche',
+            title: payload.fiche.title,
+            subjectId: payload.fiche.subjectId,
+            sizeKb: payload.fiche.sizeKb,
+            downloadedAt: new Date().toISOString(),
+            version: 1,
+          };
+        }
+
+        return {
+          ...prev,
+          customFiches: nextFiches,
+          customQuestions: nextQuestions,
+          customFlashcards: nextFlashcards,
+          downloadedItems: nextDownloads,
+        };
+      });
+      enqueueSync('generated_content', 'Sauvegarde de contenus générés (fiche / QCM / flashcards)', 8);
+      notify('Contenus générés enregistrés et disponibles 100 % hors ligne !', 'success');
+    },
+    [enqueueSync, notify]
+  );
+
+  const setFatigueLevel = useCallback(
+    (level: AppState['fatigueLevel']) => {
+      setState((prev) => ({ ...prev, fatigueLevel: level }));
+      notify(
+        level === 'fatigue'
+          ? 'Mode énergie douce activé : sessions courtes (5–15 min) privilégiées.'
+          : level === 'frais'
+          ? 'Pleine forme enregistrée : sessions approfondies et examens blancs conseillés.'
+          : 'Niveau d’énergie normal enregistré.',
+        'info'
+      );
+    },
+    [notify]
+  );
+
+  const setPlanMode = useCallback(
+    (mode: AppState['planMode']) => {
+      setState((prev) => {
+        const factor =
+          mode === 'express' ? 0.5 : mode === 'veille' ? 0.6 : mode === 'derniere_semaine' ? 1.2 : 1;
+        const adjusted = prev.studyPlan.map((item) =>
+          item.type === 'pause'
+            ? item
+            : {
+                ...item,
+                durationMinutes: Math.max(5, Math.round((item.durationMinutes * factor) / 5) * 5),
+              }
+        );
+        return { ...prev, planMode: mode, studyPlan: adjusted };
+      });
+      const labels: Record<AppState['planMode'], string> = {
+        standard: 'Mode standard activé',
+        express: 'Mode révision express (sessions courtes 5–15 min)',
+        derniere_semaine: 'Mode dernière semaine (priorité annales & erreurs)',
+        veille: 'Mode veille d’examen (fiches légères & repos mental)',
+      };
+      notify(labels[mode], 'success');
+    },
+    [notify]
+  );
+
+  const createStudyGroup = useCallback(
+    (input: { name: string; examId: string; description: string }) => {
+      const code = `${input.examId.slice(0, 4).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const group: StudyGroup = {
+        id: `grp-${Date.now()}`,
+        name: input.name.trim(),
+        examId: input.examId,
+        inviteCode: code,
+        membersCount: 1,
+        description: input.description.trim() || 'Groupe privé de révision et d’entraide.',
+        moderated: true,
+        minorSafe: true,
+        sharedFicheIds: [],
+        messages: [
+          {
+            id: `msg-${Date.now()}`,
+            author: activeProfile?.name ?? 'Créateur',
+            role: activeProfile?.category === 'enseignant' ? 'enseignant' : 'eleve',
+            text: `Groupe créé ! Code d’invitation privé : ${code}. Restons bienveillants et axés sur la réussite.`,
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      };
+      setState((prev) => ({ ...prev, studyGroups: [group, ...prev.studyGroups] }));
+      enqueueSync('study_group', `Création du groupe ${group.name}`, 3);
+      notify(`Groupe privé « ${group.name} » créé (code ${code}).`, 'success');
+    },
+    [activeProfile, enqueueSync, notify]
+  );
+
+  const addStudyGroupMessage = useCallback(
+    (groupId: string, text: string) => {
+      if (!text.trim()) return;
+      setState((prev) => ({
+        ...prev,
+        studyGroups: prev.studyGroups.map((g) =>
+          g.id === groupId
+            ? {
+                ...g,
+                messages: [
+                  ...g.messages,
+                  {
+                    id: `msg-${Date.now()}`,
+                    author: activeProfile?.name ?? 'Étudiant',
+                    role: activeProfile?.category === 'enseignant' ? 'enseignant' : 'eleve',
+                    text: text.trim(),
+                    createdAt: new Date().toISOString(),
+                  },
+                ],
+              }
+            : g
+        ),
+      }));
+      enqueueSync('group_message', 'Message pédagogique ajouté au groupe', 1);
+    },
+    [activeProfile, enqueueSync]
+  );
+
+  const reportGroupMessage = useCallback(
+    (groupId: string, messageId: string) => {
+      setState((prev) => ({
+        ...prev,
+        studyGroups: prev.studyGroups.map((g) =>
+          g.id === groupId
+            ? {
+                ...g,
+                messages: g.messages.map((m) =>
+                  m.id === messageId ? { ...m, reported: true } : m
+                ),
+              }
+            : g
+        ),
+      }));
+      notify('Message signalé à la modération et masqué pour sécurité.', 'warning');
+    },
+    [notify]
+  );
+
+  const updateErrorReportStatus = useCallback(
+    (reportId: string, status: ErrorReport['status']) => {
+      setState((prev) => ({
+        ...prev,
+        errorReports: prev.errorReports.map((r) =>
+          r.id === reportId ? { ...r, status } : r
+        ),
+      }));
+      enqueueSync('admin_report', `Statut signalement mis à jour : ${status}`, 1);
+      notify(`Signalement marqué « ${status} ».`, 'success');
+    },
+    [enqueueSync, notify]
+  );
+
+  const launchEnamDemoScenario = useCallback(() => {
+    const examDate = new Date();
+    examDate.setDate(examDate.getDate() + 35);
+    const enamProfile: UserProfile = {
+      id: 'profile-demo-moussa-enam',
+      name: 'Moussa Oumar',
+      email: 'moussa.enam@exemple.td',
+      passwordHash: 'demo_hashed_local',
+      category: 'concours_admin',
+      country: 'Tchad',
+      studyLevel: 'Candidat libre / Concours administratif',
+      examId: 'concours-admin',
+      selectedSubjectIds: ['droit', 'economie', 'culture_gen', 'histoire_geo'],
+      examDate: formatIsoDate(examDate),
+      currentLevel: 'intermediaire',
+      dailyMinutes: 45,
+      restDays: [0],
+      targetScore: 80,
+      plan: 'gratuit',
+      createdAt: new Date().toISOString(),
+      onboardingCompleted: true,
+    };
+
+    const plan = generateAdaptiveStudyPlan(
+      enamProfile,
+      SUBJECTS,
+      { droit: 50, economie: 65, culture_gen: 75, histoire_geo: 60 },
+      2
+    );
+
+    setState((prev) => {
+      const exists = prev.profiles.some((p) => p.id === enamProfile.id);
+      return {
+        ...prev,
+        profiles: exists ? prev.profiles : [...prev.profiles, enamProfile],
+        activeProfileId: enamProfile.id,
+        studyPlan: plan,
+        downloadedItems: {
+          ...prev.downloadedItems,
+          'subject:droit': {
+            id: 'droit',
+            type: 'subject',
+            title: 'Pack complet Droit Constitutionnel & Administratif',
+            subjectId: 'droit',
+            sizeKb: 540,
+            downloadedAt: new Date().toISOString(),
+            version: 1,
+          },
+          'annale:ann-enam-hg-2024': {
+            id: 'ann-enam-hg-2024',
+            type: 'annale',
+            title: 'Concours ENAM & Douanes 2024 — Histoire Contemporaine & Intégration Africaine',
+            subjectId: 'histoire_geo',
+            sizeKb: 172,
+            downloadedAt: new Date().toISOString(),
+            version: 1,
+          },
+        },
+      };
+    });
+    setScreen('diagnostic');
+    notify(
+      'Scénario ENAM activé pour Moussa Oumar : commence par ton test de positionnement adaptatif !',
+      'success'
+    );
+  }, [notify]);
+
   const triggerLocalReminder = useCallback(() => {
     const nextSession = state.studyPlan.find((p) => !p.completed && p.type !== 'pause');
     const body = nextSession
@@ -1354,6 +1725,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setShowPlanModal,
     allQuestions,
     allFiches,
+    allFlashcards,
+    saveDiagnosticResult,
+    addGeneratedContent,
+    setFatigueLevel,
+    setPlanMode,
+    createStudyGroup,
+    addStudyGroupMessage,
+    reportGroupMessage,
+    updateErrorReportStatus,
+    launchEnamDemoScenario,
     isOnline,
     syncStatus,
     downloadingIds,

@@ -82,6 +82,11 @@ export const CorrectionScreen: React.FC = () => {
             <p className="text-xs font-semibold text-blue-100">
               {session.correctCount} / {session.totalCount} bonnes réponses
             </p>
+            {session.penalizedScorePercent !== undefined && (
+              <p className="mt-1 rounded-lg bg-white/15 px-2 py-0.5 text-[11px] font-bold">
+                Note concours (−{session.penaltyPerWrong} pt/err.) : {session.penalizedScorePercent} %
+              </p>
+            )}
           </div>
         </div>
 
@@ -121,6 +126,22 @@ export const CorrectionScreen: React.FC = () => {
             Conseil de gestion du temps :
           </p>
           <p className="mt-1">{timeAdvice}</p>
+          {(() => {
+            const skippedCount = session.answers.filter((a) => a.skipped).length;
+            const inattentionCount = session.answers.filter(
+              (a) => !a.isCorrect && !a.skipped && (a.timeSpentSeconds < 10 || a.modifiedCount > 0)
+            ).length;
+            const conceptualCount = Math.max(
+              0,
+              session.totalCount - session.correctCount - skippedCount - inattentionCount
+            );
+            return (
+              <p className="mt-1.5 text-[11px] font-semibold">
+                Diagnostic des erreurs : {inattentionCount} erreur(s) d’inattention / hésitation ·{' '}
+                {conceptualCount} lacune(s) conceptuelle(s) · {skippedCount} question(s) sans réponse.
+              </p>
+            );
+          })()}
           {slowest.length > 0 && (
             <p className="mt-1.5 text-[11px] opacity-85">
               Questions les plus longues :{' '}

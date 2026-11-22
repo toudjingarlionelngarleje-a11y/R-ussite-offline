@@ -4,7 +4,9 @@ import {
   BarChart3,
   BookMarked,
   BookOpen,
+  Bot,
   Calendar,
+  Compass,
   Download,
   FileText,
   GraduationCap,
@@ -18,11 +20,13 @@ import {
   PenTool,
   RefreshCw,
   Shield,
+  ShieldCheck,
   Sparkles,
   StickyNote,
   Sun,
   Timer,
   Users,
+  Wand2,
   Wifi,
   WifiOff,
   X,
@@ -74,9 +78,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   const navGroups: NavGroup[] = [
     {
-      label: 'Révision',
+      label: 'Coach & Révision',
       items: [
         { id: 'dashboard', label: 'Tableau de bord', icon: Home },
+        { id: 'diagnostic', label: 'Test de niveau IA', icon: Compass },
+        { id: 'coach', label: 'Assistant & Vocal', icon: Bot },
         { id: 'library', label: 'Bibliothèque', icon: BookOpen },
         { id: 'annales', label: 'Banque d’annales', icon: FileText },
         { id: 'fiche-viewer', label: 'Fiches synthétiques', icon: BookMarked },
@@ -87,16 +93,17 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       label: 'Entraînement',
       items: [
         { id: 'training', label: 'Modes d’entraînement', icon: Timer },
-        { id: 'mock-exam', label: 'Examen blanc', icon: GraduationCap },
+        { id: 'mock-exam', label: 'Examen blanc & Officiel', icon: GraduationCap },
         { id: 'mistakes', label: 'Révision erreurs', icon: AlertCircle, badge: mistakeCount },
         { id: 'planner', label: 'Programme perso', icon: Calendar },
-        { id: 'stats', label: 'Statistiques', icon: BarChart3 },
+        { id: 'stats', label: 'Compétences & Stats', icon: BarChart3 },
       ],
     },
     {
       label: 'Hors ligne & Personnel',
       items: [
         { id: 'downloads', label: 'Téléchargements', icon: Download },
+        { id: 'generator', label: 'Générateur de fiches', icon: Wand2 },
         { id: 'favorites', label: 'Favoris', icon: Heart },
         { id: 'notes', label: 'Notes personnelles', icon: StickyNote },
         { id: 'storage', label: 'Stockage appareil', icon: HardDrive },
@@ -104,9 +111,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       ],
     },
     {
-      label: 'Studio & Paramètres',
+      label: 'Communauté, Studio & Admin',
       items: [
+        { id: 'community', label: 'Groupes d’étude', icon: Users },
         { id: 'teacher', label: 'Espace enseignant', icon: PenTool },
+        { id: 'admin', label: 'Admin & Qualité', icon: ShieldCheck },
         { id: 'privacy', label: 'Confidentialité & Accès', icon: Shield },
       ],
     },

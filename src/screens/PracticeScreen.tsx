@@ -55,6 +55,8 @@ export const PracticeScreen: React.FC = () => {
   const [durationMinutes, setDurationMinutes] = useState(15);
   const [allowBack, setAllowBack] = useState(true);
   const [focusLock, setFocusLock] = useState(screen === 'mock-exam');
+  const [penaltyPerWrong, setPenaltyPerWrong] = useState<0 | 0.25 | 0.5>(0);
+  const [officialSimulation, setOfficialSimulation] = useState(false);
 
   // Active session UI state
   const [paused, setPaused] = useState(false);
@@ -155,7 +157,12 @@ export const PracticeScreen: React.FC = () => {
       };
     });
     const correctCount = records.filter((r) => r.isCorrect).length;
+    const wrongCount = records.filter((r) => !r.isCorrect && !r.skipped).length;
     const scorePercent = Math.round((correctCount / Math.max(1, records.length)) * 100);
+    const penalty = session.penaltyPerWrong ?? 0;
+    const rawPenalized = Math.max(0, correctCount - wrongCount * penalty);
+    const penalizedScorePercent =
+      penalty > 0 ? Math.round((rawPenalized / Math.max(1, records.length)) * 100) : undefined;
     const remainingSeconds =
       session.timerMode === 'countdown' && session.durationLimitSeconds
         ? Math.max(0, session.durationLimitSeconds - session.elapsedSeconds)
@@ -173,6 +180,9 @@ export const PracticeScreen: React.FC = () => {
       totalTimeSeconds: session.elapsedSeconds,
       remainingSeconds,
       scorePercent,
+      penalizedScorePercent,
+      penaltyPerWrong: penalty > 0 ? penalty : undefined,
+      officialSimulation: session.officialSimulation,
       correctCount,
       totalCount: records.length,
       answers: records,
@@ -220,8 +230,10 @@ export const PracticeScreen: React.FC = () => {
         durationMinutes: timerMode === 'countdown' ? durationMinutes : undefined,
         timerMode,
         allowBackNavigation: launcherMode === 'examen_blanc' ? allowBack : true,
-        focusLock,
+        focusLock: officialSimulation ? true : focusLock,
         immediateFeedback: launcherMode === 'libre',
+        penaltyPerWrong: launcherMode === 'examen_blanc' ? penaltyPerWrong : 0,
+        officialSimulation: launcherMode === 'examen_blanc' && officialSimulation,
       });
     };
 
@@ -429,27 +441,73 @@ export const PracticeScreen: React.FC = () => {
             )}
           </div>
 
-          <div className="flex flex-wrap gap-4 border-t border-slate-100 pt-4 text-xs dark:border-slate-800">
+          <div className="space-y-3 border-t border-slate-100 pt-4 text-xs dark:border-slate-800">
             {launcherMode === 'examen_blanc' && (
+              <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-3.5 dark:border-blue-900 dark:bg-blue-950/30">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="inline-flex cursor-pointer items-center gap-2 font-extrabold text-blue-950 dark:text-blue-100">
+                    <input
+                      type="checkbox"
+                      checked={officialSimulation}
+                      onChange={(e) => {
+                        setOfficialSimulation(e.target.checked);
+                        if (e.target.checked) {
+                          setFocusLock(true);
+                          setTimerMode('countdown');
+                        }
+                      }}
+                      className="accent-blue-700"
+                    />
+                    Mode Simulation Officielle (chronomètre non interruptible, sans indice, conditions concours)
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-slate-600 dark:text-slate-300">Pénalité mauvaise réponse :</span>
+                    {([0, 0.25, 0.5] as const).map((pen) => (
+                      <button
+                        key={pen}
+                        type="button"
+                        onClick={() => setPenaltyPerWrong(pen)}
+                        className={`rounded-lg px-2 py-1 text-[11px] font-bold ${
+                          penaltyPerWrong === pen
+                            ? 'bg-blue-700 text-white'
+                            : 'bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                        }`}
+                      >
+                        {pen === 0 ? 'Aucune' : `−${pen} pt`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {officialSimulation && (
+                  <p className="mt-2 text-[11px] text-blue-900 dark:text-blue-200">
+                    <strong>Briefing officiel :</strong> durée {durationMinutes} min · {questionCount} questions · aucun document ni indice autorisé · pause désactivée · correction différée après remise définitive.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-4">
+              {launcherMode === 'examen_blanc' && (
+                <label className="inline-flex cursor-pointer items-center gap-2 font-semibold">
+                  <input
+                    type="checkbox"
+                    checked={allowBack}
+                    onChange={(e) => setAllowBack(e.target.checked)}
+                    className="accent-blue-700"
+                  />
+                  Autoriser le retour en arrière entre questions
+                </label>
+              )}
               <label className="inline-flex cursor-pointer items-center gap-2 font-semibold">
                 <input
                   type="checkbox"
-                  checked={allowBack}
-                  onChange={(e) => setAllowBack(e.target.checked)}
+                  checked={focusLock}
+                  onChange={(e) => setFocusLock(e.target.checked)}
                   className="accent-blue-700"
                 />
-                Autoriser le retour en arrière entre questions
+                Verrouillage des distractions (mode plein focus)
               </label>
-            )}
-            <label className="inline-flex cursor-pointer items-center gap-2 font-semibold">
-              <input
-                type="checkbox"
-                checked={focusLock}
-                onChange={(e) => setFocusLock(e.target.checked)}
-                className="accent-blue-700"
-              />
-              Verrouillage des distractions (mode plein focus)
-            </label>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
@@ -653,17 +711,26 @@ export const PracticeScreen: React.FC = () => {
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={() =>
-                updateInProgressSession((p) => ({ ...p, focusLock: !p.focusLock }))
-              }
-              className="inline-flex h-10 items-center gap-1 rounded-xl border border-slate-300 px-2.5 text-xs font-bold dark:border-slate-700"
-              title="Verrouillage des distractions"
-            >
+            {session.officialSimulation && (
+              <span className="inline-flex items-center gap-1 rounded-xl bg-rose-100 px-2.5 py-1.5 text-[11px] font-extrabold text-rose-800 dark:bg-rose-950 dark:text-rose-200">
+                <Lock className="h-3.5 w-3.5" />
+                Simulation officielle
+              </span>
+            )}
+
+            {!session.officialSimulation && (
+              <button
+                type="button"
+                onClick={() =>
+                  updateInProgressSession((p) => ({ ...p, focusLock: !p.focusLock }))
+                }
+                className="inline-flex h-10 items-center gap-1 rounded-xl border border-slate-300 px-2.5 text-xs font-bold dark:border-slate-700"
+                title="Verrouillage des distractions"
+              >
               {session.focusLock ? <Lock className="h-4 w-4 text-amber-600" /> : <Unlock className="h-4 w-4" />}
               <span className="hidden sm:inline">{session.focusLock ? 'Focus actif' : 'Focus'}</span>
             </button>
+            )}
 
             <button
               type="button"

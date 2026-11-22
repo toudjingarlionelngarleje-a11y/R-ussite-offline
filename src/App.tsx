@@ -3,13 +3,17 @@ import { Layout } from './components/Layout';
 import { AppProvider, useApp } from './context/AppContext';
 import { AnnalesScreen } from './screens/AnnalesScreen';
 import { AuthScreen } from './screens/AuthScreen';
+import { CoachScreen } from './screens/CoachScreen';
+import { CommunityAdminScreen } from './screens/CommunityAdminScreen';
 import { CorrectionScreen } from './screens/CorrectionScreen';
 import { CourseReaderScreen } from './screens/CourseReaderScreen';
 import { DashboardScreen } from './screens/DashboardScreen';
+import { DiagnosticScreen } from './screens/DiagnosticScreen';
 import { DownloadsScreen } from './screens/DownloadsScreen';
 import { FavoritesNotesScreen } from './screens/FavoritesNotesScreen';
 import { FicheViewerScreen } from './screens/FicheViewerScreen';
 import { FlashcardsScreen } from './screens/FlashcardsScreen';
+import { GeneratorScreen } from './screens/GeneratorScreen';
 import { LibraryScreen } from './screens/LibraryScreen';
 import { MistakesScreen } from './screens/MistakesScreen';
 import { OnboardingScreen } from './screens/OnboardingScreen';
@@ -43,6 +47,12 @@ const ScreenRouter: React.FC = () => {
         return <OnboardingScreen />;
       case 'dashboard':
         return <DashboardScreen />;
+      case 'diagnostic':
+        return <DiagnosticScreen />;
+      case 'coach':
+        return <CoachScreen />;
+      case 'generator':
+        return <GeneratorScreen />;
       case 'library':
       case 'subject-detail':
       case 'chapters':
@@ -74,6 +84,9 @@ const ScreenRouter: React.FC = () => {
       case 'storage':
       case 'sync':
         return <StorageSyncScreen />;
+      case 'community':
+      case 'admin':
+        return <CommunityAdminScreen />;
       case 'teacher':
         return <TeacherScreen />;
       case 'privacy':

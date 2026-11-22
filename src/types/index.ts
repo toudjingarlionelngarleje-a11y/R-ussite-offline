@@ -4,6 +4,9 @@ export type ScreenId =
   | 'onboarding-exam'
   | 'onboarding-goals'
   | 'dashboard'
+  | 'diagnostic'
+  | 'coach'
+  | 'generator'
   | 'library'
   | 'subject-detail'
   | 'chapters'
@@ -22,7 +25,9 @@ export type ScreenId =
   | 'notes'
   | 'storage'
   | 'sync'
+  | 'community'
   | 'teacher'
+  | 'admin'
   | 'privacy';
 
 export type UserCategory =
@@ -275,6 +280,9 @@ export interface SessionRecord {
   totalTimeSeconds: number;
   remainingSeconds?: number;
   scorePercent: number;
+  penalizedScorePercent?: number;
+  penaltyPerWrong?: number;
+  officialSimulation?: boolean;
   correctCount: number;
   totalCount: number;
   answers: QuestionAnswerRecord[];
@@ -306,6 +314,8 @@ export interface InProgressSession {
   allowBackNavigation: boolean;
   focusLock: boolean;
   immediateFeedback: boolean;
+  penaltyPerWrong?: number;
+  officialSimulation?: boolean;
 }
 
 export interface DownloadedItem {
@@ -396,6 +406,40 @@ export interface TeacherDraft {
   createdAt: string;
 }
 
+export interface DiagnosticResult {
+  completedAt: string;
+  examId: string;
+  estimatedLevel: 'debutant' | 'intermediaire' | 'avance';
+  overallScore: number;
+  recommendedWeeklyHours: number;
+  subjectScores: { subjectId: string; score: number; answered: number }[];
+  strongSubjectIds: string[];
+  weakSubjectIds: string[];
+  priorityChapterIds: string[];
+}
+
+export interface StudyGroupMessage {
+  id: string;
+  author: string;
+  role: 'eleve' | 'enseignant';
+  text: string;
+  createdAt: string;
+  reported?: boolean;
+}
+
+export interface StudyGroup {
+  id: string;
+  name: string;
+  examId: string;
+  inviteCode: string;
+  membersCount: number;
+  description: string;
+  moderated: boolean;
+  minorSafe: boolean;
+  messages: StudyGroupMessage[];
+  sharedFicheIds: string[];
+}
+
 export interface AppState {
   profiles: UserProfile[];
   activeProfileId: string | null;
@@ -423,6 +467,11 @@ export interface AppState {
   teacherDrafts: TeacherDraft[];
   customQuestions: Question[];
   customFiches: Fiche[];
+  customFlashcards: Flashcard[];
+  diagnosticResult: DiagnosticResult | null;
+  studyGroups: StudyGroup[];
+  fatigueLevel: 'frais' | 'normal' | 'fatigue';
+  planMode: 'standard' | 'express' | 'derniere_semaine' | 'veille';
   accessibility: AccessibilitySettings;
   privacy: PrivacySettings;
 }

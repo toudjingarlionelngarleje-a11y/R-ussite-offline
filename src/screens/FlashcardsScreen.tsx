@@ -6,7 +6,7 @@ import { isCardDue, MASTERY_LABELS } from '../lib/sm2';
 import { MasteryLevel } from '../types';
 
 export const FlashcardsScreen: React.FC = () => {
-  const { state, rateFlashcard } = useApp();
+  const { state, allFlashcards, rateFlashcard } = useApp();
   const [subjectFilter, setSubjectFilter] = useState('all');
   const [dueOnly, setDueOnly] = useState(false);
   const [flipped, setFlipped] = useState(false);
@@ -14,22 +14,22 @@ export const FlashcardsScreen: React.FC = () => {
   const [sessionReviewed, setSessionReviewed] = useState(0);
 
   const deck = useMemo(() => {
-    return FLASHCARDS.filter((fc) => {
+    return allFlashcards.filter((fc) => {
       if (subjectFilter !== 'all' && fc.subjectId !== subjectFilter) return false;
       if (dueOnly && !isCardDue(state.flashcardProgress[fc.id])) return false;
       return true;
     });
-  }, [subjectFilter, dueOnly, state.flashcardProgress]);
+  }, [allFlashcards, subjectFilter, dueOnly, state.flashcardProgress]);
 
   const safeIndex = deck.length > 0 ? index % deck.length : 0;
   const current = deck[safeIndex];
   const progress = current ? state.flashcardProgress[current.id] : undefined;
   const currentSubject = current ? SUBJECTS.find((s) => s.id === current.subjectId) : null;
 
-  const masteredCount = FLASHCARDS.filter(
+  const masteredCount = allFlashcards.filter(
     (c) => (state.flashcardProgress[c.id]?.mastery ?? 0) >= 2
   ).length;
-  const dueCount = FLASHCARDS.filter((c) => isCardDue(state.flashcardProgress[c.id])).length;
+  const dueCount = allFlashcards.filter((c) => isCardDue(state.flashcardProgress[c.id])).length;
 
   const handleRate = (level: MasteryLevel) => {
     if (!current) return;

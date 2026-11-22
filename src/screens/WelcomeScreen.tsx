@@ -14,7 +14,7 @@ import {
 import { EXAMS, useApp } from '../context/AppContext';
 
 export const WelcomeScreen: React.FC = () => {
-  const { state, navigate, loginDemo, switchProfile, setShowPlanModal } = useApp();
+  const { state, navigate, loginDemo, launchEnamDemoScenario, switchProfile, setShowPlanModal } = useApp();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50/70 via-slate-50 to-white dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
@@ -74,8 +74,16 @@ export const WelcomeScreen: React.FC = () => {
                 className="inline-flex min-h-[48px] items-center gap-2 rounded-xl bg-blue-700 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-blue-800"
               >
                 <Sparkles className="h-4 w-4" />
-                Essayer immédiatement (Démo hors ligne)
+                Essayer immédiatement (Démo Bac)
                 <ArrowRight className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={launchEnamDemoScenario}
+                className="inline-flex min-h-[48px] items-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:bg-emerald-800"
+              >
+                <GraduationCap className="h-4 w-4" />
+                Scénario Concours ENAM (Test + Plan)
               </button>
               <button
                 type="button"
