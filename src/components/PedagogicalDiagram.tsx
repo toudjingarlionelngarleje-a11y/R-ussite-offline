@@ -524,6 +524,102 @@ export const PedagogicalDiagram: React.FC<{
     );
   }
 
+  if (diagramId === 'forces_vol') {
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 165" className="mx-auto h-40 w-full max-w-md" role="img" aria-label="Les 4 forces aérodynamiques en vol rectiligne uniforme : Portance, Poids, Traction et Traînée">
+          <ellipse cx="180" cy="82" rx="48" ry="14" fill="#DBEAFE" stroke="#1D4ED8" strokeWidth="2" />
+          <text x="180" y="86" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#1E3A8A">AVION</text>
+          <line x1="180" y1="68" x2="180" y2="20" stroke="#059669" strokeWidth="3" />
+          <polygon points="180,14 174,25 186,25" fill="#059669" />
+          <text x="192" y="30" fontSize="10.5" fontWeight="bold" fill="#059669">Portance (L)</text>
+          <line x1="180" y1="96" x2="180" y2="144" stroke="#DC2626" strokeWidth="3" />
+          <polygon points="180,150 174,139 186,139" fill="#DC2626" />
+          <text x="192" y="144" fontSize="10.5" fontWeight="bold" fill="#DC2626">Poids (mg)</text>
+          <line x1="228" y1="82" x2="315" y2="82" stroke="#2563EB" strokeWidth="3" />
+          <polygon points="322,82 311,76 311,88" fill="#2563EB" />
+          <text x="275" y="72" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#1D4ED8">Traction (T)</text>
+          <line x1="132" y1="82" x2="45" y2="82" stroke="#D97706" strokeWidth="3" />
+          <polygon points="38,82 49,76 49,88" fill="#D97706" />
+          <text x="85" y="72" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#B45309">Traînée (D)</text>
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : équilibre des 4 forces en vol rectiligne uniforme (Portance = Poids ; Traction = Traînée).
+        </figcaption>
+      </figure>
+    );
+  }
+
+  if (diagramId === 'couches_geologiques') {
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 155" className="mx-auto h-36 w-full max-w-md" role="img" aria-label="Piège pétrolier anticlinal : roche couverture imperméable, gaz, pétrole, eau dans roche réservoir, roche mère">
+          <path d="M 20 55 Q 180 5 340 55 L 340 80 Q 180 30 20 80 Z" fill="#94A3B8" stroke="#475569" strokeWidth="1.5" />
+          <text x="180" y="38" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#FFFFFF">Roche couverture imperméable (Argile / Sel)</text>
+          <path d="M 20 80 Q 180 30 340 80 L 340 118 Q 180 68 20 118 Z" fill="#FEF3C7" stroke="#D97706" strokeWidth="1.5" />
+          <text x="180" y="74" textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#92400E">Roche réservoir poreuse : Gaz → Pétrole → Eau</text>
+          <rect x="20" y="118" width="320" height="30" rx="4" fill="#334155" />
+          <text x="180" y="137" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#F8FAFC">Roche mère riche en matière organique (kérogène)</text>
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : système pétrolier anticlinal (Roche mère → Migration → Roche réservoir → Roche couverture).
+        </figcaption>
+      </figure>
+    );
+  }
+
+  if (diagramId === 'pyramide_maslow') {
+    const levels = [
+      { y: 12, x1: 145, x2: 215, label: '5. Accomplissement', color: '#7C3AED' },
+      { y: 40, x1: 118, x2: 242, label: '4. Estime', color: '#2563EB' },
+      { y: 68, x1: 90, x2: 270, label: '3. Appartenance', color: '#0284C7' },
+      { y: 96, x1: 62, x2: 298, label: '2. Sécurité', color: '#059669' },
+      { y: 124, x1: 34, x2: 326, label: '1. Besoins physiologiques', color: '#D97706' },
+    ];
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 160" className="mx-auto h-40 w-full max-w-md" role="img" aria-label="Pyramide des 5 besoins de Maslow de la base physiologique au sommet accomplissement">
+          {levels.map((lv) => (
+            <g key={lv.label}>
+              <rect x={lv.x1} y={lv.y} width={lv.x2 - lv.x1} height="24" rx="5" fill={lv.color} />
+              <text x="180" y={lv.y + 16} textAnchor="middle" fontSize="9.5" fontWeight="bold" fill="#FFFFFF">
+                {lv.label}
+              </text>
+            </g>
+          ))}
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : hiérarchie des besoins humains selon Abraham Maslow (1943).
+        </figcaption>
+      </figure>
+    );
+  }
+
+  if (diagramId === 'flux_fintech') {
+    return (
+      <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+        <svg viewBox="0 0 360 128" className="mx-auto h-32 w-full max-w-md" role="img" aria-label="Architecture d'un paiement Mobile Money sécurisé : Wallet KYC, API TLS, Switch GIMAC/BCEAO, Compte de cantonnement">
+          {[
+            { x: 8, label: 'Wallet KYC', sub: 'PIN / OTP', fill: '#EFF6FF', stroke: '#2563EB', text: '#1E3A8A' },
+            { x: 96, label: 'API TLS', sub: 'Anti-fraude', fill: '#F5F3FF', stroke: '#7C3AED', text: '#5B21B6' },
+            { x: 184, label: 'Switch', sub: 'Interopérable', fill: '#ECFDF5', stroke: '#059669', text: '#065F46' },
+            { x: 272, label: 'Banque', sub: 'Cantonnement', fill: '#FEF3C7', stroke: '#D97706', text: '#92400E' },
+          ].map((n, i) => (
+            <g key={n.label}>
+              <rect x={n.x} y="32" width="78" height="56" rx="8" fill={n.fill} stroke={n.stroke} strokeWidth="1.8" />
+              <text x={n.x + 39} y="55" textAnchor="middle" fontSize="10" fontWeight="bold" fill={n.text}>{n.label}</text>
+              <text x={n.x + 39} y="72" textAnchor="middle" fontSize="8.8" fill="#475569">{n.sub}</text>
+              {i < 3 && <line x1={n.x + 78} y1="60" x2={n.x + 88} y2="60" stroke="#64748B" strokeWidth="2" />}
+            </g>
+          ))}
+        </svg>
+        <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+          Schéma hors ligne : flux sécurisé d’un paiement Mobile Money (KYC, chiffrement TLS, interopérabilité et cantonnement).
+        </figcaption>
+      </figure>
+    );
+  }
+
   return (
     <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
       <svg viewBox="0 0 360 130" className="mx-auto h-32 w-full max-w-md" role="img" aria-label="Boucle itérative Scrum Sprint">

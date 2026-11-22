@@ -153,7 +153,11 @@ export interface CourseSection {
     | 'modele_osi'
     | 'poutre_flexion'
     | 'pyramide_alimentaire'
-    | 'pyramide_inversee';
+    | 'pyramide_inversee'
+    | 'forces_vol'
+    | 'couches_geologiques'
+    | 'pyramide_maslow'
+    | 'flux_fintech';
 }
 
 export interface Course {
