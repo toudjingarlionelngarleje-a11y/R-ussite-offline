@@ -1,3 +1,4 @@
+import { ClassLevelId, ExamTrack } from '../types';
 import {
   CHAPTERS as BASE_CHAPTERS,
   COUNTRIES,
@@ -96,15 +97,83 @@ import {
   MEGA50_QUESTIONS,
   buildMissingChapterExercises,
 } from './megaExpansion50';
+import {
+  CLASS_LEVELS,
+  HYPER72_ANNALES,
+  HYPER72_CHAPTERS,
+  HYPER72_COURSES,
+  HYPER72_EXAMS,
+  HYPER72_FICHES,
+  HYPER72_FLASHCARDS,
+  HYPER72_NEW_SUBJECTS,
+  HYPER72_QUESTIONS,
+  SCHOOL_CYCLES,
+  assignClassLevelForOrder,
+  formatClassRange,
+  getClassLevelMeta,
+  getSubjectClassLevels,
+} from './hyperExpansion72';
 
-export { COUNTRIES, USER_CATEGORIES };
+export {
+  COUNTRIES,
+  USER_CATEGORIES,
+  CLASS_LEVELS,
+  SCHOOL_CYCLES,
+  getClassLevelMeta,
+  getSubjectClassLevels,
+  formatClassRange,
+};
 
 export const STUDY_LEVELS: string[] = [
+  'Sixième / 6e (Collège)',
+  'Cinquième / 5e (Collège)',
+  'Quatrième / 4e (Collège)',
   'Troisième / 3e (BEPC / Brevet)',
   ...BASE_STUDY_LEVELS,
 ];
 
-export const EXAMS = [
+export function mapStudyLevelToClassId(studyLevel?: string): ClassLevelId | null {
+  if (!studyLevel) return null;
+  const s = studyLevel.toLowerCase();
+  if (s.includes('6e') || s.includes('sixième')) return '6e';
+  if (s.includes('5e') || s.includes('cinquième')) return '5e';
+  if (s.includes('4e') || s.includes('quatrième')) return '4e';
+  if (s.includes('3e') || s.includes('troisième') || s.includes('bepc')) return '3e';
+  if (s.includes('2nde') || s.includes('seconde')) return '2nde';
+  if (s.includes('1ère') || s.includes('1ere') || s.includes('première')) return '1ere';
+  if (s.includes('terminale') || s.includes('baccalauréat') || s.includes('tle')) return 'terminale';
+  if (s.includes('licence 1') || s.includes('bts 1') || s.includes('l1')) return 'l1';
+  if (s.includes('licence 2') || s.includes('bts 2') || s.includes('l2')) return 'l2';
+  if (s.includes('licence 3') || s.includes('bachelor') || s.includes('l3')) return 'l3';
+  if (s.includes('master') || s.includes('concours') || s.includes('professionnel')) return 'master';
+  return null;
+}
+
+function inferExamClassLevels(exam: ExamTrack): ClassLevelId[] {
+  if (exam.classLevels && exam.classLevels.length > 0) return exam.classLevels;
+  const text = `${exam.id} ${exam.name} ${exam.category} ${exam.level}`.toLowerCase();
+  if (text.includes('6e')) return ['6e'];
+  if (text.includes('5e') || text.includes('4e')) return ['5e', '4e'];
+  if (text.includes('bepc') || text.includes('brevet') || text.includes('3e')) return ['3e'];
+  if (text.includes('bac')) return ['2nde', '1ere', 'terminale'];
+  if (text.includes('bts') || text.includes('dut') || text.includes('l1') || text.includes('l2')) {
+    return ['l1', 'l2'];
+  }
+  if (text.includes('l3') || text.includes('licence')) return ['l1', 'l2', 'l3'];
+  if (
+    text.includes('medecine') ||
+    text.includes('médecine') ||
+    text.includes('ingenieur') ||
+    text.includes('ingénieur') ||
+    text.includes('paramedical') ||
+    text.includes('paramédical')
+  ) {
+    return ['terminale', 'l1', 'l2'];
+  }
+  return ['l2', 'l3', 'master'];
+}
+
+export const EXAMS: ExamTrack[] = [
   ...BASE_EXAMS,
   ...EXTRA_EXAMS,
   ...MEGA_EXAMS,
@@ -114,7 +183,11 @@ export const EXAMS = [
   ...SUMMIT_EXAMS,
   ...HORIZON_EXAMS,
   ...MEGA50_EXAMS,
-];
+  ...HYPER72_EXAMS,
+].map((exam) => ({
+  ...exam,
+  classLevels: inferExamClassLevels(exam),
+}));
 
 const EXTRA_EXAM_LINKS: Record<string, string[]> = {
   maths: [
@@ -246,11 +319,11 @@ const EXTRA_EXAM_LINKS: Record<string, string[]> = {
   ethique_gouvernance: ['certif-droit-numerique'],
 };
 
-const MEGA50_EXAM_LINKS_BY_SUBJECT: Record<string, string[]> = {};
-for (const exam of MEGA50_EXAMS) {
+const DYNAMIC_EXAM_LINKS_BY_SUBJECT: Record<string, string[]> = {};
+for (const exam of [...MEGA50_EXAMS, ...HYPER72_EXAMS]) {
   for (const sid of exam.subjectIds) {
-    MEGA50_EXAM_LINKS_BY_SUBJECT[sid] = [
-      ...(MEGA50_EXAM_LINKS_BY_SUBJECT[sid] ?? []),
+    DYNAMIC_EXAM_LINKS_BY_SUBJECT[sid] = [
+      ...(DYNAMIC_EXAM_LINKS_BY_SUBJECT[sid] ?? []),
       exam.id,
     ];
   }
@@ -265,18 +338,20 @@ export const SUBJECTS = [
   ...ZENITH_SUBJECTS,
   ...SUMMIT_SUBJECTS,
   ...HORIZON_SUBJECTS,
+  ...HYPER72_NEW_SUBJECTS,
 ].map((s) => ({
   ...s,
+  classLevels: s.classLevels && s.classLevels.length > 0 ? s.classLevels : getSubjectClassLevels(s.id),
   examIds: Array.from(
     new Set([
       ...s.examIds,
       ...(EXTRA_EXAM_LINKS[s.id] ?? []),
-      ...(MEGA50_EXAM_LINKS_BY_SUBJECT[s.id] ?? []),
+      ...(DYNAMIC_EXAM_LINKS_BY_SUBJECT[s.id] ?? []),
     ])
   ),
 }));
 
-export const CHAPTERS = [
+const RAW_CHAPTERS = [
   ...BASE_CHAPTERS,
   ...EXTRA_CHAPTERS,
   ...MEGA_CHAPTERS,
@@ -287,7 +362,32 @@ export const CHAPTERS = [
   ...HORIZON_CHAPTERS,
   ...EXPANDED_CHAPTERS,
   ...MEGA50_CHAPTERS,
+  ...HYPER72_CHAPTERS,
 ];
+
+// Attribuer un niveau de classe (6e → Master) à 100% des chapitres sans écraser les attributions explicites
+const UNASSIGNED_BY_SUBJECT: Record<string, string[]> = {};
+for (const ch of RAW_CHAPTERS) {
+  if (!ch.classLevel) {
+    UNASSIGNED_BY_SUBJECT[ch.subjectId] = UNASSIGNED_BY_SUBJECT[ch.subjectId] ?? [];
+    UNASSIGNED_BY_SUBJECT[ch.subjectId].push(ch.id);
+  }
+}
+const ASSIGNED_CLASS_BY_CHAPTER_ID: Record<string, ClassLevelId> = {};
+for (const [sid, ids] of Object.entries(UNASSIGNED_BY_SUBJECT)) {
+  ids.forEach((id, idx) => {
+    ASSIGNED_CLASS_BY_CHAPTER_ID[id] = assignClassLevelForOrder(sid, idx, ids.length);
+  });
+}
+
+export const CHAPTERS = RAW_CHAPTERS.map((ch) => ({
+  ...ch,
+  classLevel: ch.classLevel ?? ASSIGNED_CLASS_BY_CHAPTER_ID[ch.id] ?? getSubjectClassLevels(ch.subjectId)[0],
+}));
+
+const CHAPTER_CLASS_MAP: Record<string, ClassLevelId> = Object.fromEntries(
+  CHAPTERS.map((ch) => [ch.id, ch.classLevel!])
+);
 
 export const COURSES = [
   ...BASE_COURSES,
@@ -300,7 +400,11 @@ export const COURSES = [
   ...HORIZON_COURSES,
   ...EXPANDED_COURSES,
   ...MEGA50_COURSES,
-];
+  ...HYPER72_COURSES,
+].map((crs) => ({
+  ...crs,
+  classLevel: crs.classLevel ?? CHAPTER_CLASS_MAP[crs.chapterId] ?? getSubjectClassLevels(crs.subjectId)[0],
+}));
 
 export const FICHES = [
   ...BASE_FICHES,
@@ -313,7 +417,11 @@ export const FICHES = [
   ...HORIZON_FICHES,
   ...EXPANDED_FICHES,
   ...MEGA50_FICHES,
-];
+  ...HYPER72_FICHES,
+].map((fic) => ({
+  ...fic,
+  classLevel: fic.classLevel ?? CHAPTER_CLASS_MAP[fic.chapterId] ?? getSubjectClassLevels(fic.subjectId)[0],
+}));
 
 const CORE_AND_MEGA_QUESTIONS = [
   ...BASE_QUESTIONS,
@@ -325,6 +433,7 @@ const CORE_AND_MEGA_QUESTIONS = [
   ...SUMMIT_QUESTIONS,
   ...HORIZON_QUESTIONS,
   ...MEGA50_QUESTIONS,
+  ...HYPER72_QUESTIONS,
 ];
 
 const SUBJECT_META_MAP: Record<string, { name: string; examIds: string[] }> = Object.fromEntries(
@@ -338,7 +447,14 @@ const CHAPTER_COVERAGE_QUESTIONS = buildMissingChapterExercises(
   SUBJECT_META_MAP
 );
 
-export const QUESTIONS = [...CORE_AND_MEGA_QUESTIONS, ...CHAPTER_COVERAGE_QUESTIONS];
+export const QUESTIONS = [...CORE_AND_MEGA_QUESTIONS, ...CHAPTER_COVERAGE_QUESTIONS].map((q) => ({
+  ...q,
+  classLevel: q.classLevel ?? CHAPTER_CLASS_MAP[q.chapterId] ?? getSubjectClassLevels(q.subjectId)[0],
+}));
+
+const EXAM_CLASS_MAP: Record<string, ClassLevelId[]> = Object.fromEntries(
+  EXAMS.map((e) => [e.id, e.classLevels ?? ['terminale']])
+);
 
 export const ANNALES = [
   ...BASE_ANNALES,
@@ -350,7 +466,19 @@ export const ANNALES = [
   ...SUMMIT_ANNALES,
   ...HORIZON_ANNALES,
   ...MEGA50_ANNALES,
-];
+  ...HYPER72_ANNALES,
+].map((a) => {
+  const examClasses = EXAM_CLASS_MAP[a.examId];
+  const subjectClasses = getSubjectClassLevels(a.subjectId);
+  const fallbackClass =
+    (examClasses && examClasses[examClasses.length - 1]) ??
+    subjectClasses[subjectClasses.length - 1] ??
+    'terminale';
+  return {
+    ...a,
+    classLevel: a.classLevel ?? fallbackClass,
+  };
+});
 
 export const FLASHCARDS = [
   ...BASE_FLASHCARDS,
@@ -362,4 +490,5 @@ export const FLASHCARDS = [
   ...SUMMIT_FLASHCARDS,
   ...HORIZON_FLASHCARDS,
   ...MEGA50_FLASHCARDS,
+  ...HYPER72_FLASHCARDS,
 ];

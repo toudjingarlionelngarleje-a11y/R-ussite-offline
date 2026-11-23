@@ -1,5 +1,19 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ANNALES, CHAPTERS, COURSES, EXAMS, FICHES, FLASHCARDS, QUESTIONS, SUBJECTS } from '../data';
+import {
+  ANNALES,
+  CHAPTERS,
+  CLASS_LEVELS,
+  COURSES,
+  EXAMS,
+  FICHES,
+  FLASHCARDS,
+  QUESTIONS,
+  SCHOOL_CYCLES,
+  SUBJECTS,
+  formatClassRange,
+  getClassLevelMeta,
+  mapStudyLevelToClassId,
+} from '../data';
 import { generateAdaptiveStudyPlan, formatIsoDate } from '../lib/planner';
 import { computeNextFlashcardReview } from '../lib/sm2';
 import {
@@ -3203,4 +3217,16 @@ export function useApp(): AppContextValue {
   return ctx;
 }
 
-export { CHAPTERS, COURSES, EXAMS, FLASHCARDS, SUBJECTS, ANNALES };
+export {
+  CHAPTERS,
+  CLASS_LEVELS,
+  COURSES,
+  EXAMS,
+  FLASHCARDS,
+  SCHOOL_CYCLES,
+  SUBJECTS,
+  ANNALES,
+  formatClassRange,
+  getClassLevelMeta,
+  mapStudyLevelToClassId,
+};

@@ -12,9 +12,9 @@ import {
   Share2,
   Trash2,
 } from 'lucide-react';
-import { ANNALES, EXAMS, SUBJECTS, useApp } from '../context/AppContext';
+import { ANNALES, CLASS_LEVELS, EXAMS, SUBJECTS, getClassLevelMeta, useApp } from '../context/AppContext';
 import { downloadExamPaperFile } from '../lib/examPaperDownload';
-import { Difficulty } from '../types';
+import { ClassLevelId, Difficulty } from '../types';
 
 export const AnnalesScreen: React.FC = () => {
   const {
@@ -32,6 +32,7 @@ export const AnnalesScreen: React.FC = () => {
   } = useApp();
 
   const [query, setQuery] = useState('');
+  const [classFilter, setClassFilter] = useState<'all' | ClassLevelId>('all');
   const [examFilter, setExamFilter] = useState('all');
   const [subjectFilter, setSubjectFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
@@ -61,6 +62,7 @@ export const AnnalesScreen: React.FC = () => {
   const filtered = useMemo(
     () =>
       ANNALES.filter((a) => {
+        if (classFilter !== 'all' && a.classLevel !== classFilter) return false;
         if (examFilter !== 'all' && a.examId !== examFilter) return false;
         if (subjectFilter !== 'all' && a.subjectId !== subjectFilter) return false;
         if (yearFilter !== 'all' && String(a.year) !== yearFilter) return false;
@@ -81,6 +83,7 @@ export const AnnalesScreen: React.FC = () => {
         return true;
       }),
     [
+      classFilter,
       examFilter,
       subjectFilter,
       yearFilter,
@@ -215,6 +218,36 @@ export const AnnalesScreen: React.FC = () => {
           </div>
         </div>
 
+        {/* Quick class filter strip (6e → Master) */}
+        <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-3 dark:border-slate-800">
+          <span className="mr-1 text-xs font-bold text-slate-600 dark:text-slate-300">Classe :</span>
+          <button
+            type="button"
+            onClick={() => setClassFilter('all')}
+            className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+              classFilter === 'all'
+                ? 'bg-indigo-700 text-white'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+            }`}
+          >
+            Toutes (6e → Master)
+          </button>
+          {CLASS_LEVELS.map((cl) => (
+            <button
+              key={cl.id}
+              type="button"
+              onClick={() => setClassFilter(cl.id)}
+              className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                classFilter === cl.id
+                  ? 'bg-indigo-700 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+              }`}
+            >
+              {cl.shortLabel}
+            </button>
+          ))}
+        </div>
+
         {/* Quick filter chips */}
         <div className="flex flex-wrap gap-2">
           {[
@@ -295,6 +328,9 @@ export const AnnalesScreen: React.FC = () => {
                         style={{ backgroundColor: subj?.color ?? '#1D4ED8' }}
                       >
                         {subj?.shortName}
+                      </span>
+                      <span className="rounded-md bg-indigo-100 px-2 py-0.5 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
+                        {getClassLevelMeta(a.classLevel).shortLabel}
                       </span>
                       <span className="rounded-md bg-slate-100 px-2 py-0.5 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                         {a.year}

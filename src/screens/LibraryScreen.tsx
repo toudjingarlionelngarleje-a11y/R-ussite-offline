@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -7,12 +7,26 @@ import {
   CheckCircle2,
   Download,
   FileText,
+  GraduationCap,
   Layers,
   Play,
   Search,
   Sparkles,
 } from 'lucide-react';
-import { ANNALES, CHAPTERS, COURSES, EXAMS, SUBJECTS, useApp } from '../context/AppContext';
+import {
+  ANNALES,
+  CHAPTERS,
+  CLASS_LEVELS,
+  COURSES,
+  EXAMS,
+  SCHOOL_CYCLES,
+  SUBJECTS,
+  formatClassRange,
+  getClassLevelMeta,
+  mapStudyLevelToClassId,
+  useApp,
+} from '../context/AppContext';
+import { ClassLevelId, SchoolCycleId } from '../types';
 
 export const LibraryScreen: React.FC = () => {
   const {
@@ -32,35 +46,190 @@ export const LibraryScreen: React.FC = () => {
     setShowPlanModal,
   } = useApp();
 
+  const activeProfile = state.profiles.find((p) => p.id === state.activeProfileId);
+  const profileClassId = mapStudyLevelToClassId(activeProfile?.studyLevel);
+
   const [query, setQuery] = useState('');
   const [examFilter, setExamFilter] = useState<string>('all');
+  const [cycleFilter, setCycleFilter] = useState<'all' | SchoolCycleId>('all');
+  const [classFilter, setClassFilter] = useState<'all' | ClassLevelId>('all');
   const [onlyDownloaded, setOnlyDownloaded] = useState(false);
+
+  // Subject detail / chapters view filters
   const [chapterSearch, setChapterSearch] = useState('');
+  const [chapterClassFilter, setChapterClassFilter] = useState<'all' | ClassLevelId>('all');
+  const [groupChaptersByClass, setGroupChaptersByClass] = useState(true);
   const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'facile' | 'moyen' | 'difficile'>('all');
 
   const selectedSubject = SUBJECTS.find((s) => s.id === selectedSubjectId) ?? SUBJECTS[0];
 
-  // Screen 7: Détail d'une matière & Screen 8: Liste des chapitres
+  // Precomputed counts for instant rendering across 60 subjects & 4,320 chapters
+  const chapterCountBySubject = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const ch of CHAPTERS) map[ch.subjectId] = (map[ch.subjectId] ?? 0) + 1;
+    return map;
+  }, []);
+
+  const chapterCountBySubjectAndClass = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const ch of CHAPTERS) {
+      if (ch.classLevel) {
+        const key = `${ch.subjectId}:${ch.classLevel}`;
+        map[key] = (map[key] ?? 0) + 1;
+      }
+    }
+    return map;
+  }, []);
+
+  const ficheCountBySubject = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const f of allFiches) map[f.subjectId] = (map[f.subjectId] ?? 0) + 1;
+    return map;
+  }, [allFiches]);
+
+  const classTotals = useMemo(() => {
+    const res: Record<ClassLevelId, { subjects: number; chapters: number }> = {} as Record<
+      ClassLevelId,
+      { subjects: number; chapters: number }
+    >;
+    for (const cl of CLASS_LEVELS) {
+      res[cl.id] = {
+        subjects: SUBJECTS.filter((s) => s.classLevels?.includes(cl.id)).length,
+        chapters: CHAPTERS.filter((c) => c.classLevel === cl.id).length,
+      };
+    }
+    return res;
+  }, []);
+
+  // Screen 7: Détail d'une matière & Screen 8: Liste des chapitres (organisés par classe 6e → Master)
   if (screen === 'subject-detail' || screen === 'chapters') {
-    const subjChapters = CHAPTERS.filter((c) => c.subjectId === selectedSubject.id).sort(
-      (a, b) => a.order - b.order
+    const subjChapters = CHAPTERS.filter((c) => c.subjectId === selectedSubject.id).sort((a, b) => {
+      const ca = getClassLevelMeta(a.classLevel).order;
+      const cb = getClassLevelMeta(b.classLevel).order;
+      if (ca !== cb) return ca - cb;
+      return a.order - b.order;
+    });
+
+    const subjectClasses = CLASS_LEVELS.filter((cl) =>
+      subjChapters.some((ch) => ch.classLevel === cl.id)
     );
+
+    const activeChapterClassFilter =
+      chapterClassFilter !== 'all' && !subjectClasses.some((c) => c.id === chapterClassFilter)
+        ? 'all'
+        : chapterClassFilter;
+
     const filteredChapters = subjChapters.filter((ch) => {
+      if (activeChapterClassFilter !== 'all' && ch.classLevel !== activeChapterClassFilter) {
+        return false;
+      }
       if (difficultyFilter !== 'all' && ch.difficulty !== difficultyFilter) return false;
       if (
         chapterSearch.trim() &&
-        !`${ch.title} ${ch.summary}`.toLowerCase().includes(chapterSearch.trim().toLowerCase())
+        !`${ch.title} ${ch.summary} ${getClassLevelMeta(ch.classLevel).label}`
+          .toLowerCase()
+          .includes(chapterSearch.trim().toLowerCase())
       ) {
         return false;
       }
       return true;
     });
+
     const subjAnnales = ANNALES.filter((a) => a.subjectId === selectedSubject.id);
     const subjFiches = allFiches.filter((f) => f.subjectId === selectedSubject.id);
     const subjQuestions = allQuestions.filter((q) => q.subjectId === selectedSubject.id);
     const packKey = `subject:${selectedSubject.id}`;
     const isPackDownloaded = Boolean(state.downloadedItems[packKey]);
     const progressPct = downloadingIds[packKey];
+
+    const groupedByClass = CLASS_LEVELS.map((meta) => ({
+      meta,
+      items: filteredChapters.filter((ch) => ch.classLevel === meta.id),
+    })).filter((g) => g.items.length > 0);
+
+    const renderChapterCard = (ch: (typeof CHAPTERS)[number]) => {
+      const course = COURSES.find((c) => c.id === ch.courseId);
+      const completed = course ? state.completedCourseIds.includes(course.id) : false;
+      const chQuestions = allQuestions.filter((q) => q.chapterId === ch.id);
+      const classMeta = getClassLevelMeta(ch.classLevel);
+
+      return (
+        <div
+          key={ch.id}
+          className="hc-card rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-md bg-indigo-100 px-2 py-0.5 text-xs font-extrabold text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
+                  {classMeta.shortLabel} · {classMeta.cycleLabel}
+                </span>
+                <span className="rounded-md bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-800 dark:bg-blue-950 dark:text-blue-200">
+                  Chapitre {ch.order}
+                </span>
+                <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold capitalize text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                  {ch.difficulty} · {ch.estimatedMinutes} min
+                </span>
+                {completed && (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Cours lu
+                  </span>
+                )}
+              </div>
+              <h3 className="mt-1.5 text-base font-bold text-slate-900 dark:text-white">
+                {ch.title}
+              </h3>
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{ch.summary}</p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCourseId(ch.courseId);
+                  navigate('course-reader');
+                }}
+                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              >
+                <BookOpen className="h-3.5 w-3.5 text-blue-600" />
+                Cours
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedFicheId(ch.ficheId);
+                  navigate('fiche-viewer');
+                }}
+                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+              >
+                <BookMarked className="h-3.5 w-3.5 text-emerald-600" />
+                Fiche
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  startPractice({
+                    mode: 'libre',
+                    title: `Exercices — ${ch.title}`,
+                    subjectId: selectedSubject.id,
+                    questionIds:
+                      chQuestions.length > 0
+                        ? chQuestions.map((q) => q.id)
+                        : subjQuestions.map((q) => q.id),
+                    immediateFeedback: true,
+                  })
+                }
+                className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-blue-700 px-3 py-2 text-xs font-bold text-white hover:bg-blue-800"
+              >
+                <Play className="h-3.5 w-3.5" />
+                QCM ({chQuestions.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
 
     return (
       <div className="space-y-6">
@@ -104,7 +273,7 @@ export const LibraryScreen: React.FC = () => {
         <section className="hc-card rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span
                   className="h-3.5 w-3.5 rounded-full"
                   style={{ backgroundColor: selectedSubject.color }}
@@ -112,22 +281,29 @@ export const LibraryScreen: React.FC = () => {
                 <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
                   {selectedSubject.name}
                 </h1>
+                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-bold text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
+                  <GraduationCap className="h-3.5 w-3.5" />
+                  Classes : {formatClassRange(selectedSubject.classLevels)}
+                </span>
               </div>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                 {selectedSubject.description}
               </p>
               <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
                 <span className="rounded-lg bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
-                  {subjChapters.length} chapitre(s)
+                  {subjChapters.length} chapitres
                 </span>
                 <span className="rounded-lg bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
-                  {subjFiches.length} fiche(s)
+                  {subjectClasses.length} niveaux de classe
                 </span>
                 <span className="rounded-lg bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
-                  {subjAnnales.length} annale(s)
+                  {subjFiches.length} fiches
                 </span>
                 <span className="rounded-lg bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
-                  {subjQuestions.length} question(s)
+                  {subjAnnales.length} annales
+                </span>
+                <span className="rounded-lg bg-slate-100 px-2.5 py-1 dark:bg-slate-800">
+                  {subjQuestions.length} QCM
                 </span>
               </div>
             </div>
@@ -178,8 +354,57 @@ export const LibraryScreen: React.FC = () => {
           </div>
         </section>
 
+        {/* Class Filter Pills inside Subject */}
+        <section className="hc-card rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+              <GraduationCap className="h-4 w-4 text-indigo-600" />
+              Découpage par classe ({formatClassRange(selectedSubject.classLevels)})
+            </div>
+            <label className="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
+              <input
+                type="checkbox"
+                checked={groupChaptersByClass}
+                onChange={(e) => setGroupChaptersByClass(e.target.checked)}
+                className="accent-indigo-600"
+              />
+              Grouper les chapitres par classe
+            </label>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => setChapterClassFilter('all')}
+              className={`rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                activeChapterClassFilter === 'all'
+                  ? 'bg-indigo-700 text-white'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+              }`}
+            >
+              Toutes ({subjChapters.length})
+            </button>
+            {subjectClasses.map((cl) => {
+              const count = subjChapters.filter((ch) => ch.classLevel === cl.id).length;
+              return (
+                <button
+                  key={cl.id}
+                  type="button"
+                  onClick={() => setChapterClassFilter(cl.id)}
+                  className={`rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                    activeChapterClassFilter === cl.id
+                      ? 'bg-indigo-700 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'
+                  }`}
+                >
+                  {cl.shortLabel} ({count})
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
         {/* Chapters List (Screen 8) */}
-        <section className="space-y-3">
+        <section className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-bold text-slate-900 dark:text-white">
               Chapitres du programme ({filteredChapters.length}/{subjChapters.length})
@@ -211,82 +436,37 @@ export const LibraryScreen: React.FC = () => {
             </div>
           </div>
 
-          {filteredChapters.map((ch) => {
-            const course = COURSES.find((c) => c.id === ch.courseId);
-            const completed = course ? state.completedCourseIds.includes(course.id) : false;
-            const chQuestions = allQuestions.filter((q) => q.chapterId === ch.id);
-
-            return (
-              <div
-                key={ch.id}
-                className="hc-card rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-md bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-800 dark:bg-blue-950 dark:text-blue-200">
-                        Chapitre {ch.order}
+          {filteredChapters.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-slate-700">
+              Aucun chapitre ne correspond à ces filtres.
+            </div>
+          ) : groupChaptersByClass && activeChapterClassFilter === 'all' ? (
+            <div className="space-y-6">
+              {groupedByClass.map(({ meta, items }) => (
+                <div key={meta.id} className="space-y-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2 dark:border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-lg bg-indigo-700 px-2.5 py-1 text-xs font-extrabold text-white">
+                        {meta.shortLabel}
                       </span>
-                      <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold capitalize text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                        {ch.difficulty} · {ch.estimatedMinutes} min
+                      <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                        {meta.label}
+                      </h3>
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        · {meta.cycleLabel}
                       </span>
-                      {completed && (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Cours lu
-                        </span>
-                      )}
                     </div>
-                    <h3 className="mt-1.5 text-base font-bold text-slate-900 dark:text-white">
-                      {ch.title}
-                    </h3>
-                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">{ch.summary}</p>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                      {items.length} chapitre{items.length > 1 ? 's' : ''}
+                    </span>
                   </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedCourseId(ch.courseId);
-                        navigate('course-reader');
-                      }}
-                      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                    >
-                      <BookOpen className="h-3.5 w-3.5 text-blue-600" />
-                      Cours
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedFicheId(ch.ficheId);
-                        navigate('fiche-viewer');
-                      }}
-                      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                    >
-                      <BookMarked className="h-3.5 w-3.5 text-emerald-600" />
-                      Fiche
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        startPractice({
-                          mode: 'libre',
-                          title: `Exercices — ${ch.title}`,
-                          subjectId: selectedSubject.id,
-                          questionIds: chQuestions.length > 0 ? chQuestions.map((q) => q.id) : subjQuestions.map((q) => q.id),
-                          immediateFeedback: true,
-                        })
-                      }
-                      className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-blue-700 px-3 py-2 text-xs font-bold text-white hover:bg-blue-800"
-                    >
-                      <Play className="h-3.5 w-3.5" />
-                      QCM ({chQuestions.length})
-                    </button>
-                  </div>
+                  <div className="space-y-2.5">{items.map(renderChapterCard)}</div>
                 </div>
-              </div>
-            );
-          })}
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2.5">{filteredChapters.map(renderChapterCard)}</div>
+          )}
         </section>
 
         {/* Linked Annales & Flashcards in Subject Detail view */}
@@ -307,7 +487,7 @@ export const LibraryScreen: React.FC = () => {
                 </button>
               </div>
               <div className="mt-3 space-y-2">
-                {subjAnnales.map((a) => (
+                {subjAnnales.slice(0, 8).map((a) => (
                   <div
                     key={a.id}
                     className="flex items-center justify-between rounded-xl border border-slate-200 p-3 dark:border-slate-700"
@@ -315,7 +495,7 @@ export const LibraryScreen: React.FC = () => {
                     <div>
                       <p className="text-xs font-bold text-slate-900 dark:text-white">{a.title}</p>
                       <p className="text-[11px] text-slate-500">
-                        {a.year} · {a.durationMinutes} min · {a.questionIds.length} q.
+                        {getClassLevelMeta(a.classLevel).shortLabel} · {a.year} · {a.durationMinutes} min · {a.questionIds.length} q.
                       </p>
                     </div>
                     <button
@@ -377,8 +557,19 @@ export const LibraryScreen: React.FC = () => {
     );
   }
 
-  // Screen 6: Bibliothèque de contenus (principale)
+  // Screen 6: Bibliothèque de contenus (principale — découpée de la 6e à l’Université)
+  const visibleClasses =
+    cycleFilter === 'all'
+      ? CLASS_LEVELS
+      : CLASS_LEVELS.filter((c) => c.cycle === cycleFilter);
+
   const filteredSubjects = SUBJECTS.filter((s) => {
+    const subjClasses = s.classLevels ?? [];
+    if (cycleFilter !== 'all') {
+      const cycleLevels = SCHOOL_CYCLES.find((c) => c.id === cycleFilter)?.levels ?? [];
+      if (!subjClasses.some((cl) => cycleLevels.includes(cl))) return false;
+    }
+    if (classFilter !== 'all' && !subjClasses.includes(classFilter)) return false;
     if (examFilter !== 'all' && !s.examIds.includes(examFilter)) return false;
     if (onlyDownloaded && !isDownloaded('subject', s.id)) return false;
     if (
@@ -390,15 +581,23 @@ export const LibraryScreen: React.FC = () => {
     return true;
   });
 
+  const handleSelectCycle = (cycle: 'all' | SchoolCycleId) => {
+    setCycleFilter(cycle);
+    if (cycle !== 'all' && classFilter !== 'all') {
+      const levels = SCHOOL_CYCLES.find((c) => c.id === cycle)?.levels ?? [];
+      if (!levels.includes(classFilter)) setClassFilter('all');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">
-            Bibliothèque de contenus
+            Bibliothèque de contenus · 6e → Université
           </h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            {SUBJECTS.length} matières · {CHAPTERS.length} chapitres · {allFiches.length} fiches de cours disponibles 100 % hors ligne.
+            {SUBJECTS.length} matières · {CHAPTERS.length.toLocaleString('fr-FR')} chapitres (72/matière) · {allFiches.length.toLocaleString('fr-FR')} fiches · 11 niveaux de classe 100 % hors ligne.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -407,7 +606,7 @@ export const LibraryScreen: React.FC = () => {
             onClick={() => navigate('annales')}
             className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           >
-            Banque d’annales →
+            Banque d’annales ({ANNALES.length}) →
           </button>
           <button
             type="button"
@@ -419,6 +618,111 @@ export const LibraryScreen: React.FC = () => {
         </div>
       </div>
 
+      {/* Parcours par Cycle & Classe (6e → Master) */}
+      <section className="hc-card space-y-3 rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50/70 to-white p-4 dark:border-indigo-900/60 dark:from-indigo-950/30 dark:to-slate-900">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <GraduationCap className="h-5 w-5 text-indigo-700 dark:text-indigo-400" />
+            <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">
+              Filtrer par cycle et par classe (6e → Université)
+            </h2>
+          </div>
+          {profileClassId && (
+            <button
+              type="button"
+              onClick={() => {
+                const meta = getClassLevelMeta(profileClassId);
+                setCycleFilter(meta.cycle);
+                setClassFilter(profileClassId);
+              }}
+              className="rounded-full bg-indigo-700 px-3 py-1 text-xs font-bold text-white hover:bg-indigo-800"
+            >
+              Ma classe : {getClassLevelMeta(profileClassId).shortLabel}
+            </button>
+          )}
+        </div>
+
+        {/* Cycles */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setCycleFilter('all');
+              setClassFilter('all');
+            }}
+            className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
+              cycleFilter === 'all'
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700'
+            }`}
+          >
+            Tous les cycles ({SUBJECTS.length} matières)
+          </button>
+          {SCHOOL_CYCLES.map((cycle) => {
+            const count = SUBJECTS.filter((s) =>
+              (s.classLevels ?? []).some((cl) => cycle.levels.includes(cl))
+            ).length;
+            return (
+              <button
+                key={cycle.id}
+                type="button"
+                onClick={() => handleSelectCycle(cycle.id)}
+                className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition ${
+                  cycleFilter === cycle.id
+                    ? 'bg-indigo-700 text-white'
+                    : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700'
+                }`}
+              >
+                {cycle.label} ({cycle.rangeLabel}) · {count}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 11 Classes Strip */}
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => setClassFilter('all')}
+            className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
+              classFilter === 'all'
+                ? 'bg-blue-700 text-white'
+                : 'bg-white/90 text-slate-700 ring-1 ring-slate-200 hover:bg-blue-50 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700'
+            }`}
+          >
+            Toutes classes
+          </button>
+          {visibleClasses.map((cl) => {
+            const totals = classTotals[cl.id];
+            return (
+              <button
+                key={cl.id}
+                type="button"
+                onClick={() => setClassFilter(cl.id)}
+                title={`${cl.label} : ${totals.subjects} matières, ${totals.chapters} chapitres`}
+                className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
+                  classFilter === cl.id
+                    ? 'bg-blue-700 text-white shadow-sm'
+                    : 'bg-white/90 text-slate-700 ring-1 ring-slate-200 hover:bg-blue-50 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700'
+                }`}
+              >
+                {cl.shortLabel}{' '}
+                <span className={classFilter === cl.id ? 'text-blue-100' : 'text-slate-400'}>
+                  ({totals.subjects})
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {classFilter !== 'all' && (
+          <p className="text-xs font-medium text-indigo-900 dark:text-indigo-200">
+            <strong>{getClassLevelMeta(classFilter).label}</strong> : {getClassLevelMeta(classFilter).description}{' '}
+            ({classTotals[classFilter].subjects} matières · {classTotals[classFilter].chapters} chapitres dédiés)
+          </p>
+        )}
+      </section>
+
       {/* Search & Filters */}
       <div className="hc-card flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
         <div className="relative min-w-[220px] flex-1">
@@ -427,7 +731,7 @@ export const LibraryScreen: React.FC = () => {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher une matière ou un thème..."
+            placeholder="Rechercher une matière (Maths, Robotique, Allemand, Génétique, Droit Pénal...)"
             className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2 pl-9 pr-3 text-sm dark:border-slate-700 dark:bg-slate-800"
           />
         </div>
@@ -437,7 +741,7 @@ export const LibraryScreen: React.FC = () => {
           onChange={(e) => setExamFilter(e.target.value)}
           className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold dark:border-slate-700 dark:bg-slate-800"
         >
-          <option value="all">Tous les examens / concours</option>
+          <option value="all">Tous les examens / concours ({EXAMS.length})</option>
           {EXAMS.map((e) => (
             <option key={e.id} value={e.id}>
               {e.shortName}
@@ -456,13 +760,19 @@ export const LibraryScreen: React.FC = () => {
       </div>
 
       {/* Subject Grid */}
+      <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+        {filteredSubjects.length} matière{filteredSubjects.length > 1 ? 's' : ''} affichée{filteredSubjects.length > 1 ? 's' : ''} sur {SUBJECTS.length}
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {filteredSubjects.map((subj) => {
           const downloaded = isDownloaded('subject', subj.id);
           const pct = downloadingIds[`subject:${subj.id}`];
-          const chCount = CHAPTERS.filter((c) => c.subjectId === subj.id).length;
-          const ficheCount = allFiches.filter((f) => f.subjectId === subj.id).length;
-          const lockedPremium = subj.isPremium && state.profiles.find((p) => p.id === state.activeProfileId)?.plan !== 'premium';
+          const chCount = chapterCountBySubject[subj.id] ?? 0;
+          const ficheCount = ficheCountBySubject[subj.id] ?? 0;
+          const classSpecificChCount =
+            classFilter !== 'all' ? chapterCountBySubjectAndClass[`${subj.id}:${classFilter}`] ?? 0 : null;
+          const lockedPremium = subj.isPremium && activeProfile?.plan !== 'premium';
 
           return (
             <div
@@ -473,7 +783,7 @@ export const LibraryScreen: React.FC = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5">
                     <span
-                      className="h-3.5 w-3.5 rounded-full"
+                      className="h-3.5 w-3.5 shrink-0 rounded-full"
                       style={{ backgroundColor: subj.color }}
                     />
                     <h2 className="text-base font-bold text-slate-900 dark:text-white">
@@ -481,13 +791,25 @@ export const LibraryScreen: React.FC = () => {
                     </h2>
                   </div>
                   {subj.isPremium ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900 dark:bg-amber-900 dark:text-amber-100">
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900 dark:bg-amber-900 dark:text-amber-100">
                       <Sparkles className="h-3 w-3" />
                       Plus
                     </span>
                   ) : (
-                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+                    <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
                       Gratuit
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-800 dark:bg-indigo-950/70 dark:text-indigo-200">
+                    <GraduationCap className="h-3 w-3" />
+                    {formatClassRange(subj.classLevels)}
+                  </span>
+                  {classSpecificChCount !== null && (
+                    <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-800 dark:bg-blue-950 dark:text-blue-200">
+                      {classSpecificChCount} ch. en {getClassLevelMeta(classFilter as ClassLevelId).shortLabel}
                     </span>
                   )}
                 </div>
@@ -511,7 +833,7 @@ export const LibraryScreen: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mt-4 flex items-center gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => {
@@ -520,6 +842,7 @@ export const LibraryScreen: React.FC = () => {
                       return;
                     }
                     setSelectedSubjectId(subj.id);
+                    setChapterClassFilter(classFilter);
                     navigate('subject-detail');
                   }}
                   className="inline-flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-700 px-3 py-2 text-xs font-bold text-white hover:bg-blue-800"

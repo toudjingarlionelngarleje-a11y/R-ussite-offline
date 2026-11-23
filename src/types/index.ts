@@ -44,6 +44,31 @@ export type UserCategory =
 
 export type Difficulty = 'facile' | 'moyen' | 'difficile';
 
+export type SchoolCycleId = 'college' | 'lycee' | 'universite';
+
+export type ClassLevelId =
+  | '6e'
+  | '5e'
+  | '4e'
+  | '3e'
+  | '2nde'
+  | '1ere'
+  | 'terminale'
+  | 'l1'
+  | 'l2'
+  | 'l3'
+  | 'master';
+
+export interface ClassLevelMeta {
+  id: ClassLevelId;
+  label: string;
+  shortLabel: string;
+  cycle: SchoolCycleId;
+  cycleLabel: string;
+  order: number;
+  description: string;
+}
+
 export type SyncStatus =
   | 'synced'
   | 'pending'
@@ -133,6 +158,7 @@ export interface ExamTrack {
   description: string;
   level: string;
   subjectIds: string[];
+  classLevels?: ClassLevelId[];
   isPremium?: boolean;
   badgeColor: string;
 }
@@ -142,6 +168,7 @@ export interface Subject {
   name: string;
   shortName: string;
   examIds: string[];
+  classLevels?: ClassLevelId[];
   color: string;
   icon: string;
   description: string;
@@ -154,6 +181,7 @@ export interface Chapter {
   subjectId: string;
   title: string;
   order: number;
+  classLevel?: ClassLevelId;
   summary: string;
   estimatedMinutes: number;
   difficulty: Difficulty;
@@ -203,6 +231,7 @@ export interface Course {
   id: string;
   subjectId: string;
   chapterId: string;
+  classLevel?: ClassLevelId;
   title: string;
   durationMinutes: number;
   sizeKb: number;
@@ -214,6 +243,7 @@ export interface Question {
   id: string;
   subjectId: string;
   chapterId: string;
+  classLevel?: ClassLevelId;
   examIds: string[];
   prompt: string;
   context?: string;
@@ -237,6 +267,7 @@ export interface Annale {
   title: string;
   examId: string;
   subjectId: string;
+  classLevel?: ClassLevelId;
   chapterIds: string[];
   year: number;
   difficulty: Difficulty;
@@ -263,6 +294,7 @@ export interface Fiche {
   id: string;
   subjectId: string;
   chapterId: string;
+  classLevel?: ClassLevelId;
   title: string;
   subtitle: string;
   sizeKb: number;
