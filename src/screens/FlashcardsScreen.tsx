@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { CheckCircle2, Layers, RotateCcw, Sparkles } from 'lucide-react';
 import { PedagogicalDiagram } from '../components/PedagogicalDiagram';
-import { FLASHCARDS, SUBJECTS, useApp } from '../context/AppContext';
+import { SUBJECTS, useApp } from '../context/AppContext';
 import { isCardDue, MASTERY_LABELS } from '../lib/sm2';
 import { MasteryLevel } from '../types';
 
@@ -55,7 +55,7 @@ export const FlashcardsScreen: React.FC = () => {
             À revoir : {dueCount}
           </span>
           <span className="rounded-xl bg-emerald-100 px-3 py-1.5 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
-            Maîtrisées : {masteredCount}/{FLASHCARDS.length}
+            Maîtrisées : {masteredCount}/{allFlashcards.length}
           </span>
         </div>
       </div>
@@ -73,7 +73,7 @@ export const FlashcardsScreen: React.FC = () => {
             }}
             className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold dark:border-slate-700 dark:bg-slate-800"
           >
-            <option value="all">Toutes les matières ({FLASHCARDS.length})</option>
+            <option value="all">Toutes les matières ({allFlashcards.length})</option>
             {SUBJECTS.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}

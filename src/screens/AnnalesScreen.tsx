@@ -38,6 +38,7 @@ export const AnnalesScreen: React.FC = () => {
   const [difficultyFilter, setDifficultyFilter] = useState<'all' | Difficulty>('all');
   const [durationFilter, setDurationFilter] = useState<'all' | 'short' | 'medium'>('all');
   const [quickTag, setQuickTag] = useState<'all' | 'downloaded' | 'favorites' | 'unfinished' | 'review'>('all');
+  const [visibleCount, setVisibleCount] = useState(24);
 
   const years = useMemo(
     () => Array.from(new Set(ANNALES.map((a) => a.year))).sort((a, b) => b - a),
@@ -57,26 +58,45 @@ export const AnnalesScreen: React.FC = () => {
     return { best, status, attempts: matching.length };
   };
 
-  const filtered = ANNALES.filter((a) => {
-    if (examFilter !== 'all' && a.examId !== examFilter) return false;
-    if (subjectFilter !== 'all' && a.subjectId !== subjectFilter) return false;
-    if (yearFilter !== 'all' && String(a.year) !== yearFilter) return false;
-    if (difficultyFilter !== 'all' && a.difficulty !== difficultyFilter) return false;
-    if (durationFilter === 'short' && a.durationMinutes > 15) return false;
-    if (durationFilter === 'medium' && a.durationMinutes <= 15) return false;
+  const filtered = useMemo(
+    () =>
+      ANNALES.filter((a) => {
+        if (examFilter !== 'all' && a.examId !== examFilter) return false;
+        if (subjectFilter !== 'all' && a.subjectId !== subjectFilter) return false;
+        if (yearFilter !== 'all' && String(a.year) !== yearFilter) return false;
+        if (difficultyFilter !== 'all' && a.difficulty !== difficultyFilter) return false;
+        if (durationFilter === 'short' && a.durationMinutes > 15) return false;
+        if (durationFilter === 'medium' && a.durationMinutes <= 15) return false;
 
-    const st = getAnnaleStats(a.id);
-    if (quickTag === 'downloaded' && !isDownloaded('annale', a.id)) return false;
-    if (quickTag === 'favorites' && !state.favorites.annales.includes(a.id)) return false;
-    if (quickTag === 'unfinished' && st.status === 'termine') return false;
-    if (quickTag === 'review' && !a.questionIds.some((qid) => mistakeIds.has(qid))) return false;
+        const st = getAnnaleStats(a.id);
+        if (quickTag === 'downloaded' && !isDownloaded('annale', a.id)) return false;
+        if (quickTag === 'favorites' && !state.favorites.annales.includes(a.id)) return false;
+        if (quickTag === 'unfinished' && st.status === 'termine') return false;
+        if (quickTag === 'review' && !a.questionIds.some((qid) => mistakeIds.has(qid))) return false;
 
-    if (query.trim()) {
-      const hay = `${a.title} ${a.examType} ${a.year} ${a.countryOrZone ?? ''}`.toLowerCase();
-      if (!hay.includes(query.trim().toLowerCase())) return false;
-    }
-    return true;
-  });
+        if (query.trim()) {
+          const hay = `${a.title} ${a.examType} ${a.year} ${a.countryOrZone ?? ''}`.toLowerCase();
+          if (!hay.includes(query.trim().toLowerCase())) return false;
+        }
+        return true;
+      }),
+    [
+      examFilter,
+      subjectFilter,
+      yearFilter,
+      difficultyFilter,
+      durationFilter,
+      quickTag,
+      query,
+      state.sessions,
+      state.inProgressSession,
+      state.favorites.annales,
+      state.downloadedItems,
+      mistakeIds,
+    ]
+  );
+
+  const displayedAnnales = filtered.slice(0, visibleCount);
 
   const handleDownloadPaper = (annaleId: string, includeCorrection: boolean) => {
     const annale = ANNALES.find((a) => a.id === annaleId);
@@ -220,6 +240,24 @@ export const AnnalesScreen: React.FC = () => {
         </div>
       </div>
 
+      {/* Results summary */}
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+        <span>
+          Affichage de <strong className="text-slate-900 dark:text-white">{displayedAnnales.length}</strong> sur{' '}
+          <strong className="text-slate-900 dark:text-white">{filtered.length}</strong> anciens sujets correspondants
+          ({ANNALES.length} au total)
+        </span>
+        {filtered.length > visibleCount && (
+          <button
+            type="button"
+            onClick={() => setVisibleCount((n) => n + 30)}
+            className="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-300"
+          >
+            + Voir plus
+          </button>
+        )}
+      </div>
+
       {/* Results List */}
       <div className="space-y-3">
         {filtered.length === 0 ? (
@@ -227,7 +265,7 @@ export const AnnalesScreen: React.FC = () => {
             Aucun sujet ne correspond à ces filtres.
           </div>
         ) : (
-          filtered.map((a) => {
+          displayedAnnales.map((a) => {
             const subj = SUBJECTS.find((s) => s.id === a.subjectId);
             const exam = EXAMS.find((e) => e.id === a.examId);
             const downloaded = isDownloaded('annale', a.id);
@@ -441,6 +479,25 @@ export const AnnalesScreen: React.FC = () => {
               </article>
             );
           })
+        )}
+
+        {filtered.length > visibleCount && (
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setVisibleCount((n) => n + 30)}
+              className="rounded-xl bg-blue-700 px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-blue-800"
+            >
+              Charger 30 sujets supplémentaires ({filtered.length - visibleCount} restants)
+            </button>
+            <button
+              type="button"
+              onClick={() => setVisibleCount(filtered.length)}
+              className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+            >
+              Tout afficher ({filtered.length})
+            </button>
+          </div>
         )}
       </div>
     </div>

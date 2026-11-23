@@ -297,7 +297,7 @@ export async function syncStateWithSupabase(
       .from('teacher_contents')
       .select('id, kind, payload_json')
       .order('published_at', { ascending: false })
-      .limit(80);
+      .limit(200);
 
     const pulledQuestions: Question[] = [];
     const pulledFiches: Fiche[] = [];

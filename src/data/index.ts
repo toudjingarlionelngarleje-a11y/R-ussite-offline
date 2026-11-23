@@ -86,6 +86,16 @@ import {
   EXPANDED_COURSES,
   EXPANDED_FICHES,
 } from './curriculumExpansion';
+import {
+  MEGA50_ANNALES,
+  MEGA50_CHAPTERS,
+  MEGA50_COURSES,
+  MEGA50_EXAMS,
+  MEGA50_FICHES,
+  MEGA50_FLASHCARDS,
+  MEGA50_QUESTIONS,
+  buildMissingChapterExercises,
+} from './megaExpansion50';
 
 export { COUNTRIES, USER_CATEGORIES };
 
@@ -103,6 +113,7 @@ export const EXAMS = [
   ...ZENITH_EXAMS,
   ...SUMMIT_EXAMS,
   ...HORIZON_EXAMS,
+  ...MEGA50_EXAMS,
 ];
 
 const EXTRA_EXAM_LINKS: Record<string, string[]> = {
@@ -235,6 +246,16 @@ const EXTRA_EXAM_LINKS: Record<string, string[]> = {
   ethique_gouvernance: ['certif-droit-numerique'],
 };
 
+const MEGA50_EXAM_LINKS_BY_SUBJECT: Record<string, string[]> = {};
+for (const exam of MEGA50_EXAMS) {
+  for (const sid of exam.subjectIds) {
+    MEGA50_EXAM_LINKS_BY_SUBJECT[sid] = [
+      ...(MEGA50_EXAM_LINKS_BY_SUBJECT[sid] ?? []),
+      exam.id,
+    ];
+  }
+}
+
 export const SUBJECTS = [
   ...BASE_SUBJECTS,
   ...EXTRA_SUBJECTS,
@@ -246,7 +267,13 @@ export const SUBJECTS = [
   ...HORIZON_SUBJECTS,
 ].map((s) => ({
   ...s,
-  examIds: Array.from(new Set([...s.examIds, ...(EXTRA_EXAM_LINKS[s.id] ?? [])])),
+  examIds: Array.from(
+    new Set([
+      ...s.examIds,
+      ...(EXTRA_EXAM_LINKS[s.id] ?? []),
+      ...(MEGA50_EXAM_LINKS_BY_SUBJECT[s.id] ?? []),
+    ])
+  ),
 }));
 
 export const CHAPTERS = [
@@ -259,7 +286,9 @@ export const CHAPTERS = [
   ...SUMMIT_CHAPTERS,
   ...HORIZON_CHAPTERS,
   ...EXPANDED_CHAPTERS,
+  ...MEGA50_CHAPTERS,
 ];
+
 export const COURSES = [
   ...BASE_COURSES,
   ...EXTRA_COURSES,
@@ -270,27 +299,9 @@ export const COURSES = [
   ...SUMMIT_COURSES,
   ...HORIZON_COURSES,
   ...EXPANDED_COURSES,
+  ...MEGA50_COURSES,
 ];
-export const QUESTIONS = [
-  ...BASE_QUESTIONS,
-  ...EXTRA_QUESTIONS,
-  ...MEGA_QUESTIONS,
-  ...ULTRA_QUESTIONS,
-  ...APEX_QUESTIONS,
-  ...ZENITH_QUESTIONS,
-  ...SUMMIT_QUESTIONS,
-  ...HORIZON_QUESTIONS,
-];
-export const ANNALES = [
-  ...BASE_ANNALES,
-  ...EXTRA_ANNALES,
-  ...MEGA_ANNALES,
-  ...ULTRA_ANNALES,
-  ...APEX_ANNALES,
-  ...ZENITH_ANNALES,
-  ...SUMMIT_ANNALES,
-  ...HORIZON_ANNALES,
-];
+
 export const FICHES = [
   ...BASE_FICHES,
   ...EXTRA_FICHES,
@@ -301,7 +312,46 @@ export const FICHES = [
   ...SUMMIT_FICHES,
   ...HORIZON_FICHES,
   ...EXPANDED_FICHES,
+  ...MEGA50_FICHES,
 ];
+
+const CORE_AND_MEGA_QUESTIONS = [
+  ...BASE_QUESTIONS,
+  ...EXTRA_QUESTIONS,
+  ...MEGA_QUESTIONS,
+  ...ULTRA_QUESTIONS,
+  ...APEX_QUESTIONS,
+  ...ZENITH_QUESTIONS,
+  ...SUMMIT_QUESTIONS,
+  ...HORIZON_QUESTIONS,
+  ...MEGA50_QUESTIONS,
+];
+
+const SUBJECT_META_MAP: Record<string, { name: string; examIds: string[] }> = Object.fromEntries(
+  SUBJECTS.map((s) => [s.id, { name: s.name, examIds: s.examIds }])
+);
+
+const CHAPTER_COVERAGE_QUESTIONS = buildMissingChapterExercises(
+  CHAPTERS,
+  FICHES,
+  CORE_AND_MEGA_QUESTIONS,
+  SUBJECT_META_MAP
+);
+
+export const QUESTIONS = [...CORE_AND_MEGA_QUESTIONS, ...CHAPTER_COVERAGE_QUESTIONS];
+
+export const ANNALES = [
+  ...BASE_ANNALES,
+  ...EXTRA_ANNALES,
+  ...MEGA_ANNALES,
+  ...ULTRA_ANNALES,
+  ...APEX_ANNALES,
+  ...ZENITH_ANNALES,
+  ...SUMMIT_ANNALES,
+  ...HORIZON_ANNALES,
+  ...MEGA50_ANNALES,
+];
+
 export const FLASHCARDS = [
   ...BASE_FLASHCARDS,
   ...EXTRA_FLASHCARDS,
@@ -311,4 +361,5 @@ export const FLASHCARDS = [
   ...ZENITH_FLASHCARDS,
   ...SUMMIT_FLASHCARDS,
   ...HORIZON_FLASHCARDS,
+  ...MEGA50_FLASHCARDS,
 ];
