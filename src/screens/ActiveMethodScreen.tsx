@@ -481,13 +481,13 @@ export const ActiveMethodScreen: React.FC = () => {
           <div className="max-w-2xl">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold backdrop-blur">
               <Sparkles className="h-3.5 w-3.5" />
-              Nouvelle Méthode de Travail Centurion v16 · 100 % Hors Ligne
+              Méthode de Travail Active · 100 % Hors Ligne
             </span>
             <h1 className="mt-2.5 text-2xl font-extrabold sm:text-3xl">
               Atelier Méthode Active (au-delà du QCM)
             </h1>
             <p className="mt-1.5 text-sm text-indigo-100">
-              Ancre durablement tes 6 600 chapitres grâce à 4 techniques éprouvées par les sciences cognitives :
+              Ancre durablement tes {CHAPTERS.length.toLocaleString('fr-FR')} chapitres ({SUBJECTS.length} matières) grâce à 4 techniques éprouvées par les sciences cognitives :
               rappel libre Feynman, texte à trous actif, séquençage logique et rédaction d’examen chronométrée avec grille /20.
             </p>
           </div>

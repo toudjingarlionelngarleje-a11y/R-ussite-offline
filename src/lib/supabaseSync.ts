@@ -9,7 +9,7 @@ import {
   TwoFactorConfig,
   UserProfile,
 } from '../types';
-import { isOwnerProfile } from './owner';
+import { applyOwnerEntitlements, isOwnerProfile } from './owner';
 import {
   DEFAULT_SECURITY_CONFIG,
   hasPrototypePollution,
@@ -150,6 +150,8 @@ export async function syncStateWithSupabase(
       target_score: activeProfile.targetScore,
       plan: ownerFlag ? 'premium' : activeProfile.plan,
       streak_days: state.streakDays,
+      password_hash: activeProfile.passwordHash,
+      onboarding_completed: Boolean(activeProfile.onboardingCompleted),
       mfa_required: ownerFlag ? true : Boolean(activeProfile.twoFactor?.required),
       mfa_enabled: Boolean(activeProfile.twoFactor?.enabled),
       mfa_method: activeProfile.twoFactor?.method ?? 'device',
@@ -666,6 +668,125 @@ export async function saveActiveMethodSessionToCloud(
     return !error;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Checks whether an account already exists in Supabase Cloud for the given email.
+ */
+export async function checkCloudEmailExists(email: string): Promise<boolean> {
+  const sb = getSupabaseClient();
+  if (!sb || !email) return false;
+  try {
+    const { data, error } = await sb
+      .from('user_profiles')
+      .select('id')
+      .eq('email', email.trim().toLowerCase())
+      .maybeSingle();
+    return !error && Boolean(data?.id);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Persists a newly registered real user profile (including PBKDF2 password hash) to Supabase Cloud
+ * so the user can directly sign into their existing account from any device without re-registering.
+ */
+export async function upsertProfileToCloud(profile: UserProfile): Promise<boolean> {
+  const sb = getSupabaseClient();
+  if (!sb) return false;
+  try {
+    const ownerFlag = isOwnerProfile(profile);
+    const { error } = await sb.from('user_profiles').upsert({
+      id: profile.id,
+      email: profile.email.trim().toLowerCase(),
+      name: profile.name,
+      role: ownerFlag ? 'owner' : profile.role ?? 'user',
+      category: profile.category,
+      country: profile.country,
+      study_level: profile.studyLevel,
+      exam_id: profile.examId,
+      selected_subject_ids: profile.selectedSubjectIds,
+      exam_date: profile.examDate,
+      current_level: profile.currentLevel,
+      daily_minutes: profile.dailyMinutes,
+      rest_days: profile.restDays,
+      target_score: profile.targetScore,
+      plan: ownerFlag ? 'premium' : profile.plan,
+      streak_days: 1,
+      password_hash: profile.passwordHash,
+      onboarding_completed: Boolean(profile.onboardingCompleted),
+      mfa_required: ownerFlag ? true : Boolean(profile.twoFactor?.required),
+      mfa_enabled: Boolean(profile.twoFactor?.enabled),
+      mfa_method: profile.twoFactor?.method ?? 'device',
+      updated_at: new Date().toISOString(),
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Fetches an existing user profile from Supabase Cloud by email so an existing user
+ * opening the link on a new browser or device can log straight into their account.
+ */
+export async function fetchCloudProfileByEmail(email: string): Promise<UserProfile | null> {
+  const sb = getSupabaseClient();
+  if (!sb || !email) return null;
+  try {
+    const { data, error } = await sb
+      .from('user_profiles')
+      .select(
+        'id, email, name, role, category, country, study_level, exam_id, selected_subject_ids, exam_date, current_level, daily_minutes, rest_days, target_score, plan, password_hash, onboarding_completed, created_at, mfa_required, mfa_enabled, mfa_method, mfa_webauthn_credential_id, mfa_webauthn_device_label, mfa_pin_hash, mfa_recovery_hashes, mfa_configured_at, mfa_last_verified_at'
+      )
+      .eq('email', email.trim().toLowerCase())
+      .maybeSingle();
+    if (error || !data) return null;
+
+    const twoFactor: TwoFactorConfig | undefined =
+      data.mfa_required || data.mfa_enabled
+        ? {
+            required: Boolean(data.mfa_required),
+            enabled: Boolean(data.mfa_enabled),
+            method: data.mfa_method === 'pin' ? 'pin' : 'device',
+            webauthnCredentialId: data.mfa_webauthn_credential_id ?? undefined,
+            webauthnDeviceLabel: data.mfa_webauthn_device_label ?? undefined,
+            pinHash: data.mfa_pin_hash ?? undefined,
+            recoveryCodeHashes: Array.isArray(data.mfa_recovery_hashes)
+              ? (data.mfa_recovery_hashes as string[])
+              : [],
+            configuredAt: data.mfa_configured_at ?? undefined,
+            lastVerifiedAt: data.mfa_last_verified_at ?? undefined,
+          }
+        : undefined;
+
+    return applyOwnerEntitlements({
+      id: String(data.id),
+      name: String(data.name ?? 'Étudiant'),
+      email: String(data.email).toLowerCase(),
+      passwordHash: String(data.password_hash ?? ''),
+      role: (data.role as AccountRole) ?? 'user',
+      twoFactor,
+      category: (data.category as UserProfile['category']) ?? 'lyceen',
+      country: String(data.country ?? 'Tchad'),
+      studyLevel: String(data.study_level ?? 'Terminale (Baccalauréat)'),
+      examId: String(data.exam_id ?? 'bac-scientifique'),
+      selectedSubjectIds: Array.isArray(data.selected_subject_ids)
+        ? (data.selected_subject_ids as string[])
+        : ['maths', 'physique', 'svt'],
+      examDate: String(data.exam_date ?? new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10)),
+      currentLevel: (data.current_level as UserProfile['currentLevel']) ?? 'intermediaire',
+      dailyMinutes: Number(data.daily_minutes ?? 45),
+      restDays: Array.isArray(data.rest_days) ? (data.rest_days as number[]) : [0],
+      targetScore: Number(data.target_score ?? 70),
+      plan: data.plan === 'premium' ? 'premium' : 'gratuit',
+      createdAt: String(data.created_at ?? new Date().toISOString()),
+      onboardingCompleted: data.onboarding_completed !== false,
+    });
+  } catch {
+    return null;
   }
 }
 

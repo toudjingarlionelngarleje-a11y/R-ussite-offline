@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { ArrowLeft, GraduationCap, Lock, ShieldCheck, UserPlus } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, GraduationCap, Lock, LogIn, ShieldCheck, UserPlus, WifiOff } from 'lucide-react';
 import { USER_CATEGORIES } from '../data';
 import { useApp } from '../context/AppContext';
 import { isTwoFactorMandatoryForProfile } from '../lib/twoFactor';
 import { UserCategory } from '../types';
 
 export const AuthScreen: React.FC = () => {
-  const { state, navigate, registerAccount, loginAccount, switchProfile, loginDemo } = useApp();
-  const [tab, setTab] = useState<'register' | 'login'>('register');
+  const { state, navigate, registerAccount, loginAccount, switchProfile } = useApp();
+  // If an account already exists on this device, default to 'login' so the user can reconnect directly
+  const [tab, setTab] = useState<'register' | 'login'>(() =>
+    state.profiles.length > 0 ? 'login' : 'register'
+  );
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,27 +32,44 @@ export const AuthScreen: React.FC = () => {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-4xl flex-col justify-center px-4 py-8">
-      <button
-        type="button"
-        onClick={() => navigate('welcome')}
-        className="mb-6 inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-blue-700 dark:text-slate-300"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Retour à l’accueil
-      </button>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-700 to-emerald-600 text-white shadow">
+            <GraduationCap className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-base font-extrabold text-slate-900 dark:text-white">Réussite Offline</p>
+            <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+              100 matières · 10 000 chapitres · 100 % Hors ligne
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate('welcome')}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Découvrir le programme
+        </button>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-12">
         <div className="hc-card rounded-2xl border border-slate-200 bg-white p-6 shadow-lg lg:col-span-7 dark:border-slate-800 dark:bg-slate-900">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-700 text-white">
-              <GraduationCap className="h-5 w-5" />
+              {tab === 'register' ? <UserPlus className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-900 dark:text-white">
-                {tab === 'register' ? 'Créer un compte hors ligne' : 'Connexion locale sécurisée'}
+                {tab === 'register'
+                  ? 'Créer ton compte personnel'
+                  : 'Connexion à ton compte existant'}
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Fonctionne même sans Internet grâce au stockage local chiffré.
+                {tab === 'register'
+                  ? 'Nouveau sur Réussite Offline ? Crée ton compte en 30 secondes.'
+                  : 'Déjà inscrit ? Connecte-toi directement avec ton e-mail et ton mot de passe (local & cloud).'}
               </p>
             </div>
           </div>
@@ -61,13 +81,13 @@ export const AuthScreen: React.FC = () => {
                 setTab('register');
                 setError(null);
               }}
-              className={`rounded-lg py-2 text-sm font-semibold transition ${
+              className={`rounded-lg py-2.5 text-sm font-bold transition ${
                 tab === 'register'
                   ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300'
                   : 'text-slate-600 dark:text-slate-400'
               }`}
             >
-              Inscription
+              Créer un compte
             </button>
             <button
               type="button"
@@ -75,13 +95,13 @@ export const AuthScreen: React.FC = () => {
                 setTab('login');
                 setError(null);
               }}
-              className={`rounded-lg py-2 text-sm font-semibold transition ${
+              className={`rounded-lg py-2.5 text-sm font-bold transition ${
                 tab === 'login'
                   ? 'bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300'
                   : 'text-slate-600 dark:text-slate-400'
               }`}
             >
-              Connexion
+              J’ai déjà un compte
             </button>
           </div>
 
@@ -145,7 +165,7 @@ export const AuthScreen: React.FC = () => {
 
             <div>
               <label htmlFor="auth-pwd" className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
-                Mot de passe (haché localement en SHA-256)
+                Mot de passe (protégé par PBKDF2-SHA256)
               </label>
               <input
                 id="auth-pwd"
@@ -171,20 +191,56 @@ export const AuthScreen: React.FC = () => {
               className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white hover:bg-blue-800 disabled:opacity-60"
             >
               {tab === 'register' ? <UserPlus className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-              {tab === 'register' ? 'Créer mon compte et configurer mon examen' : 'Me connecter'}
+              {busy
+                ? 'Vérification sécurisée...'
+                : tab === 'register'
+                ? 'Créer mon compte et choisir mon examen'
+                : 'Se connecter à mon compte'}
             </button>
+
+            <div className="pt-1 text-center text-xs text-slate-500 dark:text-slate-400">
+              {tab === 'register' ? (
+                <>
+                  Tu as déjà un compte ?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTab('login');
+                      setError(null);
+                    }}
+                    className="font-bold text-blue-700 hover:underline dark:text-blue-400"
+                  >
+                    Connecte-toi directement ici
+                  </button>
+                </>
+              ) : (
+                <>
+                  Pas encore de compte ?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTab('register');
+                      setError(null);
+                    }}
+                    className="font-bold text-blue-700 hover:underline dark:text-blue-400"
+                  >
+                    Crée ton compte gratuitement
+                  </button>
+                </>
+              )}
+            </div>
           </form>
         </div>
 
         <div className="space-y-4 lg:col-span-5">
-          <div className="hc-card rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-              Appareil partagé en famille ?
-            </h2>
-            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
-              Chaque membre peut garder son propre profil, ses notes et sa progression sur le même téléphone sans mélanger les résultats.
-            </p>
-            {state.profiles.length > 0 && (
+          {state.profiles.length > 0 && (
+            <div className="hc-card rounded-2xl border border-blue-200 bg-white p-5 shadow-sm dark:border-blue-900/60 dark:bg-slate-900">
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                Comptes déjà enregistrés sur cet appareil
+              </h2>
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                Clique directement sur ton compte existant pour reprendre tes révisions sans rien recréer.
+              </p>
               <div className="mt-3 space-y-2">
                 {state.profiles.map((p) => {
                   const protected2fa = isTwoFactorMandatoryForProfile(p);
@@ -193,7 +249,7 @@ export const AuthScreen: React.FC = () => {
                       key={p.id}
                       type="button"
                       onClick={() => switchProfile(p.id)}
-                      className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-3 py-2 text-left text-xs hover:border-blue-400 dark:border-slate-700"
+                      className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-3 py-2.5 text-left text-xs transition hover:border-blue-400 hover:bg-blue-50/50 dark:border-slate-700 dark:hover:bg-blue-950/30"
                     >
                       <div>
                         <p className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
@@ -206,30 +262,44 @@ export const AuthScreen: React.FC = () => {
                         </p>
                         <p className="text-slate-500">{p.email}</p>
                       </div>
-                      <span className="font-semibold text-blue-700 dark:text-blue-400">
+                      <span className="font-bold text-blue-700 dark:text-blue-400">
                         {protected2fa ? 'Vérifier 2FA →' : 'Ouvrir →'}
                       </span>
                     </button>
                   );
                 })}
               </div>
-            )}
-            <button
-              type="button"
-              onClick={() => loginDemo('bac-scientifique')}
-              className="mt-4 w-full rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5 text-xs font-bold text-blue-800 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-200"
-            >
-              Accéder rapidement avec le compte démo
-            </button>
+            </div>
+          )}
+
+          <div className="hc-card rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
+              <WifiOff className="h-4 w-4 text-blue-600" />
+              Un seul compte, tous tes appareils
+            </h2>
+            <ul className="mt-2.5 space-y-2 text-xs text-slate-600 dark:text-slate-400">
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                <span>
+                  Tes progrès, notes, flashcards et examens blancs sont sauvegardés localement hors ligne et synchronisés sur le cloud Supabase.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                <span>
+                  Si tu as déjà un compte, connecte-toi directement avec ton e-mail et ton mot de passe : inutile de recréer un compte.
+                </span>
+              </li>
+            </ul>
           </div>
 
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 text-xs text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
             <p className="flex items-center gap-1.5 font-bold">
               <ShieldCheck className="h-4 w-4 text-emerald-600" />
-              Confidentialité garantie
+              Sécurité & Confidentialité garanties
             </p>
             <p className="mt-1 leading-relaxed">
-              Tes données restent sur cet appareil dans IndexedDB. Tu peux les exporter ou supprimer ton compte à tout moment.
+              Mots de passe hachés en PBKDF2-SHA256 (120 000 itérations), bouclier anti-bruteforce, coffre IndexedDB et zéro publicité.
             </p>
           </div>
         </div>

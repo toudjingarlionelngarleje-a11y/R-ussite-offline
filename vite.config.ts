@@ -13,6 +13,13 @@ export default defineConfig({
             if (id.includes('lucide-react')) return 'vendor-icons';
             return 'vendor-react';
           }
+          if (id.includes('/millennium100/pack1_')) return 'data-m100-1';
+          if (id.includes('/millennium100/pack2_')) return 'data-m100-2';
+          if (id.includes('/millennium100/pack3_')) return 'data-m100-3';
+          if (id.includes('/millennium100/pack4_')) return 'data-m100-4';
+          if (id.includes('/millennium100/pack5_')) return 'data-m100-5';
+          if (id.includes('/millennium100/pack6_')) return 'data-m100-6';
+          if (id.includes('/millennium100/pack7_')) return 'data-m100-7';
           if (id.includes('/centurion100/pack1_')) return 'data-c100-1';
           if (id.includes('/centurion100/pack2_')) return 'data-c100-2';
           if (id.includes('/centurion100/pack3_')) return 'data-c100-3';

@@ -40,12 +40,15 @@ import {
   isOwnerProfile,
 } from '../lib/owner';
 import {
+  checkCloudEmailExists,
+  fetchCloudProfileByEmail,
   fetchProfileMfaFromCloud,
   isSupabaseConfigured,
   publishOwnerCloudQuestion,
   saveOwnerGlobalSettingsToCloud,
   syncStateWithSupabase,
   syncTwoFactorConfigToCloud,
+  upsertProfileToCloud,
 } from '../lib/supabaseSync';
 import {
   clearTwoFactorSessionVerification,
@@ -126,194 +129,41 @@ const DEFAULT_PRIVACY: PrivacySettings = {
   acceptedPolicyDate: '2026-11-22',
 };
 
-function createDemoState(): AppState {
-  const examDate = new Date();
-  examDate.setDate(examDate.getDate() + 45);
-  const demoProfile: UserProfile = {
-    id: 'profile-demo-amina',
-    name: 'Amina Mahamat',
-    email: 'amina.mahamat@exemple.td',
-    passwordHash: 'demo_hashed_local',
-    category: 'lyceen',
-    country: 'Tchad',
-    studyLevel: 'Terminale (Baccalauréat)',
-    examId: 'bac-scientifique',
-    selectedSubjectIds: ['maths', 'physique', 'svt', 'philo'],
-    examDate: formatIsoDate(examDate),
-    currentLevel: 'intermediaire',
-    dailyMinutes: 45,
-    restDays: [0], // Dimanche
-    targetScore: 75,
-    plan: 'gratuit',
-    createdAt: new Date(Date.now() - 8 * 86400000).toISOString(),
-    onboardingCompleted: true,
-  };
-
-  const past1 = new Date(Date.now() - 3 * 86400000).toISOString();
-  const past2 = new Date(Date.now() - 1 * 86400000).toISOString();
-
-  const initialSessions: SessionRecord[] = [
-    {
-      id: 'sess-demo-1',
-      mode: 'rapide',
-      title: 'Révision rapide — Mathématiques (Second degré)',
-      subjectId: 'maths',
-      startedAt: past1,
-      completedAt: past1,
-      totalTimeSeconds: 235,
-      scorePercent: 50,
-      correctCount: 2,
-      totalCount: 4,
-      answers: [
-        { questionId: 'q-m-1', selectedIndex: 0, isCorrect: true, timeSpentSeconds: 52, modifiedCount: 0, flaggedForReview: false, skipped: false },
-        { questionId: 'q-m-2', selectedIndex: 1, isCorrect: false, timeSpentSeconds: 78, modifiedCount: 1, flaggedForReview: true, skipped: false },
-        { questionId: 'q-m-3', selectedIndex: 1, isCorrect: false, timeSpentSeconds: 65, modifiedCount: 0, flaggedForReview: true, skipped: false },
-        { questionId: 'q-m-4', selectedIndex: 1, isCorrect: true, timeSpentSeconds: 40, modifiedCount: 0, flaggedForReview: false, skipped: false },
-      ],
-      synced: true,
-    },
-    {
-      id: 'sess-demo-2',
-      mode: 'examen_blanc',
-      title: 'Baccalauréat Physique-Chimie — Dipôle RC & Mécanique',
-      annaleId: 'annale-bac-phys-2024',
-      subjectId: 'physique',
-      startedAt: past2,
-      completedAt: past2,
-      durationLimitSeconds: 900,
-      totalTimeSeconds: 310,
-      remainingSeconds: 590,
-      scorePercent: 75,
-      correctCount: 3,
-      totalCount: 4,
-      answers: [
-        { questionId: 'q-p-1', selectedIndex: 0, isCorrect: true, timeSpentSeconds: 70, modifiedCount: 0, flaggedForReview: false, skipped: false },
-        { questionId: 'q-p-2', selectedIndex: 1, isCorrect: false, timeSpentSeconds: 95, modifiedCount: 1, flaggedForReview: true, skipped: false },
-        { questionId: 'q-p-3', selectedIndex: 0, isCorrect: true, timeSpentSeconds: 85, modifiedCount: 0, flaggedForReview: false, skipped: false },
-        { questionId: 'q-p-4', selectedIndex: 0, isCorrect: true, timeSpentSeconds: 60, modifiedCount: 0, flaggedForReview: false, skipped: false },
-      ],
-      synced: true,
-    },
-  ];
-
-  const downloadedItems: Record<string, DownloadedItem> = {
-    'subject:maths': {
-      id: 'subject:maths',
-      type: 'subject',
-      title: 'Pack complet Mathématiques',
-      subjectId: 'maths',
-      sizeKb: 680,
-      downloadedAt: past1,
-      version: 1,
-    },
-    'annale:annale-bac-maths-2024': {
-      id: 'annale:annale-bac-maths-2024',
-      type: 'annale',
-      title: 'Baccalauréat Scientifique — Mathématiques (Série D & C)',
-      subjectId: 'maths',
-      sizeKb: 245,
-      downloadedAt: past1,
-      version: 1,
-    },
-    'annale:annale-bac-phys-2024': {
-      id: 'annale:annale-bac-phys-2024',
-      type: 'annale',
-      title: 'Baccalauréat Physique-Chimie — Dipôle RC & Mécanique',
-      subjectId: 'physique',
-      sizeKb: 210,
-      downloadedAt: past2,
-      version: 1,
-    },
-    'fiche:fiche-maths-second-degre': {
-      id: 'fiche:fiche-maths-second-degre',
-      type: 'fiche',
-      title: 'Équations et fonctions du second degré',
-      subjectId: 'maths',
-      sizeKb: 64,
-      downloadedAt: past1,
-      version: 1,
-    },
-    'fiche:fiche-phys-rc': {
-      id: 'fiche:fiche-phys-rc',
-      type: 'fiche',
-      title: 'Dipôle RC — Charge et décharge',
-      subjectId: 'physique',
-      sizeKb: 68,
-      downloadedAt: past2,
-      version: 1,
-    },
-    'course:course-maths-second-degre': {
-      id: 'course:course-maths-second-degre',
-      type: 'course',
-      title: 'Maîtriser les équations du second degré',
-      subjectId: 'maths',
-      sizeKb: 145,
-      downloadedAt: past1,
-      version: 1,
-    },
-  };
-
-  const studyPlan = generateAdaptiveStudyPlan(
-    demoProfile,
-    SUBJECTS,
-    { maths: 50, physique: 75 },
-    3
+function isLegacyDemoProfile(profile: UserProfile): boolean {
+  return (
+    profile.id === 'profile-demo-amina' ||
+    profile.id === 'profile-demo-moussa-enam' ||
+    profile.passwordHash === 'demo_hashed_local' ||
+    profile.email === 'amina.mahamat@exemple.td' ||
+    profile.email === 'moussa.enam@exemple.td'
   );
+}
 
+function createCleanBaseState(): AppState {
   return {
-    profiles: [demoProfile],
-    activeProfileId: demoProfile.id,
-    downloadedItems,
-    sessions: initialSessions,
+    profiles: [],
+    activeProfileId: null,
+    downloadedItems: {},
+    sessions: [],
     inProgressSession: null,
     flashcardProgress: {},
     favorites: {
-      annales: ['annale-bac-maths-2024'],
-      fiches: ['fiche-maths-second-degre', 'fiche-phys-rc'],
-      courses: ['course-maths-second-degre'],
-      questions: ['q-m-2', 'q-p-2'],
+      annales: [],
+      fiches: [],
+      courses: [],
+      questions: [],
     },
-    notes: [
-      {
-        id: 'note-demo-1',
-        targetType: 'fiche',
-        targetId: 'fiche-maths-second-degre',
-        targetTitle: 'Équations et fonctions du second degré',
-        subjectId: 'maths',
-        content: 'Penser à vérifier les signes de b et c avant de calculer Δ = b² − 4ac. Ne pas oublier le facteur a dans a(x − x₁)(x − x₂).',
-        createdAt: past1,
-        updatedAt: past1,
-      },
-      {
-        id: 'note-demo-2',
-        targetType: 'question',
-        targetId: 'q-p-2',
-        targetTitle: 'Charge condensateur à t = τ',
-        subjectId: 'physique',
-        content: 'Charge à t = τ → 63% de E. Décharge à t = τ → 37% de E. Ne plus inverser !',
-        createdAt: past2,
-        updatedAt: past2,
-      },
-    ],
-    highlights: [
-      {
-        id: 'hl-demo-1',
-        targetType: 'fiche',
-        targetId: 'fiche-maths-second-degre',
-        text: 'Le trinôme est du signe de a à l’extérieur des racines et du signe de (−a) entre les racines.',
-        color: 'yellow',
-        createdAt: past1,
-      },
-    ],
-    completedCourseIds: ['course-maths-second-degre'],
-    studyPlan,
+    notes: [],
+    highlights: [],
+    completedCourseIds: [],
+    studyPlan: [],
     errorReports: [],
     syncQueue: [],
-    lastSyncAt: past2,
+    lastSyncAt: null,
     simulatedOffline: false,
     simulateSyncError: false,
     dailyChallengeCompletedDate: null,
-    streakDays: 4,
+    streakDays: 0,
     teacherDrafts: [],
     customQuestions: [],
     customFiches: [],
@@ -558,11 +408,7 @@ function createDemoState(): AppState {
 }
 
 function createEmptyInitialState(): AppState {
-  const demo = createDemoState();
-  return {
-    ...demo,
-    activeProfileId: null, // Start on Welcome screen so user can either Sign up OR 1-click launch Demo!
-  };
+  return createCleanBaseState();
 }
 
 export interface ToastMessage {
@@ -607,7 +453,6 @@ interface AppContextValue {
   addStudyGroupMessage: (groupId: string, text: string) => void;
   reportGroupMessage: (groupId: string, messageId: string) => void;
   updateErrorReportStatus: (reportId: string, status: ErrorReport['status']) => void;
-  launchEnamDemoScenario: () => void;
 
   // Network & Sync
   isOnline: boolean;
@@ -617,8 +462,7 @@ interface AppContextValue {
   toggleSimulateSyncError: () => void;
   syncNow: () => Promise<void>;
 
-  // Auth & Profile
-  loginDemo: (examId?: string) => void;
+  // Auth & Profile (real accounts only — no demo account)
   registerAccount: (input: {
     name: string;
     email: string;
@@ -730,7 +574,7 @@ const AppContext = createContext<AppContextValue | null>(null);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<AppState>(() => createEmptyInitialState());
   const [hydrated, setHydrated] = useState(false);
-  const [screen, setScreen] = useState<ScreenId>('welcome');
+  const [screen, setScreen] = useState<ScreenId>('auth');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('maths');
   const [selectedCourseId, setSelectedCourseId] = useState<string>('course-maths-second-degre');
   const [selectedFicheId, setSelectedFicheId] = useState<string>('fiche-maths-second-degre');
@@ -784,10 +628,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         if (urlThreat) extraEvents.push(urlThreat);
 
+        const realProfiles = (saved.profiles ?? [])
+          .filter((p) => !isLegacyDemoProfile(p))
+          .map(applyOwnerEntitlements);
+        const validActiveProfile = saved.activeProfileId
+          ? realProfiles.find((p) => p.id === saved.activeProfileId) ?? null
+          : null;
+
         setState({
           ...defaults,
           ...saved,
-          profiles: (saved.profiles ?? []).map(applyOwnerEntitlements),
+          profiles: realProfiles,
+          activeProfileId: validActiveProfile ? validActiveProfile.id : null,
           customFlashcards: saved.customFlashcards ?? [],
           diagnosticResult: saved.diagnosticResult ?? null,
           studyGroups: saved.studyGroups?.length
@@ -810,11 +662,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             events: [...extraEvents, ...(baseSec.events ?? [])].slice(0, 60),
           },
         });
-        if (saved.activeProfileId) {
-          const prof = saved.profiles.find((p) => p.id === saved.activeProfileId);
-          if (prof) {
-            setScreen(prof.onboardingCompleted ? 'dashboard' : 'onboarding-exam');
-          }
+        if (validActiveProfile) {
+          setScreen(validActiveProfile.onboardingCompleted ? 'dashboard' : 'onboarding-exam');
+        } else {
+          setScreen('auth');
         }
       } else if (urlThreat) {
         setState((prev) => {
@@ -1174,38 +1025,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, []);
 
-  const loginDemo = useCallback(
-    (examId?: string) => {
-      const demo = createDemoState();
-      if (examId) {
-        const track = EXAMS.find((e) => e.id === examId);
-        if (track && demo.profiles[0]) {
-          demo.profiles[0].examId = track.id;
-          demo.profiles[0].selectedSubjectIds = track.subjectIds;
-          demo.studyPlan = generateAdaptiveStudyPlan(
-            demo.profiles[0],
-            SUBJECTS,
-            { maths: 50, physique: 75 },
-            3
-          );
-        }
-      }
-      setState((prev) => {
-        const existingDemo = prev.profiles.find((p) => p.id === demo.profiles[0].id);
-        if (existingDemo) {
-          return {
-            ...prev,
-            activeProfileId: existingDemo.id,
-          };
-        }
-        return demo;
-      });
-      setScreen('dashboard');
-      notify('Bienvenue sur Réussite Offline ! Tes contenus de démonstration sont prêts hors ligne.', 'success');
-    },
-    [notify]
-  );
-
   const registerAccount = useCallback(
     async (input: { name: string; email: string; password: string; category: UserCategory }) => {
       const secCfg = state.security?.config ?? DEFAULT_SECURITY_CONFIG;
@@ -1266,7 +1085,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const existing = state.profiles.find((p) => p.email.toLowerCase() === trimmedEmail);
       if (existing) {
-        return { ok: false, error: 'Un compte existe déjà avec cette adresse e-mail sur cet appareil.' };
+        return {
+          ok: false,
+          error:
+            'Un compte existe déjà avec cette adresse e-mail. Connecte-toi directement depuis l’onglet « Connexion ».',
+        };
+      }
+      if (isOnline && isSupabaseConfigured) {
+        const existsInCloud = await checkCloudEmailExists(trimmedEmail);
+        if (existsInCloud) {
+          return {
+            ok: false,
+            error:
+              'Un compte existe déjà avec cette adresse e-mail. Passe sur l’onglet « Connexion » pour te connecter directement sans recréer de compte.',
+          };
+        }
       }
       const passwordHash = await hashPassword(input.password);
       const examDate = new Date();
@@ -1298,11 +1131,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         activeProfileId: newProfile.id,
       }));
       enqueueSync('register', `Création du profil ${newProfile.name}`, 3);
+      if (isOnline && isSupabaseConfigured) {
+        void upsertProfileToCloud(newProfile);
+      }
       setScreen('onboarding-exam');
       notify(`Compte créé pour ${newProfile.name} (PBKDF2-SHA256 + coffre chiffré).`, 'success');
       return { ok: true };
     },
-    [state.profiles, state.security?.config, guardInput, logSecurityEvent, enqueueSync, notify]
+    [state.profiles, state.security?.config, state.ownerSettings?.freePremiumEvent, isOnline, guardInput, logSecurityEvent, enqueueSync, notify]
   );
 
   const loginAccount = useCallback(
@@ -1328,7 +1164,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const trimmedEmail = emailGuard.cleanText.toLowerCase();
-      const found = state.profiles.find((p) => p.email.toLowerCase() === trimmedEmail);
+      let found = state.profiles.find((p) => p.email.toLowerCase() === trimmedEmail);
+      let restoredFromCloud = false;
+
+      // If account not cached on this device yet, check Supabase Cloud so existing users can sign in directly!
+      if (!found && isOnline && isSupabaseConfigured) {
+        const cloudProfile = await fetchCloudProfileByEmail(trimmedEmail);
+        if (cloudProfile) {
+          found = cloudProfile;
+          restoredFromCloud = true;
+        }
+      }
+
       const passwordOk = found ? await verifyPasswordHash(password, found.passwordHash) : false;
 
       if (!found || !passwordOk) {
@@ -1342,7 +1189,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             timestamp: new Date().toISOString(),
             category: 'BRUTEFORCE_AUTH',
             severity: triggerLock ? 'critical' : 'medium',
-            source: 'Authentification locale',
+            source: 'Authentification',
             ruleId: triggerLock ? 'ZT-BF-LOCKOUT' : 'ZT-BF-FAIL',
             description: triggerLock
               ? 'Verrouillage anti-bruteforce (5 min) déclenché après 5 tentatives échouées.'
@@ -1364,7 +1211,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ok: false,
           error: triggerLock
             ? '5 échecs détectés : compte temporairement verrouillé pendant 5 minutes (anti-bruteforce).'
-            : 'E-mail ou mot de passe incorrect.',
+            : found && !found.passwordHash
+            ? 'Ce compte ancien n’a pas encore synchronisé son mot de passe dans le cloud. Connecte-toi depuis ton appareil initial ou crée un mot de passe.'
+            : 'E-mail ou mot de passe incorrect. Si tu n’as pas encore de compte, utilise l’onglet « Créer un compte ».',
         };
       }
 
@@ -1377,22 +1226,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setState((prev) => {
         const pSec = prev.security ?? createInitialSecurityState();
+        const existsLocally = prev.profiles.some((p) => p.id === normalizedFound.id);
         return {
           ...prev,
-          activeProfileId: found.id,
+          profiles: existsLocally ? prev.profiles : [...prev.profiles, normalizedFound],
+          activeProfileId: normalizedFound.id,
           security: { ...pSec, failedLoginAttempts: 0, lockoutUntil: null },
         };
       });
-      setScreen(found.onboardingCompleted ? 'dashboard' : 'onboarding-exam');
+      if (!restoredFromCloud && isOnline && isSupabaseConfigured) {
+        void upsertProfileToCloud(normalizedFound);
+      }
+      setScreen(normalizedFound.onboardingCompleted ? 'dashboard' : 'onboarding-exam');
       notify(
         needs2fa
-          ? `Mot de passe vérifié pour ${found.name}. Valide maintenant ta double authentification (2FA).`
-          : `Bon retour, ${found.name} ! Connexion sécurisée.`,
+          ? `Mot de passe vérifié pour ${normalizedFound.name}. Valide maintenant ta double authentification (2FA).`
+          : restoredFromCloud
+          ? `Bon retour ${normalizedFound.name} ! Compte existant restauré depuis le cloud.`
+          : `Bon retour, ${normalizedFound.name} ! Connexion sécurisée.`,
         needs2fa ? 'info' : 'success'
       );
       return { ok: true };
     },
-    [state.profiles, state.security, guardInput, notify]
+    [state.profiles, state.security, isOnline, guardInput, notify]
   );
 
   const switchProfile = useCallback(
@@ -1421,8 +1277,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     clearTwoFactorSessionVerification();
     setTwoFactorVerifiedProfileId(null);
     setState((prev) => ({ ...prev, activeProfileId: null }));
-    setScreen('welcome');
-    notify('Session fermée. Tes fichiers hors ligne restent conservés sur cet appareil.', 'info');
+    setScreen('auth');
+    notify('Session fermée. Reconnecte-toi directement avec ton compte existant quand tu veux.', 'info');
   }, [notify]);
 
   const updateActiveProfile = useCallback(
@@ -2265,73 +2121,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [enqueueSync, notify]
   );
 
-  const launchEnamDemoScenario = useCallback(() => {
-    const examDate = new Date();
-    examDate.setDate(examDate.getDate() + 35);
-    const enamProfile: UserProfile = {
-      id: 'profile-demo-moussa-enam',
-      name: 'Moussa Oumar',
-      email: 'moussa.enam@exemple.td',
-      passwordHash: 'demo_hashed_local',
-      category: 'concours_admin',
-      country: 'Tchad',
-      studyLevel: 'Candidat libre / Concours administratif',
-      examId: 'concours-admin',
-      selectedSubjectIds: ['droit', 'economie', 'culture_gen', 'histoire_geo'],
-      examDate: formatIsoDate(examDate),
-      currentLevel: 'intermediaire',
-      dailyMinutes: 45,
-      restDays: [0],
-      targetScore: 80,
-      plan: 'gratuit',
-      createdAt: new Date().toISOString(),
-      onboardingCompleted: true,
-    };
-
-    const plan = generateAdaptiveStudyPlan(
-      enamProfile,
-      SUBJECTS,
-      { droit: 50, economie: 65, culture_gen: 75, histoire_geo: 60 },
-      2
-    );
-
-    setState((prev) => {
-      const exists = prev.profiles.some((p) => p.id === enamProfile.id);
-      return {
-        ...prev,
-        profiles: exists ? prev.profiles : [...prev.profiles, enamProfile],
-        activeProfileId: enamProfile.id,
-        studyPlan: plan,
-        downloadedItems: {
-          ...prev.downloadedItems,
-          'subject:droit': {
-            id: 'droit',
-            type: 'subject',
-            title: 'Pack complet Droit Constitutionnel & Administratif',
-            subjectId: 'droit',
-            sizeKb: 540,
-            downloadedAt: new Date().toISOString(),
-            version: 1,
-          },
-          'annale:ann-enam-hg-2024': {
-            id: 'ann-enam-hg-2024',
-            type: 'annale',
-            title: 'Concours ENAM & Douanes 2024 — Histoire Contemporaine & Intégration Africaine',
-            subjectId: 'histoire_geo',
-            sizeKb: 172,
-            downloadedAt: new Date().toISOString(),
-            version: 1,
-          },
-        },
-      };
-    });
-    setScreen('diagnostic');
-    notify(
-      'Scénario ENAM activé pour Moussa Oumar : commence par ton test de positionnement adaptatif !',
-      'success'
-    );
-  }, [notify]);
-
   // ==================== SECURITY FIREWALL & ANTIVIRUS CENTER ====================
   const updateSecurityConfig = useCallback(
     (patch: Partial<SecurityConfig>) => {
@@ -3135,14 +2924,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addStudyGroupMessage,
     reportGroupMessage,
     updateErrorReportStatus,
-    launchEnamDemoScenario,
     isOnline,
     syncStatus,
     downloadingIds,
     toggleSimulatedOffline,
     toggleSimulateSyncError,
     syncNow,
-    loginDemo,
     registerAccount,
     loginAccount,
     switchProfile,

@@ -30,13 +30,22 @@ import { TwoFactorGateScreen } from './screens/TwoFactorGateScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 
 const ScreenRouter: React.FC = () => {
-  const { screen, hydrated, requiresTwoFactorGate } = useApp();
+  const { screen, hydrated, requiresTwoFactorGate, activeProfile } = useApp();
 
   if (!hydrated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm font-semibold text-slate-600 dark:bg-slate-950 dark:text-slate-300">
         Chargement de ton espace hors ligne...
       </div>
+    );
+  }
+
+  // Hard Auth Gate: visitors without an active real account must sign in or register (no demo bypass)
+  if (!activeProfile && screen !== 'welcome' && screen !== 'auth') {
+    return (
+      <Layout>
+        <AuthScreen />
+      </Layout>
     );
   }
 

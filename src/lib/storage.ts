@@ -174,10 +174,10 @@ export async function hashPassword(password: string): Promise<string> {
 
 /**
  * Verifies PBKDF2-SHA256 hashes (with constant-time compare) and preserves backwards compatibility
- * with earlier SHA-256 demo/local profiles.
+ * with earlier SHA-256 local profiles.
  */
 export async function verifyPasswordHash(password: string, storedHash: string): Promise<boolean> {
-  if (storedHash === 'demo_hashed_local') return true;
+  if (!storedHash || storedHash === 'demo_hashed_local') return false;
   if (storedHash.startsWith('pbkdf2$')) {
     return verifyPasswordPBKDF2(password, storedHash);
   }

@@ -5,16 +5,17 @@ import {
   CheckCircle2,
   DownloadCloud,
   GraduationCap,
+  LogIn,
   ShieldCheck,
-  Sparkles,
   Timer,
+  UserPlus,
   Users,
   WifiOff,
 } from 'lucide-react';
-import { EXAMS, useApp } from '../context/AppContext';
+import { EXAMS, SUBJECTS, useApp } from '../context/AppContext';
 
 export const WelcomeScreen: React.FC = () => {
-  const { state, navigate, loginDemo, launchEnamDemoScenario, switchProfile, setShowPlanModal } = useApp();
+  const { state, navigate, switchProfile, setShowPlanModal } = useApp();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50/70 via-slate-50 to-white dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
@@ -46,7 +47,7 @@ export const WelcomeScreen: React.FC = () => {
             onClick={() => navigate('auth')}
             className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           >
-            Connexion
+            Connexion / Inscription
           </button>
         </div>
       </header>
@@ -57,40 +58,33 @@ export const WelcomeScreen: React.FC = () => {
           <div className="lg:col-span-7">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-xs font-bold text-blue-800 dark:border-blue-900 dark:bg-blue-950/60 dark:text-blue-200">
               <WifiOff className="h-3.5 w-3.5" />
-              Conçu pour réviser sans Internet, sans stress et sans consommer ton forfait
+              {SUBJECTS.length} matières × 100 chapitres = 10 000 cours & fiches hors ligne
             </div>
             <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl dark:text-white">
               Prépare tes examens et concours,{' '}
               <span className="text-blue-700 dark:text-blue-400">même sans connexion</span>.
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg dark:text-slate-300">
-              Cours structurés, annales corrigées, fiches synthétiques multi-formats, flashcards à répétition espacée et examens blancs chronométrés — tout fonctionne sur ton téléphone ou ton ordinateur, puis se synchronise automatiquement dès que le réseau revient.
+              Cours structurés de la 6e au Master, annales corrigées, fiches synthétiques, flashcards SM-2, examens blancs chronométrés et Atelier Méthode Active 4-en-1 — crée ton compte personnel ou connecte-toi à ton compte existant pour démarrer.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-3">
               <button
                 type="button"
-                onClick={() => loginDemo('bac-scientifique')}
+                onClick={() => navigate('auth')}
                 className="inline-flex min-h-[48px] items-center gap-2 rounded-xl bg-blue-700 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-blue-800"
               >
-                <Sparkles className="h-4 w-4" />
-                Essayer immédiatement (Démo Bac)
+                <UserPlus className="h-4 w-4" />
+                Créer un nouveau compte
                 <ArrowRight className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={launchEnamDemoScenario}
-                className="inline-flex min-h-[48px] items-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:bg-emerald-800"
-              >
-                <GraduationCap className="h-4 w-4" />
-                Scénario Concours ENAM (Test + Plan)
               </button>
               <button
                 type="button"
                 onClick={() => navigate('auth')}
                 className="inline-flex min-h-[48px] items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               >
-                Créer mon compte personnalisé
+                <LogIn className="h-4 w-4 text-blue-700 dark:text-blue-400" />
+                J’ai déjà un compte — Se connecter
               </button>
             </div>
 
@@ -99,7 +93,7 @@ export const WelcomeScreen: React.FC = () => {
               <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
                   <Users className="h-3.5 w-3.5" />
-                  Profils enregistrés sur cet appareil (usage familial / partagé)
+                  Comptes déjà enregistrés sur cet appareil
                 </p>
                 <div className="mt-2.5 flex flex-wrap gap-2">
                   {state.profiles.map((p) => (
@@ -125,7 +119,7 @@ export const WelcomeScreen: React.FC = () => {
             <div className="hc-card rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
-                  Choisis un parcours pour démarrer
+                  Parcours d’examens & concours inclus
                 </p>
                 <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-bold text-blue-800 dark:bg-blue-950 dark:text-blue-200">
                   {EXAMS.length} examens
@@ -136,7 +130,7 @@ export const WelcomeScreen: React.FC = () => {
                   <button
                     key={exam.id}
                     type="button"
-                    onClick={() => loginDemo(exam.id)}
+                    onClick={() => navigate('auth')}
                     className="group flex w-full items-start justify-between gap-3 rounded-xl border border-slate-200 p-3.5 text-left transition hover:border-blue-400 hover:bg-blue-50/40 dark:border-slate-700 dark:hover:border-blue-500 dark:hover:bg-blue-950/30"
                   >
                     <div>
@@ -170,7 +164,7 @@ export const WelcomeScreen: React.FC = () => {
             {
               icon: DownloadCloud,
               title: 'Offline-first léger',
-              desc: 'Télécharge une fois en Wi-Fi (quelques centaines de Ko) et révise partout sans réseau.',
+              desc: 'Télécharge une fois en Wi-Fi et révise partout sans réseau sur 100 matières.',
               tone: 'text-blue-700 bg-blue-50 dark:bg-blue-950/50 dark:text-blue-300',
             },
             {
@@ -181,14 +175,14 @@ export const WelcomeScreen: React.FC = () => {
             },
             {
               icon: BookOpen,
-              title: 'Fiches & Flashcards SM-2',
-              desc: '6 formats de fiches (express, tableau, audio, PDF) et répétition espacée hors ligne.',
+              title: 'Fiches, Flashcards & Méthode Active',
+              desc: 'Feynman, Texte à trous, Séquençage, Rédaction /20 et répétition espacée SM-2 hors ligne.',
               tone: 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/50 dark:text-emerald-300',
             },
             {
               icon: ShieldCheck,
-              title: 'Respect de la vie privée',
-              desc: 'Données stockées localement, exportables, supprimables, zéro revente et zéro pub.',
+              title: 'Compte personnel sécurisé',
+              desc: 'Données chiffrées localement et synchronisées sur ton compte — zéro pub, zéro revente.',
               tone: 'text-purple-700 bg-purple-50 dark:bg-purple-950/50 dark:text-purple-300',
             },
           ].map((feat) => {

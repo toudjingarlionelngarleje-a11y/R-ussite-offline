@@ -123,6 +123,16 @@ import {
   CENTURION_NEW_EXAMS,
   CENTURION_NEW_SUBJECTS,
 } from './centurion100';
+import {
+  MILLENNIUM_ANNALES,
+  MILLENNIUM_CHAPTERS,
+  MILLENNIUM_COURSES,
+  MILLENNIUM_FICHES,
+  MILLENNIUM_FLASHCARDS,
+  MILLENNIUM_NEW_EXAMS,
+  MILLENNIUM_NEW_SUBJECTS,
+  MILLENNIUM_QUESTIONS,
+} from './millennium100';
 
 export {
   COUNTRIES,
@@ -195,6 +205,7 @@ export const EXAMS: ExamTrack[] = [
   ...MEGA50_EXAMS,
   ...HYPER72_EXAMS,
   ...CENTURION_NEW_EXAMS,
+  ...MILLENNIUM_NEW_EXAMS,
 ].map((exam) => ({
   ...exam,
   classLevels: inferExamClassLevels(exam),
@@ -331,7 +342,7 @@ const EXTRA_EXAM_LINKS: Record<string, string[]> = {
 };
 
 const DYNAMIC_EXAM_LINKS_BY_SUBJECT: Record<string, string[]> = {};
-for (const exam of [...MEGA50_EXAMS, ...HYPER72_EXAMS, ...CENTURION_NEW_EXAMS]) {
+for (const exam of [...MEGA50_EXAMS, ...HYPER72_EXAMS, ...CENTURION_NEW_EXAMS, ...MILLENNIUM_NEW_EXAMS]) {
   for (const sid of exam.subjectIds) {
     DYNAMIC_EXAM_LINKS_BY_SUBJECT[sid] = [
       ...(DYNAMIC_EXAM_LINKS_BY_SUBJECT[sid] ?? []),
@@ -351,6 +362,7 @@ export const SUBJECTS = [
   ...HORIZON_SUBJECTS,
   ...HYPER72_NEW_SUBJECTS,
   ...CENTURION_NEW_SUBJECTS,
+  ...MILLENNIUM_NEW_SUBJECTS,
 ].map((s) => ({
   ...s,
   classLevels: s.classLevels && s.classLevels.length > 0 ? s.classLevels : getSubjectClassLevels(s.id),
@@ -376,6 +388,7 @@ const RAW_CHAPTERS = [
   ...MEGA50_CHAPTERS,
   ...HYPER72_CHAPTERS,
   ...CENTURION100_CHAPTERS,
+  ...MILLENNIUM_CHAPTERS,
 ];
 
 // Attribuer un niveau de classe (6e → Master) à 100% des chapitres sans écraser les attributions explicites
@@ -415,6 +428,7 @@ export const COURSES = [
   ...MEGA50_COURSES,
   ...HYPER72_COURSES,
   ...CENTURION100_COURSES,
+  ...MILLENNIUM_COURSES,
 ].map((crs) => ({
   ...crs,
   classLevel: crs.classLevel ?? CHAPTER_CLASS_MAP[crs.chapterId] ?? getSubjectClassLevels(crs.subjectId)[0],
@@ -433,6 +447,7 @@ export const FICHES = [
   ...MEGA50_FICHES,
   ...HYPER72_FICHES,
   ...CENTURION100_FICHES,
+  ...MILLENNIUM_FICHES,
 ].map((fic) => ({
   ...fic,
   classLevel: fic.classLevel ?? CHAPTER_CLASS_MAP[fic.chapterId] ?? getSubjectClassLevels(fic.subjectId)[0],
@@ -450,6 +465,7 @@ const CORE_AND_MEGA_QUESTIONS = [
   ...MEGA50_QUESTIONS,
   ...HYPER72_QUESTIONS,
   ...CENTURION100_QUESTIONS,
+  ...MILLENNIUM_QUESTIONS,
 ];
 
 const SUBJECT_META_MAP: Record<string, { name: string; examIds: string[] }> = Object.fromEntries(
@@ -484,6 +500,7 @@ export const ANNALES = [
   ...MEGA50_ANNALES,
   ...HYPER72_ANNALES,
   ...CENTURION100_ANNALES,
+  ...MILLENNIUM_ANNALES,
 ].map((a) => {
   const examClasses = EXAM_CLASS_MAP[a.examId];
   const subjectClasses = getSubjectClassLevels(a.subjectId);
@@ -509,4 +526,5 @@ export const FLASHCARDS = [
   ...MEGA50_FLASHCARDS,
   ...HYPER72_FLASHCARDS,
   ...CENTURION100_FLASHCARDS,
+  ...MILLENNIUM_FLASHCARDS,
 ];

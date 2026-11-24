@@ -165,12 +165,12 @@ export const DashboardScreen: React.FC = () => {
             </div>
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-300">
-                Nouveauté Centurion v16 · Au-delà du QCM (66 matières × 100 chapitres)
+                Atelier Méthode Active · Au-delà du QCM ({SUBJECTS.length} matières × 100 chapitres)
               </p>
               <p className="mt-1 text-sm font-medium leading-relaxed text-slate-800 dark:text-slate-100">
                 Essaie la <strong>Méthode Active 4-en-1 hors ligne</strong> : <strong>Feynman</strong> (expliquer sans notes),{' '}
                 <strong>Texte à trous actif</strong>, <strong>Séquençage logique</strong> et{' '}
-                <strong>Rédaction d’examen Pomodoro + Grille /20</strong> sur tous les 6 600 chapitres.
+                <strong>Rédaction d’examen Pomodoro + Grille /20</strong> sur tous les {CHAPTERS.length.toLocaleString('fr-FR')} chapitres.
               </p>
             </div>
           </div>

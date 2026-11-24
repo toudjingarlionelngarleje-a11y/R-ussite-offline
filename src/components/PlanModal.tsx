@@ -153,12 +153,12 @@ export const PlanModal: React.FC = () => {
                 type="button"
                 onClick={() => {
                   updateActiveProfile({ plan: 'premium' });
-                  notify('Mode Réussite Plus activé (essai démonstration gratuit) !', 'success');
+                  notify('Mode Réussite Plus activé sur votre compte !', 'success');
                   setShowPlanModal(false);
                 }}
                 className="mt-5 w-full rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-700"
               >
-                {isPremium ? 'Déjà actif sur ce compte' : 'Tester Réussite Plus gratuitement'}
+                {isPremium ? 'Déjà actif sur ce compte' : 'Activer Réussite Plus (essai gratuit)'}
               </button>
             )}
           </div>
