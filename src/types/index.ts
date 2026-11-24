@@ -17,6 +17,7 @@ export type ScreenId =
   | 'flashcards'
   | 'training'
   | 'mock-exam'
+  | 'active-method'
   | 'correction'
   | 'mistakes'
   | 'planner'
@@ -344,6 +345,21 @@ export type TrainingMode =
   | 'libre'
   | 'erreurs'
   | 'defi_quotidien';
+
+export type ActiveMethodMode = 'feynman' | 'cloze' | 'sequencing' | 'essay';
+
+export interface ActiveMethodSessionRecord {
+  id: string;
+  mode: ActiveMethodMode;
+  subjectId: string;
+  chapterId: string;
+  chapterTitle: string;
+  scorePercent: number;
+  gradeOutOf20?: number;
+  durationSeconds: number;
+  completedAt: string;
+  notesPreview?: string;
+}
 
 export interface QuestionAnswerRecord {
   questionId: string;

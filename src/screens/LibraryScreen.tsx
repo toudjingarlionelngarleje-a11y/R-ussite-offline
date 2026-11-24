@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BookMarked,
   BookOpen,
+  Brain,
   CheckCircle2,
   Download,
   FileText,
@@ -528,6 +529,14 @@ export const LibraryScreen: React.FC = () => {
                 Mémorise les formules, définitions et repères grâce à la répétition espacée hors ligne.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('active-method')}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700"
+                >
+                  <Brain className="h-4 w-4" />
+                  Méthode Active (Feynman / Rédaction)
+                </button>
                 <button
                   type="button"
                   onClick={() => navigate('flashcards')}

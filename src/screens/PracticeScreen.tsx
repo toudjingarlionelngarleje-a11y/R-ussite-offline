@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Bookmark,
+  Brain,
   CheckCircle2,
   Clock,
   Flag,
@@ -32,6 +33,7 @@ export const PracticeScreen: React.FC = () => {
   const {
     state,
     screen,
+    navigate,
     allQuestions,
     startPractice,
     updateInProgressSession,
@@ -248,6 +250,31 @@ export const PracticeScreen: React.FC = () => {
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             Configure ta session et ton chronomètre : tout fonctionne sans connexion Internet et sauvegarde automatiquement en cas d’interruption.
           </p>
+        </div>
+
+        {/* New v16 Active Method complement banner */}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 dark:border-indigo-900 dark:bg-indigo-950/40">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white">
+              <Brain className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-extrabold text-indigo-950 dark:text-indigo-100">
+                Envie de travailler autrement qu’en QCM ?
+              </p>
+              <p className="text-xs text-indigo-800/80 dark:text-indigo-300">
+                Alterne avec la Méthode Active 4-en-1 : Feynman, Texte à trous, Séquençage et Rédaction /20 (100 % hors ligne).
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('active-method')}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-extrabold text-white hover:bg-indigo-700"
+          >
+            <Brain className="h-3.5 w-3.5" />
+            Ouvrir Méthode Active
+          </button>
         </div>
 
         {/* Mode Selector Cards */}

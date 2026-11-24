@@ -209,6 +209,14 @@ export const SUBJECT_CLASS_PROFILES: Record<string, ClassLevelId[]> = {
   urbanisme_sig: UNIV_L1_MASTER,
   droit_numerique: UNIV_L1_MASTER,
   gestion_crises: UNIV_L1_MASTER,
+
+  // Centurion v16 — 6 nouvelles matières complètes (100 chapitres chacune)
+  hydrologie_eau_climat: ALL_CLASSES,
+  electronique_electrotech: LYCEE_TO_MASTER,
+  architecture_design: LYCEE_TO_MASTER,
+  sciences_politiques: PREM_TO_MASTER,
+  finance_marches_banque: PREM_TO_MASTER,
+  medecine_clinique: UNIV_L1_MASTER,
 };
 
 const CLASS_LEVEL_MAP: Record<ClassLevelId, ClassLevelMeta> = Object.fromEntries(

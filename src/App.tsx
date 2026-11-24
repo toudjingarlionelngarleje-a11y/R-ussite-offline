@@ -1,6 +1,7 @@
 import React from 'react';
 import { Layout } from './components/Layout';
 import { AppProvider, useApp } from './context/AppContext';
+import { ActiveMethodScreen } from './screens/ActiveMethodScreen';
 import { AnnalesScreen } from './screens/AnnalesScreen';
 import { AuthScreen } from './screens/AuthScreen';
 import { CoachScreen } from './screens/CoachScreen';
@@ -78,6 +79,8 @@ const ScreenRouter: React.FC = () => {
       case 'training':
       case 'mock-exam':
         return <PracticeScreen />;
+      case 'active-method':
+        return <ActiveMethodScreen />;
       case 'correction':
         return <CorrectionScreen />;
       case 'mistakes':

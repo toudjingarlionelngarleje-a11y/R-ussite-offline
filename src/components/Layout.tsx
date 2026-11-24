@@ -5,6 +5,7 @@ import {
   BookMarked,
   BookOpen,
   Bot,
+  Brain,
   Calendar,
   Compass,
   Crown,
@@ -98,6 +99,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       label: 'Entraînement',
       items: [
         { id: 'training', label: 'Modes d’entraînement', icon: Timer },
+        { id: 'active-method', label: 'Méthode Active 4-en-1', icon: Brain },
         { id: 'mock-exam', label: 'Examen blanc & Officiel', icon: GraduationCap },
         { id: 'mistakes', label: 'Révision erreurs', icon: AlertCircle, badge: mistakeCount },
         { id: 'planner', label: 'Programme perso', icon: Calendar },

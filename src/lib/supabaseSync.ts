@@ -629,3 +629,44 @@ export async function fetchProfileMfaFromCloud(
   }
 }
 
+export async function saveActiveMethodSessionToCloud(
+  profileId: string | undefined,
+  record: {
+    id: string;
+    mode: string;
+    subjectId: string;
+    chapterId: string;
+    chapterTitle: string;
+    scorePercent: number;
+    gradeOutOf20?: number;
+    durationSeconds: number;
+    notesPreview?: string;
+    completedAt: string;
+  }
+): Promise<boolean> {
+  const sb = getSupabaseClient();
+  if (!sb) return false;
+  try {
+    const { error } = await sb.from('active_method_sessions').upsert(
+      {
+        id: record.id,
+        profile_id: profileId ?? 'guest',
+        method_mode: record.mode,
+        subject_id: record.subjectId,
+        chapter_id: record.chapterId,
+        chapter_title: record.chapterTitle.slice(0, 240),
+        score_percent: Math.max(0, Math.min(100, Math.round(record.scorePercent))),
+        grade_out_of_20: record.gradeOutOf20 ?? null,
+        duration_seconds: Math.max(0, Math.round(record.durationSeconds)),
+        notes_preview: record.notesPreview ? record.notesPreview.slice(0, 400) : null,
+        completed_at: record.completedAt,
+      },
+      { onConflict: 'id' }
+    );
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+

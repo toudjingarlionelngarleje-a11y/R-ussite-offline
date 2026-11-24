@@ -3,6 +3,7 @@ import {
   AlertCircle,
   ArrowRight,
   BookMarked,
+  Brain,
   Calendar,
   CheckCircle2,
   Clock,
@@ -156,6 +157,35 @@ export const DashboardScreen: React.FC = () => {
       </section>
 
       {/* Pedagogical Recommendation Card (Section 11 example) */}
+      <section className="hc-card rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 via-violet-50 to-fuchsia-50 p-5 dark:border-indigo-900/70 dark:from-indigo-950/50 dark:via-violet-950/40 dark:to-fuchsia-950/30">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm">
+              <Brain className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-indigo-800 dark:text-indigo-300">
+                Nouveauté Centurion v16 · Au-delà du QCM (66 matières × 100 chapitres)
+              </p>
+              <p className="mt-1 text-sm font-medium leading-relaxed text-slate-800 dark:text-slate-100">
+                Essaie la <strong>Méthode Active 4-en-1 hors ligne</strong> : <strong>Feynman</strong> (expliquer sans notes),{' '}
+                <strong>Texte à trous actif</strong>, <strong>Séquençage logique</strong> et{' '}
+                <strong>Rédaction d’examen Pomodoro + Grille /20</strong> sur tous les 6 600 chapitres.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('active-method')}
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-sm hover:bg-indigo-700"
+          >
+            <Brain className="h-4 w-4" />
+            Lancer la Méthode Active
+            <ArrowRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </section>
+
       <section className="hc-card rounded-2xl border border-blue-200 bg-blue-50/70 p-5 dark:border-blue-900 dark:bg-blue-950/35">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div className="flex items-start gap-3">
