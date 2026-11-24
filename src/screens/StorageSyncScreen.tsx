@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
   Clock,
+  Cloud,
+  Crown,
   HardDrive,
   RefreshCw,
   Smartphone,
@@ -12,6 +14,7 @@ import {
 } from 'lucide-react';
 import { SyncBadge } from '../components/SyncBadge';
 import { useApp } from '../context/AppContext';
+import { isOwnerProfile } from '../lib/owner';
 import { formatBytesFromKb } from '../lib/storage';
 import { isSupabaseConfigured } from '../lib/supabaseSync';
 
@@ -24,11 +27,19 @@ export const StorageSyncScreen: React.FC = () => {
     toggleSimulatedOffline,
     toggleSimulateSyncError,
     syncNow,
+    connectAllAccountsToCloud,
     removeDownloadedItem,
     clearAllDownloads,
     updateAccessibility,
     navigate,
   } = useApp();
+  const [linkingCloud, setLinkingCloud] = useState(false);
+
+  const handleLinkAllAccounts = async () => {
+    setLinkingCloud(true);
+    await connectAllAccountsToCloud();
+    setLinkingCloud(false);
+  };
 
   const items = Object.values(state.downloadedItems);
   const packKb = items.filter((i) => i.type === 'subject').reduce((s, i) => s + i.sizeKb, 0);
@@ -192,15 +203,69 @@ export const StorageSyncScreen: React.FC = () => {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={syncNow}
-            className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-blue-700 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-800"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Synchroniser maintenant
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleLinkAllAccounts}
+              disabled={linkingCloud || !isOnline || !isSupabaseConfigured}
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              <Cloud className="h-4 w-4" />
+              {linkingCloud ? 'Connexion Cloud...' : 'Lier tous mes comptes au Cloud'}
+            </button>
+            <button
+              type="button"
+              onClick={syncNow}
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-blue-700 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-800"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Synchroniser maintenant
+            </button>
+          </div>
         </div>
+
+        {/* Cloud-Linked Accounts & Multi-Device Recovery Status */}
+        {state.profiles.length > 0 && (
+          <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/30">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="flex items-center gap-1.5 text-xs font-extrabold text-emerald-950 dark:text-emerald-100">
+                <Cloud className="h-4 w-4 text-emerald-600" />
+                Comptes connectés au Cloud ({state.profiles.length}) — Récupérables sur tout appareil
+              </p>
+              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200">
+                Profil + Progression + Notes + 2FA
+              </span>
+            </div>
+            <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
+              {state.profiles.map((prof) => {
+                const owner = isOwnerProfile(prof);
+                return (
+                  <div
+                    key={prof.id}
+                    className="flex items-center justify-between rounded-lg border border-emerald-200/80 bg-white px-3 py-2 text-xs dark:border-emerald-900 dark:bg-slate-900"
+                  >
+                    <div>
+                      <p className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
+                        <span>{prof.name}</span>
+                        {owner && (
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+                            <Crown className="h-2.5 w-2.5" />
+                            Propriétaire
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-[11px] text-slate-500">{prof.email}</p>
+                    </div>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Cloud
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* All 5 States Reference & Interactive Simulation Controls */}
         <div className="mt-5 grid gap-3 border-t border-slate-100 pt-5 sm:grid-cols-2 dark:border-slate-800">

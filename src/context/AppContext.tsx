@@ -40,12 +40,16 @@ import {
   isOwnerProfile,
 } from '../lib/owner';
 import {
+  activateLegacyCloudAccountPassword,
+  buildPortableCloudSnapshot,
   checkCloudEmailExists,
-  fetchCloudProfileByEmail,
+  fetchCloudAccountBundleByEmail,
   fetchProfileMfaFromCloud,
   isSupabaseConfigured,
+  PortableCloudAccountData,
   publishOwnerCloudQuestion,
   saveOwnerGlobalSettingsToCloud,
+  syncAllLocalProfilesToCloud,
   syncStateWithSupabase,
   syncTwoFactorConfigToCloud,
   upsertProfileToCloud,
@@ -417,6 +421,85 @@ export interface ToastMessage {
   tone: 'info' | 'success' | 'warning' | 'error';
 }
 
+export interface LegacyCloudAccountPreview {
+  id: string;
+  name: string;
+  email: string;
+  isOwner: boolean;
+  role: UserProfile['role'];
+  hasMfaPin: boolean;
+  hasRecoveryCodes: boolean;
+  sessionsCount: number;
+  notesCount: number;
+  streakDays: number;
+}
+
+export interface LoginAccountResult {
+  ok: boolean;
+  error?: string;
+  requiresCloudActivation?: boolean;
+  legacyAccount?: LegacyCloudAccountPreview;
+}
+
+function mergeCloudDataIntoState(
+  prev: AppState,
+  cloudData?: PortableCloudAccountData | null
+): Partial<AppState> {
+  if (!cloudData) return {};
+
+  const sessionMap = new Map<string, SessionRecord>();
+  for (const s of cloudData.sessions ?? []) {
+    if (s?.id) sessionMap.set(s.id, s);
+  }
+  for (const s of prev.sessions) {
+    if (s?.id) sessionMap.set(s.id, s);
+  }
+
+  const noteMap = new Map<string, PersonalNote>();
+  for (const n of cloudData.notes ?? []) {
+    if (n?.id) noteMap.set(n.id, n);
+  }
+  for (const n of prev.notes) {
+    if (n?.id) noteMap.set(n.id, n);
+  }
+
+  const hlMap = new Map<string, HighlightItem>();
+  for (const h of cloudData.highlights ?? []) {
+    if (h?.id) hlMap.set(h.id, h);
+  }
+  for (const h of prev.highlights) {
+    if (h?.id) hlMap.set(h.id, h);
+  }
+
+  const uniq = (a: string[] = [], b: string[] = []) => Array.from(new Set([...a, ...b]));
+
+  return {
+    completedCourseIds: uniq(cloudData.completedCourseIds, prev.completedCourseIds),
+    favorites: {
+      annales: uniq(cloudData.favorites?.annales, prev.favorites.annales),
+      fiches: uniq(cloudData.favorites?.fiches, prev.favorites.fiches),
+      courses: uniq(cloudData.favorites?.courses, prev.favorites.courses),
+      questions: uniq(cloudData.favorites?.questions, prev.favorites.questions),
+    },
+    sessions: Array.from(sessionMap.values()).sort((a, b) =>
+      b.completedAt.localeCompare(a.completedAt)
+    ),
+    flashcardProgress: {
+      ...(cloudData.flashcardProgress ?? {}),
+      ...prev.flashcardProgress,
+    },
+    notes: Array.from(noteMap.values()).sort((a, b) =>
+      b.updatedAt.localeCompare(a.updatedAt)
+    ),
+    highlights: Array.from(hlMap.values()),
+    studyPlan: prev.studyPlan.length > 0 ? prev.studyPlan : cloudData.studyPlan ?? [],
+    streakDays: Math.max(prev.streakDays ?? 0, cloudData.streakDays ?? 1),
+    dailyChallengeCompletedDate:
+      prev.dailyChallengeCompletedDate ?? cloudData.dailyChallengeCompletedDate ?? null,
+    diagnosticResult: prev.diagnosticResult ?? cloudData.diagnosticResult ?? null,
+  };
+}
+
 interface AppContextValue {
   state: AppState;
   hydrated: boolean;
@@ -469,7 +552,13 @@ interface AppContextValue {
     password: string;
     category: UserCategory;
   }) => Promise<{ ok: boolean; error?: string }>;
-  loginAccount: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  loginAccount: (email: string, password: string) => Promise<LoginAccountResult>;
+  activateLegacyCloudAccount: (input: {
+    email: string;
+    newPassword: string;
+    mfaPinOrRecovery?: string;
+  }) => Promise<{ ok: boolean; error?: string }>;
+  connectAllAccountsToCloud: () => Promise<{ ok: boolean; syncedCount: number }>;
   switchProfile: (profileId: string) => void;
   logout: () => void;
   updateActiveProfile: (patch: Partial<UserProfile>) => void;
@@ -832,6 +921,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [hydrated, activeProfile?.id, activeProfile?.email, isOnline, twoFactorMandatory, twoFactorConfigured]);
 
+  // Automatically connect ALL locally saved legacy accounts + Owner account to Supabase Cloud whenever online
+  const autoCloudLinkedSignatureRef = useRef<string>('');
+  useEffect(() => {
+    if (!hydrated || !isOnline || !isSupabaseConfigured) return;
+    if (state.profiles.length === 0) return;
+
+    const sig = `${state.activeProfileId ?? 'none'}|${state.profiles
+      .map((p) => `${p.id}:${p.email}:${Boolean(p.passwordHash)}:${Boolean(p.twoFactor?.enabled)}`)
+      .join(',')}`;
+    if (autoCloudLinkedSignatureRef.current === sig) return;
+    autoCloudLinkedSignatureRef.current = sig;
+
+    let cancelled = false;
+    syncAllLocalProfilesToCloud(state.profiles, state.activeProfileId, state)
+      .then(({ canonicalIdMap }) => {
+        if (cancelled) return;
+        const mapEntries = Object.entries(canonicalIdMap);
+        if (mapEntries.length > 0) {
+          setState((prev) => ({
+            ...prev,
+            profiles: prev.profiles.map((p) =>
+              canonicalIdMap[p.id] ? { ...p, id: canonicalIdMap[p.id] } : p
+            ),
+            activeProfileId:
+              prev.activeProfileId && canonicalIdMap[prev.activeProfileId]
+                ? canonicalIdMap[prev.activeProfileId]
+                : prev.activeProfileId,
+          }));
+        }
+      })
+      .catch(() => {
+        // Silent retry on next online cycle
+        autoCloudLinkedSignatureRef.current = '';
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, isOnline, state.profiles, state.activeProfileId]);
+
   const allQuestions = useMemo(
     () => [...QUESTIONS, ...state.customQuestions],
     [state.customQuestions]
@@ -1142,7 +1271,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 
   const loginAccount = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string): Promise<LoginAccountResult> => {
       const sec = state.security ?? createInitialSecurityState();
       const secCfg = sec.config;
 
@@ -1164,21 +1293,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       const trimmedEmail = emailGuard.cleanText.toLowerCase();
-      let found = state.profiles.find((p) => p.email.toLowerCase() === trimmedEmail);
-      let restoredFromCloud = false;
+      const localFound = state.profiles.find((p) => p.email.toLowerCase() === trimmedEmail);
 
-      // If account not cached on this device yet, check Supabase Cloud so existing users can sign in directly!
-      if (!found && isOnline && isSupabaseConfigured) {
-        const cloudProfile = await fetchCloudProfileByEmail(trimmedEmail);
-        if (cloudProfile) {
-          found = cloudProfile;
-          restoredFromCloud = true;
-        }
+      // Always consult Supabase Cloud when online so cross-device accounts, legacy accounts,
+      // Owner entitlements, 2FA, and full progress (sessions, notes, flashcards) stay unified.
+      const cloudBundle =
+        isOnline && isSupabaseConfigured
+          ? await fetchCloudAccountBundleByEmail(trimmedEmail)
+          : null;
+
+      // Case 1: Account exists in Cloud without a Cloud password_hash yet (pre-v17 legacy user or Owner on a new device)
+      const localPasswordOk = localFound
+        ? await verifyPasswordHash(password, localFound.passwordHash)
+        : false;
+
+      if (!localPasswordOk && cloudBundle && cloudBundle.needsCloudPasswordActivation) {
+        const cp = cloudBundle.profile;
+        return {
+          ok: false,
+          requiresCloudActivation: true,
+          legacyAccount: {
+            id: cp.id,
+            name: cp.name,
+            email: cp.email,
+            isOwner: isOwnerProfile(cp),
+            role: cp.role ?? 'user',
+            hasMfaPin: Boolean(cp.twoFactor?.enabled && cp.twoFactor?.pinHash),
+            hasRecoveryCodes: Boolean(
+              cp.twoFactor?.enabled && (cp.twoFactor?.recoveryCodeHashes?.length ?? 0) > 0
+            ),
+            sessionsCount: cloudBundle.cloudData.sessions.length,
+            notesCount: cloudBundle.cloudData.notes.length,
+            streakDays: cloudBundle.cloudData.streakDays,
+          },
+          error:
+            'Ancien compte détecté sur le Cloud ! Active ton mot de passe Cloud ci-dessous pour le récupérer immédiatement.',
+        };
       }
 
-      const passwordOk = found ? await verifyPasswordHash(password, found.passwordHash) : false;
+      const cloudPasswordOk =
+        cloudBundle && !cloudBundle.needsCloudPasswordActivation
+          ? await verifyPasswordHash(password, cloudBundle.profile.passwordHash)
+          : false;
 
-      if (!found || !passwordOk) {
+      const authenticated = localPasswordOk || cloudPasswordOk;
+
+      if (!authenticated) {
         const nextFails = sec.failedLoginAttempts + 1;
         const triggerLock = secCfg.bruteForceProtection && nextFails >= 5;
         const lockUntil = triggerLock ? new Date(Date.now() + 5 * 60 * 1000).toISOString() : null;
@@ -1211,45 +1371,275 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ok: false,
           error: triggerLock
             ? '5 échecs détectés : compte temporairement verrouillé pendant 5 minutes (anti-bruteforce).'
-            : found && !found.passwordHash
-            ? 'Ce compte ancien n’a pas encore synchronisé son mot de passe dans le cloud. Connecte-toi depuis ton appareil initial ou crée un mot de passe.'
             : 'E-mail ou mot de passe incorrect. Si tu n’as pas encore de compte, utilise l’onglet « Créer un compte ».',
         };
       }
 
-      const normalizedFound = applyOwnerEntitlements(found);
+      // Build unified profile preserving canonical Cloud ID, Owner entitlements, Cloud 2FA, and verified passwordHash
+      const baseProfile = cloudBundle ? cloudBundle.profile : (localFound as UserProfile);
+      const mergedTwoFactor = cloudBundle?.profile.twoFactor?.enabled
+        ? cloudBundle.profile.twoFactor
+        : localFound?.twoFactor ?? baseProfile.twoFactor;
+      const mergedPasswordHash =
+        localPasswordOk && localFound?.passwordHash
+          ? localFound.passwordHash
+          : baseProfile.passwordHash;
+
+      const normalizedFound = applyOwnerEntitlements({
+        ...baseProfile,
+        id: cloudBundle?.profile.id ?? baseProfile.id,
+        passwordHash: mergedPasswordHash,
+        twoFactor: mergedTwoFactor,
+      });
+
+      const restoredFromCloud = Boolean(cloudBundle && !localFound);
       const needs2fa = isTwoFactorMandatoryForProfile(normalizedFound);
       if (needs2fa) {
         clearTwoFactorSessionVerification();
         setTwoFactorVerifiedProfileId(null);
       }
 
+      const mergedCloudPatch = cloudBundle
+        ? mergeCloudDataIntoState(state, cloudBundle.cloudData)
+        : {};
+
       setState((prev) => {
         const pSec = prev.security ?? createInitialSecurityState();
-        const existsLocally = prev.profiles.some((p) => p.id === normalizedFound.id);
+        const filteredProfiles = prev.profiles.filter(
+          (p) => p.email.toLowerCase() !== normalizedFound.email.toLowerCase()
+        );
+        const cloudPatch = cloudBundle
+          ? mergeCloudDataIntoState(prev, cloudBundle.cloudData)
+          : {};
         return {
           ...prev,
-          profiles: existsLocally ? prev.profiles : [...prev.profiles, normalizedFound],
+          ...cloudPatch,
+          profiles: [...filteredProfiles, normalizedFound],
           activeProfileId: normalizedFound.id,
+          lastSyncAt: cloudBundle ? new Date().toISOString() : prev.lastSyncAt,
           security: { ...pSec, failedLoginAttempts: 0, lockoutUntil: null },
         };
       });
-      if (!restoredFromCloud && isOnline && isSupabaseConfigured) {
-        void upsertProfileToCloud(normalizedFound);
+
+      // Always ensure this authenticated account + its password hash + snapshot are synced to Cloud
+      if (isOnline && isSupabaseConfigured) {
+        const snapshot = buildPortableCloudSnapshot({
+          ...state,
+          ...mergedCloudPatch,
+        });
+        void upsertProfileToCloud(
+          normalizedFound,
+          snapshot,
+          mergedCloudPatch.streakDays ?? state.streakDays
+        );
       }
+
       setScreen(normalizedFound.onboardingCompleted ? 'dashboard' : 'onboarding-exam');
       notify(
         needs2fa
           ? `Mot de passe vérifié pour ${normalizedFound.name}. Valide maintenant ta double authentification (2FA).`
           : restoredFromCloud
-          ? `Bon retour ${normalizedFound.name} ! Compte existant restauré depuis le cloud.`
-          : `Bon retour, ${normalizedFound.name} ! Connexion sécurisée.`,
+          ? `Bon retour ${normalizedFound.name} ! Compte et progression restaurés depuis le Cloud.`
+          : `Bon retour, ${normalizedFound.name} ! Compte synchronisé avec le Cloud.`,
         needs2fa ? 'info' : 'success'
       );
       return { ok: true };
     },
-    [state.profiles, state.security, isOnline, guardInput, notify]
+    [state, isOnline, guardInput, notify]
   );
+
+  const activateLegacyCloudAccount = useCallback(
+    async (input: {
+      email: string;
+      newPassword: string;
+      mfaPinOrRecovery?: string;
+    }): Promise<{ ok: boolean; error?: string }> => {
+      if (!isOnline || !isSupabaseConfigured) {
+        return {
+          ok: false,
+          error: 'Une connexion Internet est nécessaire une seule fois pour activer ton ancien compte sur le Cloud.',
+        };
+      }
+      const secCfg = state.security?.config ?? DEFAULT_SECURITY_CONFIG;
+      const emailGuard = guardInput('Activation compte Cloud (E-mail)', input.email, 140);
+      if (!emailGuard.allowed) {
+        return { ok: false, error: 'Entrée bloquée par le pare-feu anti-injection.' };
+      }
+      const trimmedEmail = emailGuard.cleanText.toLowerCase();
+      if (!input.newPassword || input.newPassword.length < 6) {
+        return {
+          ok: false,
+          error: 'Choisis un mot de passe Cloud d’au moins 6 caractères pour sécuriser ton compte.',
+        };
+      }
+      if (secCfg.bruteForceProtection) {
+        const pwdAudit = evaluatePasswordStrength(input.newPassword);
+        if (pwdAudit.isCompromisedCommon) {
+          return {
+            ok: false,
+            error:
+              'Mot de passe trop courant ou compromis (ex. 123456, azerty, password). Choisis un mot de passe plus sûr.',
+          };
+        }
+      }
+
+      const bundle = await fetchCloudAccountBundleByEmail(trimmedEmail);
+      if (!bundle) {
+        return { ok: false, error: 'Aucun compte Cloud trouvé avec cette adresse e-mail.' };
+      }
+      if (!bundle.needsCloudPasswordActivation) {
+        return {
+          ok: false,
+          error: 'Ce compte possède déjà un mot de passe Cloud actif. Connecte-toi normalement.',
+        };
+      }
+
+      let activeProfileModel = applyOwnerEntitlements(bundle.profile);
+      let mfaAlreadyVerified = false;
+
+      // Bulletproof security: if the legacy cloud account already has 2FA enabled (e.g. Owner account!),
+      // require the existing 2FA PIN or a recovery code BEFORE letting anyone set its Cloud password!
+      if (activeProfileModel.twoFactor?.enabled) {
+        const codeInput = (input.mfaPinOrRecovery ?? '').trim();
+        if (!codeInput) {
+          return {
+            ok: false,
+            error:
+              'Ce compte est protégé par 2FA : saisis ton Code PIN 2FA Maître ou un code de récupération pour confirmer ton identité.',
+          };
+        }
+        const pinMatch = activeProfileModel.twoFactor.pinHash
+          ? await verifyTwoFactorPin(codeInput, activeProfileModel.twoFactor.pinHash)
+          : false;
+
+        let recoveryMatched = false;
+        let updatedRecoveryHashes = activeProfileModel.twoFactor.recoveryCodeHashes ?? [];
+        if (!pinMatch && updatedRecoveryHashes.length > 0) {
+          const recRes = await verifyAndConsumeRecoveryCode(codeInput, updatedRecoveryHashes);
+          recoveryMatched = recRes.valid;
+          if (recRes.valid) {
+            updatedRecoveryHashes = recRes.remainingHashes;
+          }
+        }
+
+        if (!pinMatch && !recoveryMatched) {
+          logSecurityEvent({
+            id: `sec-legacy-mfa-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            category: 'BRUTEFORCE_AUTH',
+            severity: 'high',
+            source: 'Activation compte Cloud protégé',
+            ruleId: 'ZT-LEGACY-2FA-FAIL',
+            description: `Tentative d’activation du compte protégé ${trimmedEmail} refusée : PIN 2FA / code de récupération invalide.`,
+            blocked: true,
+          });
+          return {
+            ok: false,
+            error: 'Code PIN 2FA ou code de récupération invalide. Activation refusée par sécurité.',
+          };
+        }
+
+        mfaAlreadyVerified = true;
+        if (recoveryMatched && activeProfileModel.twoFactor) {
+          const nextTwoFactor = {
+            ...activeProfileModel.twoFactor,
+            recoveryCodeHashes: updatedRecoveryHashes,
+            lastVerifiedAt: new Date().toISOString(),
+          };
+          activeProfileModel = { ...activeProfileModel, twoFactor: nextTwoFactor };
+          void syncTwoFactorConfigToCloud(activeProfileModel);
+        }
+      }
+
+      const newHash = await hashPassword(input.newPassword);
+      const actRes = await activateLegacyCloudAccountPassword(
+        activeProfileModel.id,
+        activeProfileModel.email,
+        newHash
+      );
+      if (!actRes.ok) {
+        return {
+          ok: false,
+          error: actRes.error ?? 'Impossible d’enregistrer le mot de passe Cloud.',
+        };
+      }
+
+      const finalizedProfile = applyOwnerEntitlements({
+        ...activeProfileModel,
+        passwordHash: newHash,
+      });
+
+      const needs2fa = isTwoFactorMandatoryForProfile(finalizedProfile);
+      if (mfaAlreadyVerified) {
+        markTwoFactorSessionVerified(finalizedProfile.id, 12);
+        setTwoFactorVerifiedProfileId(finalizedProfile.id);
+      } else if (needs2fa) {
+        clearTwoFactorSessionVerification();
+        setTwoFactorVerifiedProfileId(null);
+      }
+
+      setState((prev) => {
+        const pSec = prev.security ?? createInitialSecurityState();
+        const filteredProfiles = prev.profiles.filter(
+          (p) => p.email.toLowerCase() !== finalizedProfile.email.toLowerCase()
+        );
+        const cloudPatch = mergeCloudDataIntoState(prev, bundle.cloudData);
+        return {
+          ...prev,
+          ...cloudPatch,
+          profiles: [...filteredProfiles, finalizedProfile],
+          activeProfileId: finalizedProfile.id,
+          lastSyncAt: new Date().toISOString(),
+          security: { ...pSec, failedLoginAttempts: 0, lockoutUntil: null },
+        };
+      });
+
+      setScreen(finalizedProfile.onboardingCompleted ? 'dashboard' : 'onboarding-exam');
+      notify(
+        isOwnerProfile(finalizedProfile)
+          ? `Compte Propriétaire ${finalizedProfile.name} connecté au Cloud et restauré avec succès !`
+          : `Compte ${finalizedProfile.name} connecté au Cloud et restauré avec toute ta progression !`,
+        'success'
+      );
+      return { ok: true };
+    },
+    [state.security?.config, isOnline, guardInput, logSecurityEvent, notify]
+  );
+
+  const connectAllAccountsToCloud = useCallback(async () => {
+    if (!isOnline || !isSupabaseConfigured) {
+      notify('Connecte-toi à Internet pour lier tes comptes au Cloud.', 'warning');
+      return { ok: false, syncedCount: 0 };
+    }
+    const { syncedCount, canonicalIdMap } = await syncAllLocalProfilesToCloud(
+      state.profiles,
+      state.activeProfileId,
+      state
+    );
+    const mapEntries = Object.entries(canonicalIdMap);
+    if (mapEntries.length > 0) {
+      setState((prev) => ({
+        ...prev,
+        profiles: prev.profiles.map((p) =>
+          canonicalIdMap[p.id] ? { ...p, id: canonicalIdMap[p.id] } : p
+        ),
+        activeProfileId:
+          prev.activeProfileId && canonicalIdMap[prev.activeProfileId]
+            ? canonicalIdMap[prev.activeProfileId]
+            : prev.activeProfileId,
+        lastSyncAt: new Date().toISOString(),
+      }));
+    } else if (syncedCount > 0) {
+      setState((prev) => ({ ...prev, lastSyncAt: new Date().toISOString() }));
+    }
+    notify(
+      syncedCount > 0
+        ? `${syncedCount} compte(s) (incluant progression et sécurité) connecté(s) et sauvegardé(s) sur le Cloud !`
+        : 'Aucun compte local à synchroniser pour le moment.',
+      syncedCount > 0 ? 'success' : 'info'
+    );
+    return { ok: syncedCount > 0, syncedCount };
+  }, [isOnline, state, notify]);
 
   const switchProfile = useCallback(
     (profileId: string) => {
@@ -2932,6 +3322,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     syncNow,
     registerAccount,
     loginAccount,
+    activateLegacyCloudAccount,
+    connectAllAccountsToCloud,
     switchProfile,
     logout,
     updateActiveProfile,

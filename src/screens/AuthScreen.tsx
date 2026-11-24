@@ -1,12 +1,31 @@
 import React, { useState } from 'react';
-import { ArrowLeft, CheckCircle2, GraduationCap, Lock, LogIn, ShieldCheck, UserPlus, WifiOff } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Cloud,
+  Crown,
+  GraduationCap,
+  KeyRound,
+  Lock,
+  LogIn,
+  ShieldCheck,
+  UserPlus,
+  WifiOff,
+} from 'lucide-react';
 import { USER_CATEGORIES } from '../data';
-import { useApp } from '../context/AppContext';
+import { LegacyCloudAccountPreview, useApp } from '../context/AppContext';
 import { isTwoFactorMandatoryForProfile } from '../lib/twoFactor';
 import { UserCategory } from '../types';
 
 export const AuthScreen: React.FC = () => {
-  const { state, navigate, registerAccount, loginAccount, switchProfile } = useApp();
+  const {
+    state,
+    navigate,
+    registerAccount,
+    loginAccount,
+    activateLegacyCloudAccount,
+    switchProfile,
+  } = useApp();
   // If an account already exists on this device, default to 'login' so the user can reconnect directly
   const [tab, setTab] = useState<'register' | 'login'>(() =>
     state.profiles.length > 0 ? 'login' : 'register'
@@ -18,16 +37,66 @@ export const AuthScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Seamless Cloud activation state for legacy accounts (pre-v17 users & Owner on a new device)
+  const [legacyAccount, setLegacyAccount] = useState<LegacyCloudAccountPreview | null>(null);
+  const [cloudNewPassword, setCloudNewPassword] = useState('');
+  const [cloudConfirmPassword, setCloudConfirmPassword] = useState('');
+  const [cloudMfaInput, setCloudMfaInput] = useState('');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setBusy(true);
-    const res =
-      tab === 'register'
-        ? await registerAccount({ name, email, password, category })
-        : await loginAccount(email, password);
+    if (tab === 'register') {
+      const res = await registerAccount({ name, email, password, category });
+      setBusy(false);
+      if (!res.ok) setError(res.error ?? 'Une erreur est survenue.');
+      return;
+    }
+
+    const res = await loginAccount(email, password);
     setBusy(false);
-    if (!res.ok) setError(res.error ?? 'Une erreur est survenue.');
+    if (!res.ok) {
+      if (res.requiresCloudActivation && res.legacyAccount) {
+        setLegacyAccount(res.legacyAccount);
+        setCloudNewPassword(password.length >= 6 ? password : '');
+        setCloudConfirmPassword('');
+        setCloudMfaInput('');
+        setError(null);
+      } else {
+        setError(res.error ?? 'Une erreur est survenue.');
+      }
+    }
+  };
+
+  const handleLegacyActivation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!legacyAccount) return;
+    setError(null);
+
+    if (cloudNewPassword.length < 6) {
+      setError('Choisis un mot de passe Cloud d’au moins 6 caractères.');
+      return;
+    }
+    if (cloudNewPassword !== cloudConfirmPassword) {
+      setError('Les deux mots de passe ne correspondent pas.');
+      return;
+    }
+    if ((legacyAccount.hasMfaPin || legacyAccount.hasRecoveryCodes) && !cloudMfaInput.trim()) {
+      setError('Saisis ton Code PIN 2FA Maître ou un code de récupération pour confirmer ton identité.');
+      return;
+    }
+
+    setBusy(true);
+    const res = await activateLegacyCloudAccount({
+      email: legacyAccount.email,
+      newPassword: cloudNewPassword,
+      mfaPinOrRecovery: cloudMfaInput.trim() || undefined,
+    });
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error ?? 'Impossible d’activer ton compte Cloud.');
+    }
   };
 
   return (
@@ -79,6 +148,7 @@ export const AuthScreen: React.FC = () => {
               type="button"
               onClick={() => {
                 setTab('register');
+                setLegacyAccount(null);
                 setError(null);
               }}
               className={`rounded-lg py-2.5 text-sm font-bold transition ${
@@ -93,6 +163,7 @@ export const AuthScreen: React.FC = () => {
               type="button"
               onClick={() => {
                 setTab('login');
+                setLegacyAccount(null);
                 setError(null);
               }}
               className={`rounded-lg py-2.5 text-sm font-bold transition ${
@@ -105,6 +176,126 @@ export const AuthScreen: React.FC = () => {
             </button>
           </div>
 
+          {legacyAccount ? (
+            <form onSubmit={handleLegacyActivation} className="mt-5 space-y-4">
+              <div className="rounded-xl border border-emerald-300 bg-emerald-50/80 p-4 dark:border-emerald-800 dark:bg-emerald-950/40">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Cloud className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
+                  <p className="text-sm font-extrabold text-emerald-950 dark:text-emerald-100">
+                    Ancien compte retrouvé sur le Cloud !
+                  </p>
+                  {legacyAccount.isOwner && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-900 dark:bg-amber-900/60 dark:text-amber-200">
+                      <Crown className="h-3 w-3" />
+                      Propriétaire
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1.5 text-xs font-semibold text-emerald-900 dark:text-emerald-200">
+                  {legacyAccount.name} · <span className="font-normal">{legacyAccount.email}</span>
+                </p>
+                <p className="mt-1 text-[11px] text-emerald-800 dark:text-emerald-300">
+                  Série : {legacyAccount.streakDays} j · {legacyAccount.sessionsCount} session(s) ·{' '}
+                  {legacyAccount.notesCount} note(s) prêtes à être restaurées.
+                </p>
+                <p className="mt-2 text-[11px] leading-relaxed text-emerald-900/90 dark:text-emerald-200/90">
+                  Ce compte a été créé avant l’activation de la synchronisation multi-appareils. Définis
+                  ton mot de passe Cloud une seule fois pour te connecter ensuite sur n’importe quel appareil.
+                </p>
+              </div>
+
+              {(legacyAccount.hasMfaPin || legacyAccount.hasRecoveryCodes) && (
+                <div className="rounded-xl border border-amber-300 bg-amber-50/80 p-3.5 dark:border-amber-800 dark:bg-amber-950/40">
+                  <label
+                    htmlFor="cloud-mfa-code"
+                    className="flex items-center gap-1.5 text-xs font-bold text-amber-950 dark:text-amber-100"
+                  >
+                    <KeyRound className="h-4 w-4 text-amber-700 dark:text-amber-300" />
+                    Vérification 2FA obligatoire (Code PIN Maître ou code de récupération)
+                  </label>
+                  <input
+                    id="cloud-mfa-code"
+                    type="password"
+                    required
+                    value={cloudMfaInput}
+                    onChange={(e) => setCloudMfaInput(e.target.value)}
+                    placeholder="Ton Code PIN 2FA ou code XXXX-XXXX"
+                    className="mt-1.5 w-full rounded-xl border border-amber-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-amber-600 dark:border-amber-700 dark:bg-slate-800 dark:text-white"
+                  />
+                  <p className="mt-1 text-[11px] text-amber-800 dark:text-amber-300">
+                    Protection anti-usurpation : seul le titulaire authentique peut activer ce compte protégé.
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <label
+                  htmlFor="cloud-new-pwd"
+                  className="block text-sm font-semibold text-slate-700 dark:text-slate-200"
+                >
+                  Mot de passe Cloud (6 caractères min.)
+                </label>
+                <input
+                  id="cloud-new-pwd"
+                  type="password"
+                  required
+                  minLength={6}
+                  value={cloudNewPassword}
+                  onChange={(e) => setCloudNewPassword(e.target.value)}
+                  placeholder="Choisis ton mot de passe Cloud sécurisé"
+                  className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="cloud-confirm-pwd"
+                  className="block text-sm font-semibold text-slate-700 dark:text-slate-200"
+                >
+                  Confirmer le mot de passe Cloud
+                </label>
+                <input
+                  id="cloud-confirm-pwd"
+                  type="password"
+                  required
+                  minLength={6}
+                  value={cloudConfirmPassword}
+                  onChange={(e) => setCloudConfirmPassword(e.target.value)}
+                  placeholder="Répète le mot de passe Cloud"
+                  className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+              </div>
+
+              {error && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-800 dark:border-red-900 dark:bg-red-950/60 dark:text-red-200">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="inline-flex min-h-[46px] flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-60"
+                >
+                  <Cloud className="h-4 w-4" />
+                  {busy
+                    ? 'Activation & restauration Cloud...'
+                    : 'Activer & récupérer mon compte'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLegacyAccount(null);
+                    setError(null);
+                  }}
+                  className="rounded-xl border border-slate-300 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                >
+                  Retour
+                </button>
+              </div>
+            </form>
+          ) : (
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             {tab === 'register' && (
               <>
@@ -185,6 +376,14 @@ export const AuthScreen: React.FC = () => {
               </div>
             )}
 
+            {tab === 'login' && (
+              <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3 text-[11px] leading-relaxed text-blue-900 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-200">
+                <span className="font-bold">Ancien compte ou compte Propriétaire sur un nouvel appareil ?</span>{' '}
+                Saisis ton adresse e-mail et ton mot de passe : si ton compte provient d’une version précédente,
+                l’application te proposera immédiatement de l’activer et de restaurer toutes tes données depuis le Cloud.
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={busy}
@@ -230,6 +429,7 @@ export const AuthScreen: React.FC = () => {
               )}
             </div>
           </form>
+          )}
         </div>
 
         <div className="space-y-4 lg:col-span-5">

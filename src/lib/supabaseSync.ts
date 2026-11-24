@@ -2,10 +2,16 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
   AccountRole,
   AppState,
+  DiagnosticResult,
   Fiche,
+  FlashcardProgress,
+  HighlightItem,
   OwnerGlobalSettings,
+  PersonalNote,
   Question,
   SecurityEvent,
+  SessionRecord,
+  StudyPlanItem,
   TwoFactorConfig,
   UserProfile,
 } from '../types';
@@ -108,6 +114,166 @@ export interface OwnerCloudSnapshot {
   errorMessage?: string;
 }
 
+export interface PortableCloudAccountData {
+  completedCourseIds: string[];
+  favorites: AppState['favorites'];
+  sessions: SessionRecord[];
+  flashcardProgress: Record<string, FlashcardProgress>;
+  notes: PersonalNote[];
+  highlights: HighlightItem[];
+  studyPlan: StudyPlanItem[];
+  streakDays: number;
+  dailyChallengeCompletedDate: string | null;
+  diagnosticResult: DiagnosticResult | null;
+  fatigueLevel: AppState['fatigueLevel'];
+  planMode: AppState['planMode'];
+  updatedAt: string;
+}
+
+export interface CloudAccountBundle {
+  profile: UserProfile;
+  needsCloudPasswordActivation: boolean;
+  cloudData: PortableCloudAccountData;
+}
+
+export function buildPortableCloudSnapshot(state: AppState): PortableCloudAccountData {
+  return {
+    completedCourseIds: Array.isArray(state.completedCourseIds)
+      ? state.completedCourseIds.slice(-2000)
+      : [],
+    favorites: {
+      annales: state.favorites?.annales?.slice(-300) ?? [],
+      fiches: state.favorites?.fiches?.slice(-500) ?? [],
+      courses: state.favorites?.courses?.slice(-500) ?? [],
+      questions: state.favorites?.questions?.slice(-500) ?? [],
+    },
+    sessions: Array.isArray(state.sessions) ? state.sessions.slice(-150) : [],
+    flashcardProgress: state.flashcardProgress ?? {},
+    notes: Array.isArray(state.notes) ? state.notes.slice(-300) : [],
+    highlights: Array.isArray(state.highlights) ? state.highlights.slice(-300) : [],
+    studyPlan: Array.isArray(state.studyPlan) ? state.studyPlan.slice(-200) : [],
+    streakDays: Math.max(1, Number(state.streakDays ?? 1)),
+    dailyChallengeCompletedDate: state.dailyChallengeCompletedDate ?? null,
+    diagnosticResult: state.diagnosticResult ?? null,
+    fatigueLevel: state.fatigueLevel ?? 'normal',
+    planMode: state.planMode ?? 'standard',
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function isUsablePasswordHash(hash?: string | null): boolean {
+  if (!hash || typeof hash !== 'string') return false;
+  const trimmed = hash.trim();
+  return trimmed.length >= 16 && trimmed !== 'demo_hashed_local';
+}
+
+function buildSafeProfileUpsertRow(
+  profile: UserProfile,
+  existingCloudRow: Record<string, unknown> | null,
+  cloudSnapshot?: PortableCloudAccountData,
+  streakDaysOverride?: number
+): Record<string, unknown> {
+  const normalizedProfile = applyOwnerEntitlements(profile);
+  const ownerFlag = isOwnerProfile(normalizedProfile);
+  const canonicalId =
+    existingCloudRow && typeof existingCloudRow.id === 'string' && existingCloudRow.id.trim()
+      ? existingCloudRow.id.trim()
+      : normalizedProfile.id;
+
+  const existingPwd =
+    existingCloudRow && typeof existingCloudRow.password_hash === 'string'
+      ? existingCloudRow.password_hash
+      : null;
+  const effectivePasswordHash = isUsablePasswordHash(normalizedProfile.passwordHash)
+    ? normalizedProfile.passwordHash
+    : isUsablePasswordHash(existingPwd)
+      ? existingPwd
+      : null;
+
+  const localMfaEnabled = Boolean(normalizedProfile.twoFactor?.enabled);
+  const cloudMfaEnabled = Boolean(existingCloudRow?.mfa_enabled);
+  const preserveCloudMfa = cloudMfaEnabled && !localMfaEnabled;
+
+  const row: Record<string, unknown> = {
+    id: canonicalId,
+    email: normalizedProfile.email.trim().toLowerCase(),
+    name: normalizedProfile.name,
+    role: ownerFlag ? 'owner' : normalizedProfile.role ?? 'user',
+    category: normalizedProfile.category,
+    country: normalizedProfile.country,
+    study_level: normalizedProfile.studyLevel,
+    exam_id: normalizedProfile.examId,
+    selected_subject_ids: normalizedProfile.selectedSubjectIds,
+    exam_date: normalizedProfile.examDate,
+    current_level: normalizedProfile.currentLevel,
+    daily_minutes: normalizedProfile.dailyMinutes,
+    rest_days: normalizedProfile.restDays,
+    target_score: normalizedProfile.targetScore,
+    plan: ownerFlag ? 'premium' : normalizedProfile.plan,
+    streak_days: Math.max(
+      1,
+      Number(streakDaysOverride ?? existingCloudRow?.streak_days ?? 1)
+    ),
+    password_hash: effectivePasswordHash,
+    onboarding_completed: Boolean(normalizedProfile.onboardingCompleted),
+    cloud_connected: true,
+    cloud_migrated_at:
+      (existingCloudRow?.cloud_migrated_at as string | undefined) ?? new Date().toISOString(),
+    mfa_required: ownerFlag
+      ? true
+      : Boolean(normalizedProfile.twoFactor?.required || existingCloudRow?.mfa_required),
+    mfa_enabled: preserveCloudMfa ? true : localMfaEnabled,
+    mfa_method: preserveCloudMfa
+      ? (existingCloudRow?.mfa_method as string | undefined) ?? 'pin'
+      : normalizedProfile.twoFactor?.method ?? 'device',
+    mfa_webauthn_credential_id: preserveCloudMfa
+      ? (existingCloudRow?.mfa_webauthn_credential_id as string | null | undefined) ?? null
+      : normalizedProfile.twoFactor?.webauthnCredentialId ?? null,
+    mfa_webauthn_device_label: preserveCloudMfa
+      ? (existingCloudRow?.mfa_webauthn_device_label as string | null | undefined) ?? null
+      : normalizedProfile.twoFactor?.webauthnDeviceLabel ?? null,
+    mfa_pin_hash: preserveCloudMfa
+      ? (existingCloudRow?.mfa_pin_hash as string | null | undefined) ?? null
+      : normalizedProfile.twoFactor?.pinHash ?? null,
+    mfa_recovery_hashes: preserveCloudMfa
+      ? (existingCloudRow?.mfa_recovery_hashes as string[] | undefined) ?? []
+      : normalizedProfile.twoFactor?.recoveryCodeHashes ?? [],
+    mfa_configured_at: preserveCloudMfa
+      ? (existingCloudRow?.mfa_configured_at as string | null | undefined) ?? null
+      : normalizedProfile.twoFactor?.configuredAt ?? null,
+    mfa_last_verified_at:
+      normalizedProfile.twoFactor?.lastVerifiedAt ??
+      (existingCloudRow?.mfa_last_verified_at as string | null | undefined) ??
+      null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (cloudSnapshot) {
+    row.cloud_state_json = cloudSnapshot;
+  }
+  return row;
+}
+
+async function findExistingCloudRowByEmail(
+  sb: SupabaseClient,
+  email: string
+): Promise<Record<string, unknown> | null> {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail) return null;
+  const { data, error } = await sb
+    .from('user_profiles')
+    .select(
+      'id, email, name, role, category, country, study_level, exam_id, selected_subject_ids, exam_date, current_level, daily_minutes, rest_days, target_score, plan, streak_days, password_hash, onboarding_completed, cloud_connected, cloud_migrated_at, cloud_state_json, created_at, updated_at, mfa_required, mfa_enabled, mfa_method, mfa_webauthn_credential_id, mfa_webauthn_device_label, mfa_pin_hash, mfa_recovery_hashes, mfa_configured_at, mfa_last_verified_at'
+    )
+    .ilike('email', cleanEmail)
+    .order('updated_at', { ascending: false })
+    .limit(5);
+  if (error || !data || data.length === 0) return null;
+  // Prefer owner row if multiple exist for same email, otherwise most recently updated
+  const ownerRow = data.find((r) => r.role === 'owner');
+  return (ownerRow ?? data[0]) as Record<string, unknown>;
+}
+
 /**
  * Real offline-first bidirectional sync with Supabase, protected by a Zero-Trust WAF/Antivirus gate
  * on both outbound writes and inbound teacher content pulls.
@@ -131,38 +297,17 @@ export async function syncStateWithSupabase(
   const secCfg = state.security?.config ?? DEFAULT_SECURITY_CONFIG;
 
   try {
-    // 1. Upsert user profile (sanitized + preserve Owner entitlements & 2FA metadata)
-    const ownerFlag = isOwnerProfile(activeProfile);
-    const { error: profErr } = await sb.from('user_profiles').upsert({
-      id: activeProfile.id,
-      email: activeProfile.email,
-      name: activeProfile.name,
-      role: ownerFlag ? 'owner' : activeProfile.role ?? 'user',
-      category: activeProfile.category,
-      country: activeProfile.country,
-      study_level: activeProfile.studyLevel,
-      exam_id: activeProfile.examId,
-      selected_subject_ids: activeProfile.selectedSubjectIds,
-      exam_date: activeProfile.examDate,
-      current_level: activeProfile.currentLevel,
-      daily_minutes: activeProfile.dailyMinutes,
-      rest_days: activeProfile.restDays,
-      target_score: activeProfile.targetScore,
-      plan: ownerFlag ? 'premium' : activeProfile.plan,
-      streak_days: state.streakDays,
-      password_hash: activeProfile.passwordHash,
-      onboarding_completed: Boolean(activeProfile.onboardingCompleted),
-      mfa_required: ownerFlag ? true : Boolean(activeProfile.twoFactor?.required),
-      mfa_enabled: Boolean(activeProfile.twoFactor?.enabled),
-      mfa_method: activeProfile.twoFactor?.method ?? 'device',
-      mfa_webauthn_credential_id: activeProfile.twoFactor?.webauthnCredentialId ?? null,
-      mfa_webauthn_device_label: activeProfile.twoFactor?.webauthnDeviceLabel ?? null,
-      mfa_pin_hash: activeProfile.twoFactor?.pinHash ?? null,
-      mfa_recovery_hashes: activeProfile.twoFactor?.recoveryCodeHashes ?? [],
-      mfa_configured_at: activeProfile.twoFactor?.configuredAt ?? null,
-      mfa_last_verified_at: activeProfile.twoFactor?.lastVerifiedAt ?? null,
-      updated_at: new Date().toISOString(),
-    });
+    // 1. Canonicalize & upsert user profile + full portable cloud snapshot (preserves Owner entitlements & Cloud MFA)
+    const existingCloud = await findExistingCloudRowByEmail(sb, activeProfile.email);
+    const portableSnapshot = buildPortableCloudSnapshot(state);
+    const profileRow = buildSafeProfileUpsertRow(
+      activeProfile,
+      existingCloud,
+      portableSnapshot,
+      state.streakDays
+    );
+    const canonicalProfileId = String(profileRow.id);
+    const { error: profErr } = await sb.from('user_profiles').upsert(profileRow);
     if (profErr) throw profErr;
 
     // 2. Upsert sessions
@@ -170,7 +315,7 @@ export async function syncStateWithSupabase(
     if (state.sessions.length > 0) {
       const rows = state.sessions.map((s) => ({
         id: s.id,
-        profile_id: activeProfile.id,
+        profile_id: canonicalProfileId,
         mode: s.mode,
         title: s.title,
         annale_id: s.annaleId ?? null,
@@ -197,7 +342,7 @@ export async function syncStateWithSupabase(
       if (safeNotes.length > 0) {
         const rows = safeNotes.map((n) => ({
           id: n.id,
-          profile_id: activeProfile.id,
+          profile_id: canonicalProfileId,
           target_type: n.targetType,
           target_id: n.targetId,
           target_title: n.targetTitle,
@@ -217,8 +362,8 @@ export async function syncStateWithSupabase(
     let pushedFlashcards = 0;
     if (fcValues.length > 0) {
       const rows = fcValues.map((fc) => ({
-        id: `${activeProfile.id}:${fc.cardId}`,
-        profile_id: activeProfile.id,
+        id: `${canonicalProfileId}:${fc.cardId}`,
+        profile_id: canonicalProfileId,
         card_id: fc.cardId,
         mastery: fc.mastery,
         interval_days: fc.intervalDays,
@@ -239,7 +384,7 @@ export async function syncStateWithSupabase(
       if (safeReports.length > 0) {
         const rows = safeReports.map((r) => ({
           id: r.id,
-          profile_id: activeProfile.id,
+          profile_id: canonicalProfileId,
           question_id: r.questionId,
           question_prompt: r.questionPrompt,
           reason: r.reason,
@@ -678,54 +823,111 @@ export async function checkCloudEmailExists(email: string): Promise<boolean> {
   const sb = getSupabaseClient();
   if (!sb || !email) return false;
   try {
-    const { data, error } = await sb
-      .from('user_profiles')
-      .select('id')
-      .eq('email', email.trim().toLowerCase())
-      .maybeSingle();
-    return !error && Boolean(data?.id);
+    const existing = await findExistingCloudRowByEmail(sb, email);
+    return Boolean(existing?.id);
   } catch {
     return false;
   }
 }
 
 /**
- * Persists a newly registered real user profile (including PBKDF2 password hash) to Supabase Cloud
- * so the user can directly sign into their existing account from any device without re-registering.
+ * Persists a real user profile (including PBKDF2 password hash) to Supabase Cloud
+ * without creating duplicate rows for the same email and without overwriting Cloud MFA.
  */
-export async function upsertProfileToCloud(profile: UserProfile): Promise<boolean> {
+export async function upsertProfileToCloud(
+  profile: UserProfile,
+  cloudSnapshot?: PortableCloudAccountData,
+  streakDaysOverride?: number
+): Promise<{ ok: boolean; canonicalId: string }> {
   const sb = getSupabaseClient();
-  if (!sb) return false;
+  if (!sb) return { ok: false, canonicalId: profile.id };
   try {
-    const ownerFlag = isOwnerProfile(profile);
-    const { error } = await sb.from('user_profiles').upsert({
-      id: profile.id,
-      email: profile.email.trim().toLowerCase(),
-      name: profile.name,
-      role: ownerFlag ? 'owner' : profile.role ?? 'user',
-      category: profile.category,
-      country: profile.country,
-      study_level: profile.studyLevel,
-      exam_id: profile.examId,
-      selected_subject_ids: profile.selectedSubjectIds,
-      exam_date: profile.examDate,
-      current_level: profile.currentLevel,
-      daily_minutes: profile.dailyMinutes,
-      rest_days: profile.restDays,
-      target_score: profile.targetScore,
-      plan: ownerFlag ? 'premium' : profile.plan,
-      streak_days: 1,
-      password_hash: profile.passwordHash,
-      onboarding_completed: Boolean(profile.onboardingCompleted),
-      mfa_required: ownerFlag ? true : Boolean(profile.twoFactor?.required),
-      mfa_enabled: Boolean(profile.twoFactor?.enabled),
-      mfa_method: profile.twoFactor?.method ?? 'device',
-      updated_at: new Date().toISOString(),
-    });
-    return !error;
+    const existing = await findExistingCloudRowByEmail(sb, profile.email);
+    const row = buildSafeProfileUpsertRow(profile, existing, cloudSnapshot, streakDaysOverride);
+    const { error } = await sb.from('user_profiles').upsert(row);
+    return { ok: !error, canonicalId: String(row.id) };
   } catch {
-    return false;
+    return { ok: false, canonicalId: profile.id };
   }
+}
+
+/**
+ * Automatically connects ALL locally saved profiles (including legacy accounts created before v17
+ * and the Owner account) to Supabase Cloud so they can be recovered from any device.
+ */
+export async function syncAllLocalProfilesToCloud(
+  profiles: UserProfile[],
+  activeProfileId: string | null,
+  state: AppState
+): Promise<{ syncedCount: number; canonicalIdMap: Record<string, string> }> {
+  const sb = getSupabaseClient();
+  const canonicalIdMap: Record<string, string> = {};
+  if (!sb || !profiles.length) return { syncedCount: 0, canonicalIdMap };
+
+  let syncedCount = 0;
+  const snapshot = buildPortableCloudSnapshot(state);
+
+  for (const prof of profiles) {
+    if (!prof.email || prof.email.toLowerCase().includes('demo')) continue;
+    const isActive = prof.id === activeProfileId;
+    const res = await upsertProfileToCloud(
+      prof,
+      isActive ? snapshot : undefined,
+      isActive ? state.streakDays : undefined
+    );
+    if (res.ok) {
+      syncedCount += 1;
+      if (res.canonicalId && res.canonicalId !== prof.id) {
+        canonicalIdMap[prof.id] = res.canonicalId;
+      }
+    }
+  }
+  return { syncedCount, canonicalIdMap };
+}
+
+function hydrateProfileFromCloudRow(data: Record<string, unknown>): UserProfile {
+  const twoFactor: TwoFactorConfig | undefined =
+    data.mfa_required || data.mfa_enabled
+      ? {
+          required: Boolean(data.mfa_required),
+          enabled: Boolean(data.mfa_enabled),
+          method: data.mfa_method === 'pin' ? 'pin' : 'device',
+          webauthnCredentialId: (data.mfa_webauthn_credential_id as string | null) ?? undefined,
+          webauthnDeviceLabel: (data.mfa_webauthn_device_label as string | null) ?? undefined,
+          pinHash: (data.mfa_pin_hash as string | null) ?? undefined,
+          recoveryCodeHashes: Array.isArray(data.mfa_recovery_hashes)
+            ? (data.mfa_recovery_hashes as string[])
+            : [],
+          configuredAt: (data.mfa_configured_at as string | null) ?? undefined,
+          lastVerifiedAt: (data.mfa_last_verified_at as string | null) ?? undefined,
+        }
+      : undefined;
+
+  return applyOwnerEntitlements({
+    id: String(data.id),
+    name: String(data.name ?? 'Étudiant'),
+    email: String(data.email).toLowerCase(),
+    passwordHash: String(data.password_hash ?? ''),
+    role: (data.role as AccountRole) ?? 'user',
+    twoFactor,
+    category: (data.category as UserProfile['category']) ?? 'lyceen',
+    country: String(data.country ?? 'Tchad'),
+    studyLevel: String(data.study_level ?? 'Terminale (Baccalauréat)'),
+    examId: String(data.exam_id ?? 'bac-scientifique'),
+    selectedSubjectIds: Array.isArray(data.selected_subject_ids)
+      ? (data.selected_subject_ids as string[])
+      : ['maths', 'physique', 'svt'],
+    examDate: String(
+      data.exam_date ?? new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10)
+    ),
+    currentLevel: (data.current_level as UserProfile['currentLevel']) ?? 'intermediaire',
+    dailyMinutes: Number(data.daily_minutes ?? 45),
+    restDays: Array.isArray(data.rest_days) ? (data.rest_days as number[]) : [0],
+    targetScore: Number(data.target_score ?? 70),
+    plan: data.plan === 'premium' ? 'premium' : 'gratuit',
+    createdAt: String(data.created_at ?? new Date().toISOString()),
+    onboardingCompleted: data.onboarding_completed !== false,
+  });
 }
 
 /**
@@ -736,57 +938,214 @@ export async function fetchCloudProfileByEmail(email: string): Promise<UserProfi
   const sb = getSupabaseClient();
   if (!sb || !email) return null;
   try {
-    const { data, error } = await sb
-      .from('user_profiles')
-      .select(
-        'id, email, name, role, category, country, study_level, exam_id, selected_subject_ids, exam_date, current_level, daily_minutes, rest_days, target_score, plan, password_hash, onboarding_completed, created_at, mfa_required, mfa_enabled, mfa_method, mfa_webauthn_credential_id, mfa_webauthn_device_label, mfa_pin_hash, mfa_recovery_hashes, mfa_configured_at, mfa_last_verified_at'
-      )
-      .eq('email', email.trim().toLowerCase())
-      .maybeSingle();
-    if (error || !data) return null;
-
-    const twoFactor: TwoFactorConfig | undefined =
-      data.mfa_required || data.mfa_enabled
-        ? {
-            required: Boolean(data.mfa_required),
-            enabled: Boolean(data.mfa_enabled),
-            method: data.mfa_method === 'pin' ? 'pin' : 'device',
-            webauthnCredentialId: data.mfa_webauthn_credential_id ?? undefined,
-            webauthnDeviceLabel: data.mfa_webauthn_device_label ?? undefined,
-            pinHash: data.mfa_pin_hash ?? undefined,
-            recoveryCodeHashes: Array.isArray(data.mfa_recovery_hashes)
-              ? (data.mfa_recovery_hashes as string[])
-              : [],
-            configuredAt: data.mfa_configured_at ?? undefined,
-            lastVerifiedAt: data.mfa_last_verified_at ?? undefined,
-          }
-        : undefined;
-
-    return applyOwnerEntitlements({
-      id: String(data.id),
-      name: String(data.name ?? 'Étudiant'),
-      email: String(data.email).toLowerCase(),
-      passwordHash: String(data.password_hash ?? ''),
-      role: (data.role as AccountRole) ?? 'user',
-      twoFactor,
-      category: (data.category as UserProfile['category']) ?? 'lyceen',
-      country: String(data.country ?? 'Tchad'),
-      studyLevel: String(data.study_level ?? 'Terminale (Baccalauréat)'),
-      examId: String(data.exam_id ?? 'bac-scientifique'),
-      selectedSubjectIds: Array.isArray(data.selected_subject_ids)
-        ? (data.selected_subject_ids as string[])
-        : ['maths', 'physique', 'svt'],
-      examDate: String(data.exam_date ?? new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10)),
-      currentLevel: (data.current_level as UserProfile['currentLevel']) ?? 'intermediaire',
-      dailyMinutes: Number(data.daily_minutes ?? 45),
-      restDays: Array.isArray(data.rest_days) ? (data.rest_days as number[]) : [0],
-      targetScore: Number(data.target_score ?? 70),
-      plan: data.plan === 'premium' ? 'premium' : 'gratuit',
-      createdAt: String(data.created_at ?? new Date().toISOString()),
-      onboardingCompleted: data.onboarding_completed !== false,
-    });
+    const row = await findExistingCloudRowByEmail(sb, email);
+    if (!row) return null;
+    return hydrateProfileFromCloudRow(row);
   } catch {
     return null;
+  }
+}
+
+/**
+ * Fetches the COMPLETE cloud account bundle (profile + MFA + legacy password activation status +
+ * full portable progress merged from cloud_state_json, study_sessions, personal_notes, flashcard_reviews).
+ */
+export async function fetchCloudAccountBundleByEmail(
+  email: string
+): Promise<CloudAccountBundle | null> {
+  const sb = getSupabaseClient();
+  if (!sb || !email) return null;
+  try {
+    const row = await findExistingCloudRowByEmail(sb, email);
+    if (!row) return null;
+
+    const profile = hydrateProfileFromCloudRow(row);
+    const needsCloudPasswordActivation = !isUsablePasswordHash(profile.passwordHash);
+
+    // Extract snapshot from cloud_state_json if present
+    const rawJson =
+      row.cloud_state_json && typeof row.cloud_state_json === 'object'
+        ? (row.cloud_state_json as Partial<PortableCloudAccountData>)
+        : {};
+
+    // Also pull relational cloud progress rows (study_sessions, personal_notes, flashcard_reviews)
+    const [sessionsRes, notesRes, fcRes] = await Promise.all([
+      sb
+        .from('study_sessions')
+        .select(
+          'id, mode, title, annale_id, subject_id, started_at, completed_at, total_time_seconds, remaining_seconds, score_percent, correct_count, total_count, answers_json'
+        )
+        .eq('profile_id', profile.id)
+        .order('completed_at', { ascending: false })
+        .limit(150),
+      sb
+        .from('personal_notes')
+        .select('id, target_type, target_id, target_title, subject_id, content, created_at, updated_at')
+        .eq('profile_id', profile.id)
+        .order('updated_at', { ascending: false })
+        .limit(300),
+      sb
+        .from('flashcard_reviews')
+        .select('card_id, mastery, interval_days, ease_factor, repetitions, next_review_at, last_reviewed_at')
+        .eq('profile_id', profile.id)
+        .limit(500),
+    ]);
+
+    // Merge sessions by ID
+    const sessionMap = new Map<string, SessionRecord>();
+    if (Array.isArray(rawJson.sessions)) {
+      for (const s of rawJson.sessions) {
+        if (s?.id) sessionMap.set(s.id, s);
+      }
+    }
+    if (!sessionsRes.error && Array.isArray(sessionsRes.data)) {
+      for (const s of sessionsRes.data) {
+        sessionMap.set(String(s.id), {
+          id: String(s.id),
+          mode: (s.mode as SessionRecord['mode']) ?? 'entrainement',
+          title: String(s.title ?? 'Session Cloud'),
+          annaleId: s.annale_id ? String(s.annale_id) : undefined,
+          subjectId: s.subject_id ? String(s.subject_id) : undefined,
+          startedAt: String(s.started_at ?? new Date().toISOString()),
+          completedAt: String(s.completed_at ?? new Date().toISOString()),
+          totalTimeSeconds: Number(s.total_time_seconds ?? 0),
+          remainingSeconds:
+            s.remaining_seconds != null ? Number(s.remaining_seconds) : undefined,
+          scorePercent: Number(s.score_percent ?? 0),
+          correctCount: Number(s.correct_count ?? 0),
+          totalCount: Number(s.total_count ?? 0),
+          answers: Array.isArray(s.answers_json) ? s.answers_json : [],
+          synced: true,
+        });
+      }
+    }
+
+    // Merge notes by ID
+    const noteMap = new Map<string, PersonalNote>();
+    if (Array.isArray(rawJson.notes)) {
+      for (const n of rawJson.notes) {
+        if (n?.id) noteMap.set(n.id, n);
+      }
+    }
+    if (!notesRes.error && Array.isArray(notesRes.data)) {
+      for (const n of notesRes.data) {
+        noteMap.set(String(n.id), {
+          id: String(n.id),
+          targetType: (n.target_type as PersonalNote['targetType']) ?? 'course',
+          targetId: String(n.target_id ?? ''),
+          targetTitle: String(n.target_title ?? 'Note'),
+          subjectId: n.subject_id ? String(n.subject_id) : undefined,
+          content: String(n.content ?? ''),
+          createdAt: String(n.created_at ?? new Date().toISOString()),
+          updatedAt: String(n.updated_at ?? new Date().toISOString()),
+        });
+      }
+    }
+
+    // Merge flashcard progress by cardId
+    const fcMap: Record<string, FlashcardProgress> = {
+      ...(rawJson.flashcardProgress && typeof rawJson.flashcardProgress === 'object'
+        ? rawJson.flashcardProgress
+        : {}),
+    };
+    if (!fcRes.error && Array.isArray(fcRes.data)) {
+      for (const fc of fcRes.data) {
+        const cardId = String(fc.card_id ?? '');
+        if (!cardId) continue;
+        fcMap[cardId] = {
+          cardId,
+          mastery: (Number(fc.mastery ?? 0) as FlashcardProgress['mastery']),
+          intervalDays: Number(fc.interval_days ?? 1),
+          easeFactor: Number(fc.ease_factor ?? 2.5),
+          repetitions: Number(fc.repetitions ?? 0),
+          nextReviewAt: String(fc.next_review_at ?? new Date().toISOString()),
+          lastReviewedAt: String(fc.last_reviewed_at ?? new Date().toISOString()),
+        };
+      }
+    }
+
+    const cloudData: PortableCloudAccountData = {
+      completedCourseIds: Array.isArray(rawJson.completedCourseIds)
+        ? rawJson.completedCourseIds
+        : [],
+      favorites: {
+        annales: Array.isArray(rawJson.favorites?.annales) ? rawJson.favorites.annales : [],
+        fiches: Array.isArray(rawJson.favorites?.fiches) ? rawJson.favorites.fiches : [],
+        courses: Array.isArray(rawJson.favorites?.courses) ? rawJson.favorites.courses : [],
+        questions: Array.isArray(rawJson.favorites?.questions) ? rawJson.favorites.questions : [],
+      },
+      sessions: Array.from(sessionMap.values()).sort((a, b) =>
+        b.completedAt.localeCompare(a.completedAt)
+      ),
+      flashcardProgress: fcMap,
+      notes: Array.from(noteMap.values()).sort((a, b) =>
+        b.updatedAt.localeCompare(a.updatedAt)
+      ),
+      highlights: Array.isArray(rawJson.highlights) ? rawJson.highlights : [],
+      studyPlan: Array.isArray(rawJson.studyPlan) ? rawJson.studyPlan : [],
+      streakDays: Math.max(
+        1,
+        Number(rawJson.streakDays ?? row.streak_days ?? 1)
+      ),
+      dailyChallengeCompletedDate: rawJson.dailyChallengeCompletedDate ?? null,
+      diagnosticResult: rawJson.diagnosticResult ?? null,
+      fatigueLevel: rawJson.fatigueLevel ?? 'normal',
+      planMode: rawJson.planMode ?? 'standard',
+      updatedAt: String(rawJson.updatedAt ?? row.updated_at ?? new Date().toISOString()),
+    };
+
+    return {
+      profile,
+      needsCloudPasswordActivation,
+      cloudData,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Safely attaches a new PBKDF2-SHA256 password hash to an existing legacy Cloud account
+ * (created prior to v17 where password_hash was NULL) so the account can now sign in from any device.
+ * Strictly guards against overwriting an already-set password_hash.
+ */
+export async function activateLegacyCloudAccountPassword(
+  profileId: string,
+  email: string,
+  newPasswordHash: string
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = getSupabaseClient();
+  if (!sb) return { ok: false, error: 'Supabase Cloud indisponible hors ligne.' };
+  if (!isUsablePasswordHash(newPasswordHash)) {
+    return { ok: false, error: 'Hash de mot de passe invalide.' };
+  }
+  try {
+    const existing = await findExistingCloudRowByEmail(sb, email);
+    if (!existing) {
+      return { ok: false, error: 'Compte Cloud introuvable.' };
+    }
+    if (isUsablePasswordHash(existing.password_hash as string | null)) {
+      return {
+        ok: false,
+        error: 'Ce compte possède déjà un mot de passe Cloud actif. Connectez-vous normalement.',
+      };
+    }
+    const targetId = String(existing.id || profileId);
+    const { error } = await sb
+      .from('user_profiles')
+      .update({
+        password_hash: newPasswordHash,
+        cloud_connected: true,
+        cloud_migrated_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', targetId);
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Erreur réseau.' };
   }
 }
 
