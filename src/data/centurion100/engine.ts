@@ -237,8 +237,8 @@ export function buildCenturionPack(pack: CenturionSubjectPack): CenturionBundle 
     const qId = `q-c100-${pack.subjectId}-${slug}`;
     const fcId = `fc-c100-${pack.subjectId}-${slug}`;
 
-    const summary = `Maîtrise approfondie de « ${title} » (${classMeta.label}) : ${keyNotion}, méthode d’analyse, application corrigée et entraînement actif.`;
-    const workedExample = `Étude d’application (${classMeta.shortLabel}) : face à un sujet portant sur « ${title} », poser d’abord ${keyNotion}, appliquer « ${rule} » et contrôler qu’on évite le piège : ${trap}.`;
+    const summary = `Cours complet et exercices pratiques sur « ${title} » (${classMeta.label}) : explication détaillée de ${keyNotion}, règle de référence, méthode guidée pas à pas, pièges à éviter et entraînement corrigé.`;
+    const workedExample = `Étude d’application guidée (${classMeta.shortLabel}) : face à un sujet portant sur « ${title} », commencer par définir « ${keyNotion} », poser les hypothèses, appliquer rigoureusement « ${rule} », puis relire chaque étape pour écarter le piège classique : ${trap}.`;
 
     chapters.push({
       id: chId,
@@ -256,29 +256,29 @@ export function buildCenturionPack(pack: CenturionSubjectPack): CenturionBundle 
     const sections: CourseSection[] = [
       {
         id: `${crsId}-s1`,
-        heading: `1. Objectifs & cadre du programme (${classMeta.label})`,
-        content: `${summary} Ce chapitre n°${order} du parcours Centurion (100 chapitres en ${pack.subjectName}) relie théorie, pratique d’examen et restitution active (Feynman, rappel libre et rédaction guidée).`,
+        heading: `1. Comprendre « ${title} » : définitions, enjeux & cadre (${classMeta.label})`,
+        content: `Ce chapitre n°${order}/100 en ${pack.subjectName} (${classMeta.label}) vise une maîtrise complète de « ${title} ».\n\nNotion centrale à comprendre en profondeur : ${keyNotion}.\n\nPourquoi ce chapitre compte à l’examen : il relie les bases théoriques du programme à des situations pratiques concrètes évaluées aussi bien en questions de cours, en exercices d’application qu’en études de cas rédigées.`,
         keyTakeaway: `Niveau ${classMeta.label} — Notion centrale : ${keyNotion}.`,
         diagramId: pack.diagramId,
       },
       {
         id: `${crsId}-s2`,
-        heading: '2. Règle fondamentale & formule de référence',
-        content: `Principe opératoire à retenir absolument : ${rule}. En situation d’épreuve officielle ou de concours, cette règle constitue le cœur de la démonstration ou de l’argumentation attendue par le jury.`,
+        heading: '2. Règle fondamentale, mécanisme expliqué & formule de référence',
+        content: `Principe opératoire de référence à maîtriser parfaitement :\n${rule}.\n\nExplication du mécanisme : avant d’appliquer cette règle en ${pack.subjectName}, identifie toujours les données connues, vérifie les conditions d’application et comprends le rôle de chaque élément. En épreuve officielle ou concours, énoncer clairement cette règle avant de l’utiliser sécurise les points de méthode auprès du jury.`,
         formula: rule,
         keyTakeaway: `Règle vérifiable à mobiliser : ${rule}`,
       },
       {
         id: `${crsId}-s3`,
-        heading: '3. Méthode pas à pas & piège classique à écarter',
-        content: `Étape 1 : lire la consigne et relier le problème à « ${keyNotion} ». Étape 2 : déployer rigoureusement « ${rule} ». Étape 3 : relire la réponse finale pour écarter l’erreur la plus fréquente des candidats : ${trap}.`,
+        heading: '3. Méthode détaillée pas à pas & pièges classiques à éviter',
+        content: `Démarche reproductible le jour de l’épreuve :\n• Étape 1 (Analyse) : lire attentivement la consigne, souligner les mots-clés et relier le problème à « ${keyNotion} ».\n• Étape 2 (Résolution) : déployer rigoureusement « ${rule} » en justifiant chaque étape intermédiaire.\n• Étape 3 (Contrôle anti-piège) : relire la réponse finale pour écarter l’erreur la plus fréquente des candidats : ${trap}.`,
         keyTakeaway: `Piège classique à écarter : ${trap}`,
       },
       {
         id: `${crsId}-s4`,
-        heading: '4. Application corrigée & entraînement hors-QCM',
-        content: `${workedExample} Entraîne-toi ensuite en Méthode Active (Feynman, Texte à trous, Séquençage ou Rédaction /20) pour ancrer durablement ce chapitre.`,
-        keyTakeaway: `Savoir restituer « ${title} » sans notes et vérifier ses hypothèses avant de conclure.`,
+        heading: '4. Exemple résolu, exercices pratiques & ancrage durable',
+        content: `${workedExample}\n\nPour consolider durablement ce chapitre, réalise les 4 exercices pratiques interactifs (Application directe, Mise en pratique guidée, Correction de copie fautive et Défi synthèse), puis enchaîne avec le QCM chronométré et la Méthode Active (Feynman, Texte à trous, Séquençage ou Rédaction /20).`,
+        keyTakeaway: `Savoir expliquer « ${title} » sans notes, appliquer la règle sur un cas concret et vérifier ses hypothèses avant de conclure.`,
       },
     ];
 
