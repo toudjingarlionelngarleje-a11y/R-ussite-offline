@@ -838,17 +838,54 @@ export async function upsertProfileToCloud(
   profile: UserProfile,
   cloudSnapshot?: PortableCloudAccountData,
   streakDaysOverride?: number
-): Promise<{ ok: boolean; canonicalId: string }> {
+): Promise<{ ok: boolean; canonicalId: string; error?: string }> {
   const sb = getSupabaseClient();
-  if (!sb) return { ok: false, canonicalId: profile.id };
+  if (!sb) return { ok: false, canonicalId: profile.id, error: 'Supabase non configuré.' };
   try {
     const existing = await findExistingCloudRowByEmail(sb, profile.email);
     const row = buildSafeProfileUpsertRow(profile, existing, cloudSnapshot, streakDaysOverride);
-    const { error } = await sb.from('user_profiles').upsert(row);
-    return { ok: !error, canonicalId: String(row.id) };
-  } catch {
-    return { ok: false, canonicalId: profile.id };
+    const { data, error } = await sb
+      .from('user_profiles')
+      .upsert(row, { onConflict: 'id' })
+      .select('id')
+      .maybeSingle();
+    if (error) {
+      return { ok: false, canonicalId: String(row.id), error: error.message };
+    }
+    return { ok: true, canonicalId: String(data?.id ?? row.id) };
+  } catch (err) {
+    return {
+      ok: false,
+      canonicalId: profile.id,
+      error: err instanceof Error ? err.message : 'Erreur réseau Cloud.',
+    };
   }
+}
+
+/**
+ * Guarantees automatic Cloud registration for every newly created account with automatic retries
+ * (3 attempts with short backoff) so transient mobile network glitches never drop a registration.
+ */
+export async function registerProfileToCloudWithRetry(
+  profile: UserProfile,
+  cloudSnapshot?: PortableCloudAccountData,
+  maxAttempts = 3
+): Promise<{ ok: boolean; canonicalId: string; attempts: number; error?: string }> {
+  let lastError: string | undefined;
+  let canonicalId = profile.id;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const res = await upsertProfileToCloud(profile, cloudSnapshot, 1);
+    canonicalId = res.canonicalId;
+    if (res.ok) {
+      return { ok: true, canonicalId, attempts: attempt };
+    }
+    lastError = res.error;
+    if (attempt < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, attempt * 450));
+    }
+  }
+  return { ok: false, canonicalId, attempts: maxAttempts, error: lastError };
 }
 
 /**

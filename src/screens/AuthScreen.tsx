@@ -376,6 +376,16 @@ export const AuthScreen: React.FC = () => {
               </div>
             )}
 
+            {tab === 'register' && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 text-[11px] leading-relaxed text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-200">
+                <span className="inline-flex items-center gap-1 font-bold">
+                  <Cloud className="h-3.5 w-3.5 text-emerald-600" />
+                  Enregistrement Cloud automatique activé :
+                </span>{' '}
+                chaque nouveau compte créé est automatiquement enregistré sur le Cloud Supabase (ou dès le retour d’Internet si tu es hors ligne) afin d’être accessible sur tous tes appareils.
+              </div>
+            )}
+
             {tab === 'login' && (
               <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3 text-[11px] leading-relaxed text-blue-900 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-200">
                 <span className="font-bold">Ancien compte ou compte Propriétaire sur un nouvel appareil ?</span>{' '}

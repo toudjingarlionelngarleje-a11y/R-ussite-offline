@@ -48,6 +48,7 @@ import {
   isSupabaseConfigured,
   PortableCloudAccountData,
   publishOwnerCloudQuestion,
+  registerProfileToCloudWithRetry,
   saveOwnerGlobalSettingsToCloud,
   syncAllLocalProfilesToCloud,
   syncStateWithSupabase,
@@ -1254,20 +1255,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         onboardingCompleted: false,
       });
 
+      let finalProfile: UserProfile = newProfile;
+      let registeredOnCloud = false;
+
+      // Guarantee automatic Cloud registration on Supabase for every newly created account
+      if (isOnline && isSupabaseConfigured) {
+        const initialSnapshot = buildPortableCloudSnapshot(state);
+        const cloudRes = await registerProfileToCloudWithRetry(newProfile, initialSnapshot, 3);
+        if (cloudRes.ok) {
+          registeredOnCloud = true;
+          if (cloudRes.canonicalId && cloudRes.canonicalId !== newProfile.id) {
+            finalProfile = { ...newProfile, id: cloudRes.canonicalId };
+          }
+        }
+      }
+
       setState((prev) => ({
         ...prev,
-        profiles: [...prev.profiles, newProfile],
-        activeProfileId: newProfile.id,
+        profiles: [...prev.profiles, finalProfile],
+        activeProfileId: finalProfile.id,
+        lastSyncAt: registeredOnCloud ? new Date().toISOString() : prev.lastSyncAt,
       }));
-      enqueueSync('register', `Création du profil ${newProfile.name}`, 3);
-      if (isOnline && isSupabaseConfigured) {
-        void upsertProfileToCloud(newProfile);
+
+      if (!registeredOnCloud) {
+        // Created offline or during a network drop: queue high-priority automatic Cloud registration on reconnect
+        enqueueSync(
+          'register_cloud_pending',
+          `Enregistrement automatique sur le Cloud : ${finalProfile.name}`,
+          4
+        );
       }
+
       setScreen('onboarding-exam');
-      notify(`Compte créé pour ${newProfile.name} (PBKDF2-SHA256 + coffre chiffré).`, 'success');
+      notify(
+        registeredOnCloud
+          ? `Compte créé pour ${finalProfile.name} et enregistré automatiquement sur le Cloud !`
+          : `Compte créé hors ligne pour ${finalProfile.name} — enregistrement automatique sur le Cloud dès le retour d’Internet.`,
+        'success'
+      );
       return { ok: true };
     },
-    [state.profiles, state.security?.config, state.ownerSettings?.freePremiumEvent, isOnline, guardInput, logSecurityEvent, enqueueSync, notify]
+    [state, isOnline, guardInput, logSecurityEvent, enqueueSync, notify]
   );
 
   const loginAccount = useCallback(
@@ -1673,10 +1701,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateActiveProfile = useCallback(
     (patch: Partial<UserProfile>) => {
+      const current = state.profiles.find((p) => p.id === state.activeProfileId);
+      const nextProfile = current ? applyOwnerEntitlements({ ...current, ...patch }) : null;
+
       setState((prev) => {
         if (!prev.activeProfileId) return prev;
         const profiles = prev.profiles.map((p) =>
-          p.id === prev.activeProfileId ? { ...p, ...patch } : p
+          p.id === prev.activeProfileId ? applyOwnerEntitlements({ ...p, ...patch }) : p
         );
         const updated = profiles.find((p) => p.id === prev.activeProfileId)!;
         const nextPlan =
@@ -1685,9 +1716,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             : prev.studyPlan;
         return { ...prev, profiles, studyPlan: nextPlan };
       });
+      if (nextProfile && isOnline && isSupabaseConfigured) {
+        const snapshot = buildPortableCloudSnapshot(state);
+        void upsertProfileToCloud(nextProfile, snapshot, state.streakDays);
+      }
       enqueueSync('profile_update', 'Mise à jour du profil et des objectifs', 2);
     },
-    [enqueueSync]
+    [enqueueSync, isOnline, state]
   );
 
   const deleteActiveAccount = useCallback(async () => {
