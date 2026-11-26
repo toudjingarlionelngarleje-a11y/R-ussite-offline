@@ -1,3 +1,4 @@
+import { WAF_FAMILY_LABELS, WAF_RULES as WAF_RULE_DEFS } from './wafRules';
 import {
   AppState,
   SecurityConfig,
@@ -68,8 +69,7 @@ export function createInitialSecurityState(): SecurityState {
         severity: 'info',
         source: 'Bouclier Réussite Offline',
         ruleId: 'SYS-BOOT-001',
-        description:
-          'Initialisation réussie des 36 systèmes de sécurité (WAF, Antivirus, PBKDF2/AES-256, Garde DOM, Service Worker sécurisé & Zero-Trust).',
+        description: `Initialisation réussie des ${FIREWALL_SYSTEMS.length + 28} systèmes de sécurité dont ${FIREWALL_SYSTEMS.length} pare-feux WAF (Antivirus, PBKDF2/AES-256, Garde DOM, Service Worker sécurisé & Zero-Trust).`,
         blocked: false,
       },
     ],
@@ -95,89 +95,8 @@ interface DetectionRule {
   description: string;
 }
 
-const WAF_RULES: DetectionRule[] = [
-  // Anti-XSS
-  {
-    ruleId: 'WAF-XSS-001',
-    category: 'WAF_XSS',
-    severity: 'critical',
-    pattern: /<\s*script\b[^>]*>|<\s*\/\s*script\s*>/i,
-    description: 'Tentative d’injection de balise <script> (XSS)',
-  },
-  {
-    ruleId: 'WAF-XSS-002',
-    category: 'WAF_XSS',
-    severity: 'high',
-    pattern: /\bon(?:error|load|click|mouseover|focus|submit|input|animationstart)\s*=/i,
-    description: 'Gestionnaire d’événement JavaScript inline suspect (XSS)',
-  },
-  {
-    ruleId: 'WAF-XSS-003',
-    category: 'WAF_XSS',
-    severity: 'high',
-    pattern: /(?:javascript|vbscript|livescript)\s*:|data\s*:\s*text\/html/i,
-    description: 'Protocole exécutable dangereux (javascript:/data:text/html)',
-  },
-  {
-    ruleId: 'WAF-XSS-004',
-    category: 'WAF_XSS',
-    severity: 'high',
-    pattern: /<\s*(?:iframe|object|embed|applet|meta\s+http-equiv|svg\b[^>]*onload)/i,
-    description: 'Balise HTML active interdite (iframe/object/embed/svg)',
-  },
-  {
-    ruleId: 'WAF-XSS-005',
-    category: 'WAF_XSS',
-    severity: 'high',
-    pattern: /\b(?:document\.cookie|window\.location\s*=|localStorage\.getItem|eval\s*\(|new\s+Function\s*\()/i,
-    description: 'Tentative de vol de session ou d’exécution dynamique JS',
-  },
-  // Anti-SQLi
-  {
-    ruleId: 'WAF-SQLI-001',
-    category: 'WAF_SQLI',
-    severity: 'critical',
-    pattern: /\bunion\s+(?:all\s+)?select\b/i,
-    description: 'Tentative d’injection SQL (UNION SELECT)',
-  },
-  {
-    ruleId: 'WAF-SQLI-002',
-    category: 'WAF_SQLI',
-    severity: 'critical',
-    pattern: /(?:;\s*(?:drop|delete|truncate|alter|update|insert)\s+(?:table|from|into|database)\b)/i,
-    description: 'Tentative d’injection SQL destructive (DROP/DELETE/ALTER)',
-  },
-  {
-    ruleId: 'WAF-SQLI-003',
-    category: 'WAF_SQLI',
-    severity: 'high',
-    pattern: /(?:'|")\s*(?:or|and)\s+(?:'1'='1'|1\s*=\s*1|true)\b|\b(?:xp_cmdshell|pg_sleep|benchmark\s*\(|waitfor\s+delay)\b/i,
-    description: 'Injection SQL booléenne ou temporelle (Blind SQLi)',
-  },
-  // Anti-Command Injection & Path Traversal
-  {
-    ruleId: 'WAF-CMD-001',
-    category: 'WAF_CMD_TRAVERSAL',
-    severity: 'high',
-    pattern: /(?:\.\.[\\/]){2,}|%2e%2e(?:%2f|%5c)|\/etc\/passwd|c:\\windows\\system32/i,
-    description: 'Tentative de traversée de répertoires (Path Traversal)',
-  },
-  {
-    ruleId: 'WAF-CMD-002',
-    category: 'WAF_CMD_TRAVERSAL',
-    severity: 'critical',
-    pattern: /(?:powershell\s+-(?:e|enc|encodedcommand|nop)|cmd\.exe\s+\/c|\|\s*(?:bash|sh|nc|curl|wget)\b|\/bin\/sh\b)/i,
-    description: 'Tentative d’injection de commande système (RCE)',
-  },
-  // Anti-Prototype Pollution
-  {
-    ruleId: 'WAF-PROTO-001',
-    category: 'WAF_PROTOTYPE_POLLUTION',
-    severity: 'high',
-    pattern: /__proto__|constructor\s*\[\s*["']prototype["']\s*\]|prototype\s*\./i,
-    description: 'Tentative de pollution de prototype JavaScript',
-  },
-];
+/** 100 pare-feux WAF : signatures issues du catalogue dédié (src/lib/wafRules.ts). */
+const WAF_RULES: DetectionRule[] = WAF_RULE_DEFS as unknown as DetectionRule[];
 
 const ANTIVIRUS_RULES: DetectionRule[] = [
   // EICAR standard antivirus test string
@@ -882,75 +801,25 @@ export function runFullSecurityScan(state: AppState): {
 }
 
 // ============================================================================
-// 9. COMPLETE CATALOG OF 36 ACTIVE SECURITY SYSTEMS
+// 9. CATALOGUE COMPLET DES SYSTÈMES DE SÉCURITÉ ACTIFS (100 pare-feux WAF + 28 boucliers)
 // ============================================================================
 
+/**
+ * 100 pare-feux WAF : chaque entrée est adossée à une signature réellement exécutée
+ * par `testSecurityInput()` (aucune vitrine : 1 pare-feu = 1 règle de détection active).
+ */
+export const FIREWALL_SYSTEMS: SecuritySystemItem[] = WAF_RULE_DEFS.map((rule, idx) => ({
+  id: `sys-waf-${rule.ruleId.toLowerCase()}`,
+  layer: 'Pare-feu WAF',
+  code: `WAF-${String(idx + 1).padStart(3, '0')}`,
+  name: rule.description,
+  description: `Signature ${rule.ruleId} · famille « ${WAF_FAMILY_LABELS[rule.family]} » · sévérité ${rule.severity}. Détection temps réel hors ligne, 0 ms réseau.`,
+  isActive: (s: AppState) => s.security?.config.firewallEnabled ?? true,
+}));
+
 export const SECURITY_SYSTEMS_CATALOG: SecuritySystemItem[] = [
-  // Couche 1 : Pare-feu WAF (8 systèmes)
-  {
-    id: 'sys-waf-xss',
-    layer: 'Pare-feu WAF',
-    code: 'WAF-01',
-    name: 'Pare-feu Anti-XSS (<script> & handlers JS)',
-    description: 'Bloque les scripts injectés, balises actives et gestionnaires onload/onerror.',
-    isActive: (s) => s.security?.config.firewallEnabled ?? true,
-  },
-  {
-    id: 'sys-waf-sqli',
-    layer: 'Pare-feu WAF',
-    code: 'WAF-02',
-    name: 'Pare-feu Anti-Injection SQL (SQLi)',
-    description: 'Neutralise UNION SELECT, DROP TABLE, Blind SQLi et contournements booléens.',
-    isActive: (s) => s.security?.config.firewallEnabled ?? true,
-  },
-  {
-    id: 'sys-waf-cmd',
-    layer: 'Pare-feu WAF',
-    code: 'WAF-03',
-    name: 'Bouclier Anti-Command Injection & Path Traversal',
-    description: 'Bloque ../, /etc/passwd, PowerShell encodé et injections shell RCE.',
-    isActive: (s) => s.security?.config.firewallEnabled ?? true,
-  },
-  {
-    id: 'sys-waf-proto',
-    layer: 'Pare-feu WAF',
-    code: 'WAF-04',
-    name: 'Protection Anti-Prototype Pollution',
-    description: 'Inspecte les objets JSON et imports contre __proto__ et constructor.prototype.',
-    isActive: (s) => s.security?.config.firewallEnabled ?? true,
-  },
-  {
-    id: 'sys-waf-sanitizer',
-    layer: 'Pare-feu WAF',
-    code: 'WAF-05',
-    name: 'Assainisseur HTML & Octets de Contrôle',
-    description: 'Nettoie les chevrons, octets nuls et caractères invisibles avant persistance.',
-    isActive: (s) => s.security?.config.firewallEnabled ?? true,
-  },
-  {
-    id: 'sys-waf-ratelimit',
-    layer: 'Pare-feu WAF',
-    code: 'WAF-06',
-    name: 'Rate Limiter Anti-Flood & Anti-DDoS Applicatif',
-    description: 'Limite les rafales automatisées sur connexion, messages, notes et synchro.',
-    isActive: (s) => s.security?.config.rateLimitEnabled ?? true,
-  },
-  {
-    id: 'sys-waf-url',
-    layer: 'Pare-feu WAF',
-    code: 'WAF-07',
-    name: 'Détecteur Anti-URL Poisoning & XSS Réfléchi',
-    description: 'Inspecte et purge automatiquement les paramètres d’URL malveillants au chargement.',
-    isActive: (s) => s.security?.config.firewallEnabled ?? true,
-  },
-  {
-    id: 'sys-waf-payload-cap',
-    layer: 'Pare-feu WAF',
-    code: 'WAF-08',
-    name: 'Plafonnement Anti-Saturation Mémoire (Payload Cap)',
-    description: 'Rejette les entrées surdimensionnées conçues pour geler le navigateur ou la base.',
-    isActive: (s) => s.security?.config.firewallEnabled ?? true,
-  },
+  // Couche 1 : Pare-feu WAF (100 systèmes — un pare-feu armé par signature)
+  ...FIREWALL_SYSTEMS,
 
   // Couche 2 : Antivirus & Anti-Malware (8 systèmes)
   {

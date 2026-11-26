@@ -11,6 +11,7 @@ import {
   Volume2,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { FIREWALL_SYSTEMS, SECURITY_SYSTEMS_CATALOG } from '../lib/securityFirewall';
 import { FontSizeScale } from '../types';
 
 export const PrivacySettingsScreen: React.FC = () => {
@@ -45,7 +46,7 @@ export const PrivacySettingsScreen: React.FC = () => {
           <ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-emerald-600 dark:text-emerald-400" />
           <div>
             <p className="text-sm font-extrabold text-emerald-950 dark:text-emerald-200">
-              Centre de Sécurité, Pare-feu WAF & Antivirus (36 systèmes actifs)
+              Centre de Sécurité, Pare-feu WAF & Antivirus ({FIREWALL_SYSTEMS.length} pare-feux · {SECURITY_SYSTEMS_CATALOG.length} systèmes actifs)
             </p>
             <p className="text-xs text-emerald-800/90 dark:text-emerald-300/80">
               Lance un scan antivirus complet, teste le pare-feu anti-XSS/SQLi/EICAR, analyse un fichier local

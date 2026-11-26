@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { ANNALES, CHAPTERS, COURSES, EXAMS, FICHES, SUBJECTS } from '../data';
 import { useApp } from '../context/AppContext';
+import { FIREWALL_SYSTEMS, SECURITY_SYSTEMS_CATALOG } from '../lib/securityFirewall';
 import { DEFAULT_OWNER_SETTINGS, getRoleLabel } from '../lib/owner';
 import {
   deleteCloudTeacherContent,
@@ -220,7 +221,7 @@ export const OwnerHubScreen: React.FC = () => {
             <p className="text-xs text-amber-100/80 sm:text-sm">
               Identité vérifiée : <span className="font-mono font-bold">{activeProfile?.email}</span> •
               Privilèges Super-Admin, gouvernance globale Cloud Supabase, gestion des utilisateurs,
-              publication directe & contrôle du bouclier 36/36.
+              publication directe & contrôle du bouclier {FIREWALL_SYSTEMS.length} pare-feux / {SECURITY_SYSTEMS_CATALOG.length} systèmes.
             </p>
           </div>
 
@@ -908,7 +909,7 @@ export const OwnerHubScreen: React.FC = () => {
                   onClick={() => navigate('security')}
                   className="rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-700"
                 >
-                  Ouvrir Pare-feu & Antivirus (36/36)
+                  Ouvrir Pare-feu & Antivirus ({FIREWALL_SYSTEMS.length} pare-feux · {SECURITY_SYSTEMS_CATALOG.length} systèmes)
                 </button>
                 <button
                   onClick={triggerPanicLockdown}

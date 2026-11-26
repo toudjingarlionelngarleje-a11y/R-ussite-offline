@@ -35,6 +35,7 @@ import {
   X,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { FIREWALL_SYSTEMS, SECURITY_SYSTEMS_CATALOG } from '../lib/securityFirewall';
 import { daysUntil } from '../lib/planner';
 import { ScreenId } from '../types';
 import { PlanModal } from './PlanModal';
@@ -208,10 +209,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 type="button"
                 onClick={() => handleNav('security')}
                 className="hidden h-9 items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-2.5 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 md:inline-flex dark:border-emerald-900/60 dark:bg-emerald-950/50 dark:text-emerald-300"
-                title="Centre de Sécurité : Pare-feu WAF, Antivirus et 36 systèmes actifs"
+                title={`Centre de Sécurité : ${FIREWALL_SYSTEMS.length} pare-feux WAF, Antivirus et ${SECURITY_SYSTEMS_CATALOG.length} systèmes actifs`}
               >
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>Bouclier 36/36</span>
+                <span>Bouclier {FIREWALL_SYSTEMS.length} feux</span>
               </button>
 
               <SyncBadge
