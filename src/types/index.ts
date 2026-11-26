@@ -225,7 +225,20 @@ export interface CourseSection {
     | 'couches_sig'
     | 'score_apgar'
     | 'cycle_crise'
-    | 'fonctions_chimie';
+    | 'fonctions_chimie'
+    // v17.4 — Schémas & illustrations (anatomie humaine, biologie, trading, terrain, électricité)
+    | 'corps_humain'
+    | 'appareil_digestif'
+    | 'appareil_respiratoire'
+    | 'systeme_nerveux'
+    | 'squelette'
+    | 'cellule'
+    | 'adn_helice'
+    | 'chandeliers_japonais'
+    | 'support_resistance'
+    | 'gestion_risque_trading'
+    | 'coupe_sol'
+    | 'circuit_electrique_serie';
 }
 
 export interface Course {

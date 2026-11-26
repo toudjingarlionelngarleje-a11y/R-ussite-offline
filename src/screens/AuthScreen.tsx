@@ -12,7 +12,7 @@ import {
   UserPlus,
   WifiOff,
 } from 'lucide-react';
-import { USER_CATEGORIES } from '../data';
+import { SUBJECTS, USER_CATEGORIES } from '../data';
 import { LegacyCloudAccountPreview, useApp } from '../context/AppContext';
 import { isTwoFactorMandatoryForProfile } from '../lib/twoFactor';
 import { UserCategory } from '../types';
@@ -109,7 +109,7 @@ export const AuthScreen: React.FC = () => {
           <div>
             <p className="text-base font-extrabold text-slate-900 dark:text-white">Réussite Offline</p>
             <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
-              100 matières · 10 000 chapitres · 100 % Hors ligne
+              {SUBJECTS.length} matières · {(SUBJECTS.length * 100).toLocaleString('fr-FR')} chapitres · 100 % Hors ligne
             </p>
           </div>
         </div>

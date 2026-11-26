@@ -17,6 +17,7 @@ import {
   Heart,
   HelpCircle,
   Highlighter,
+  Image as ImageIcon,
   Layers,
   Lightbulb,
   PenTool,
@@ -32,9 +33,10 @@ import { PedagogicalDiagram } from '../components/PedagogicalDiagram';
 import { CHAPTERS, COURSES, SUBJECTS, useApp } from '../context/AppContext';
 import { generateOfflineCourseSummary } from '../lib/aiHelper';
 import { buildDetailedCourseExperience } from '../lib/courseEnricher';
+import { getDiagramMeta } from '../lib/subjectDiagrams';
 import { isSpeechSupported, speakFrench, stopSpeaking } from '../lib/speech';
 
-type ReaderViewMode = 'all' | 'course' | 'case' | 'exercises' | 'notes';
+type ReaderViewMode = 'all' | 'course' | 'case' | 'exercises' | 'diagrams' | 'notes';
 type ExerciseStatus = 'none' | 'done' | 'review';
 
 const PRACTICAL_STORAGE_KEY = 'reussite_offline_practical_progress_v1';
@@ -382,6 +384,15 @@ export const CourseReaderScreen: React.FC = () => {
                 label: `Exercices pratiques (${completedExercisesCount}/${detailed.practicalExercises.length})`,
                 icon: PenTool,
               },
+              ...(detailed.diagramGallery.length > 0
+                ? [
+                    {
+                      id: 'diagrams' as const,
+                      label: `Schémas (${detailed.diagramGallery.length})`,
+                      icon: ImageIcon,
+                    },
+                  ]
+                : []),
               { id: 'notes', label: 'Synthèse & Notes', icon: StickyNote },
             ] as const
           ).map((tab) => {
@@ -588,6 +599,38 @@ export const CourseReaderScreen: React.FC = () => {
               </section>
             ))}
           </div>
+        )}
+
+        {/* ==================== 2bis. SCHÉMAS & ILLUSTRATIONS (v17.4) ==================== */}
+        {(viewMode === 'all' || viewMode === 'diagrams') && detailed.diagramGallery.length > 0 && (
+          <section className="mt-8 rounded-2xl border-2 border-sky-200 bg-sky-50/40 p-5 dark:border-sky-900 dark:bg-sky-950/20">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="flex items-center gap-2 text-base font-extrabold text-sky-950 dark:text-sky-100">
+                <ImageIcon className="h-4 w-4 text-sky-600" />
+                Schémas & illustrations — {subject?.shortName ?? 'Matière'}
+              </h2>
+              <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-bold text-sky-800 dark:bg-slate-900 dark:text-sky-300">
+                {detailed.diagramGallery.length} schéma{detailed.diagramGallery.length > 1 ? 's' : ''} 100 % hors ligne
+              </span>
+            </div>
+            <p className="mt-1.5 text-xs leading-relaxed text-sky-900/80 dark:text-sky-200/80">
+              Ces graphiques vectoriels (SVG) remplacent les images distantes : ils restent nets à tout zoom et
+              s’affichent même sans connexion Internet. Utilise-les pour mémoriser les repères visuels clés du
+              chapitre « {course.title} ».
+            </p>
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              {detailed.diagramGallery.map((diagramId) => {
+                const meta = getDiagramMeta(diagramId);
+                return (
+                  <div key={diagramId} className="rounded-xl border border-sky-200 bg-white p-3 dark:border-sky-900 dark:bg-slate-900">
+                    <p className="text-xs font-extrabold text-slate-900 dark:text-white">{meta.title}</p>
+                    <p className="mb-2 text-[11px] leading-snug text-slate-600 dark:text-slate-400">{meta.summary}</p>
+                    <PedagogicalDiagram diagramId={diagramId} />
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         )}
 
         {/* ==================== 2. FULLY WORKED CASE STUDY ==================== */}

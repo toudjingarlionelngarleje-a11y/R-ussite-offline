@@ -1,5 +1,6 @@
 import { Chapter, Course, CourseSection, Fiche, Flashcard, Question, Subject } from '../types';
 import { getClassLevelMeta } from '../data/hyperExpansion72/classLevels';
+import { getChapterDiagram, getSubjectDiagramGallery } from './subjectDiagrams';
 
 export type DisciplineFamily =
   | 'exact_sciences'
@@ -9,7 +10,8 @@ export type DisciplineFamily =
   | 'econ_management'
   | 'letters_langs'
   | 'humanities_social'
-  | 'earth_agro';
+  | 'earth_agro'
+  | 'finance_trading';
 
 export interface EnrichedCourseSection extends CourseSection {
   deepExplanation: string;
@@ -59,6 +61,8 @@ export interface DetailedCourseExperience {
   prerequisites: string[];
   glossary: { term: string; definition: string }[];
   enrichedSections: EnrichedCourseSection[];
+  /** Schémas illustrés (SVG hors ligne) pertinents pour la matière du chapitre. */
+  diagramGallery: NonNullable<CourseSection['diagramId']>[];
   workedCaseStudy: WorkedCaseStudy;
   practicalExercises: PracticalExercise[];
   quickRecapChecklist: string[];
@@ -159,6 +163,20 @@ const DISCIPLINE_PROFILES: Record<DisciplineFamily, DisciplineProfile> = {
       'Le correcteur attend une problématique claire, des arguments illustrés par des repères vérifiés et une capacité à nuancer sans tomber dans le hors-sujet.',
     exerciseContext: 'contextualisation, problématisation et argumentation illustrée',
   },
+  finance_trading: {
+    label: 'Trading, Marchés Financiers & Gestion du Risque',
+    analogyLead:
+      'En trading, aucune décision ne se prend « au feeling » : chaque position doit être justifiée par une structure de marché lisible, un scénario écrit, un stop-loss défini et une taille de position calculée en fonction du risque accepté. Le prix est l’unique vérité ; les indicateurs ne sont que des filtres.',
+    methodVerb:
+      'identifier la structure et la tendance, localiser la zone de décision, définir l’entrée, le stop-loss, l’objectif et la taille de position, puis journaliser le trade',
+    verificationHabit:
+      'Vérifie toujours le ratio risque/récompense (≥ 1:2), la taille de position calculée à partir du risque en pourcentage, le contexte multi-timeframes et l’absence de news majeure à venir.',
+    caseFraming: 'Étude de cas de trading simulée (analyse, scénario, exécution et gestion du risque)',
+    examExpectation:
+      'Le correcteur valorise un raisonnement reproductible : biais directionnel justifié par la structure, entrée/stop/objectif chiffrés, taille de position calculée et risque total maîtrisé.',
+    exerciseContext:
+      'lecture de graphique, scénario chiffré, calcul de la taille de position et débriefing du trade',
+  },
   earth_agro: {
     label: 'Géosciences, Eau, Climat & Agronomie',
     analogyLead:
@@ -202,6 +220,9 @@ export function classifyDisciplineFamily(subject?: Subject): DisciplineFamily {
     )
   ) {
     return 'law_public';
+  }
+  if (/(trading|forex|scalping|crypto.*trad|analyse.*technique|price.?action)/.test(key)) {
+    return 'finance_trading';
   }
   if (
     /(econ|compta|syscohada|financ|banq|gestion|projet|entrep|market|logist|comm.*inter|fintech|audit|rh|ressources_hum|assur|bourse|microfin)/.test(
@@ -396,10 +417,10 @@ export function buildDetailedCourseExperience(params: {
         fix: `Fais une pause de 10 secondes avant de conclure : ${profile.verificationHabit}`,
       };
     } else {
-      deepExplanation = `Une notion n’est réellement acquise que lorsqu’on est capable de la transférer sur un cas inédit, de l’expliquer simplement à voix haute (méthode Feynman) et de résister aux pièges de formulation. En combinant ce cours avec les 4 exercices pratiques ci-dessous, tu transformes une lecture passive en automatisme fiable le jour de l’épreuve.`;
+      deepExplanation = `Une notion n’est réellement acquise que lorsqu’on est capable de la transférer sur un cas inédit, de l’expliquer simplement à voix haute (méthode Feynman) et de résister aux pièges de formulation. En combinant ce cours avec les exercices pratiques ci-dessous, tu transformes une lecture passive en automatisme fiable le jour de l’épreuve.`;
       stepByStepBreakdown = [
         `Traiter l’exemple résolu ci-dessous en cachant d’abord le corrigé pour tester tes réflexes.`,
-        `Réaliser les 4 exercices pratiques progressifs (Application → Pratique → Erreur à corriger → Synthèse).`,
+        `Réaliser les exercices pratiques progressifs (Application → Pratique → Erreur à corriger → Synthèse).`,
         `Compléter par la série QCM du chapitre puis par un rappel libre sans notes dans l’Atelier Méthode Active.`,
       ];
       concreteIllustration =
@@ -419,6 +440,16 @@ export function buildDetailedCourseExperience(params: {
       commonMistakeWarning,
     };
   });
+
+  // v17.4 — Illustration : toute matière à schéma (anatomie, biologie, trading, géologie…)
+  // reçoit automatiquement un graphique SVG hors ligne, même si le cours source n'en declare aucun.
+  const subjectDiagramGallery = getSubjectDiagramGallery(subject);
+  if (!enrichedSections.some((s) => s.diagramId)) {
+    const autoDiagram = getChapterDiagram(subject, chapterOrder);
+    if (autoDiagram && enrichedSections.length > 0) {
+      enrichedSections[0] = { ...enrichedSections[0], diagramId: autoDiagram };
+    }
+  }
 
   // Worked Case Study (fully solved step-by-step example)
   const firstQ = chapterQuestions[0];
@@ -592,10 +623,77 @@ export function buildDetailedCourseExperience(params: {
     },
   ];
 
+  // v17.4 — Trading : 2 ateliers supplémentaires (gestion du risque chiffrée & journal de trade)
+  if (disciplineFamily === 'finance_trading') {
+    practicalExercises.push(
+      {
+        id: `${course.id}-ex-5`,
+        number: 5,
+        title: 'Atelier chiffré — Taille de position, stop-loss & ratio Risque/Récompense',
+        kind: 'pratique',
+        difficultyLabel: 'Approfondi',
+        stars: 3,
+        estimatedMinutes: 12,
+        prompt: `Mise en situation réelle de trading sur « ${cleanTitle} ». Capital = 1 000 000 FCFA. Risque maximal accepté par trade = 1 %. Le setup sur ${subjectName} donne une entrée à 1,0900, un stop-loss à 1,0860 et un objectif à 1,0980 (EUR/USD, 1 lot standard = 100 000 unités, 1 pip = 10 $ par lot).`,
+        tasks: [
+          'a) Calcule la distance du stop en pips puis le risque monétaire accepté.',
+          'b) Détermine la taille de position (en lots) compatible avec ce risque.',
+          'c) Calcule le ratio Risque/Récompense exact et conclus : ce trade doit-il être pris ?',
+        ],
+        hint:
+          'Risque monétaire = 1 000 000 × 1 % = 10 000 FCFA. Distance du stop = 1,0900 − 1,0860 = 40 pips. Taille (lots) = risque ÷ (pips de stop × valeur du pip par lot).',
+        solutionSteps: [
+          '1. Risque accepté : 1 000 000 × 0,01 = 10 000 FCFA.',
+          '2. Stop = 1,0900 − 1,0860 = 0,0040 soit 40 pips.',
+          '3. Valeur du pip pour 1 lot = 10 $ ≈ 6 000 FCFA (parité indicative). Risque par lot = 40 × 6 000 = 240 000 FCFA.',
+          '4. Taille = 10 000 ÷ 240 000 ≈ 0,04 lot (soit 4 micro-lots).',
+          '5. Objectif : 1,0980 − 1,0900 = 80 pips = 2 × le risque ⇒ R:R = 1:2, trade valide.',
+        ],
+        modelAnswer:
+          'Le trade respecte le plan : risque plafonné à 1 % (10 000 FCFA), stop de 40 pips, taille arrondie à 0,04 lot pour ne jamais dépasser le risque, objectif à 80 pips soit un R:R de 1:2. Le trade est donc pris, avec un stop ferme et sans élargissement ultérieur.',
+        gradingRubric: [
+          'Risque monétaire et distance du stop correctement calculés (1,5 pt)',
+          'Taille de position exacte et arrondie à la baisse (2 pts)',
+          'Ratio R:R calculé et décision argumentée (1,5 pt)',
+        ],
+      },
+      {
+        id: `${course.id}-ex-6`,
+        number: 6,
+        title: 'Journal de trading & débriefing psychologique du trade',
+        kind: 'synthese',
+        difficultyLabel: 'Approfondi',
+        stars: 3,
+        estimatedMinutes: 10,
+        prompt: `Le trade précédent est clôturé : il a été gagnant à +2R, mais tu avais hésité et failli déplacer ton stop pendant le mouvement. Rédige la fiche de journal complète de ce trade sur « ${cleanTitle} » et le débriefing de tes biais.`,
+        tasks: [
+          `a) Renseigne la fiche : marché, unité de temps, setup, entrée, stop, objectif, résultat en R et durée.`,
+          `b) Identifie le biais psychologique vécu (peur, FOMO, trading de revanche, excès de confiance) et son impact chiffré.`,
+          `c) Formule une règle écrite à ajouter au plan de trading pour neutraliser ce biais sur « ${primaryNotion} ».`,
+        ],
+        hint:
+          'Un journal utile est factuel et chiffré : résultat en R (et non en FCFA), respect ou non du plan (oui/non), émotion dominante, puis une seule action corrective concrète.',
+        solutionSteps: [
+          '1. Fiche factuelle : entrée 1,0900 / stop 1,0860 / objectif 1,0980 / sortie 1,0980 ⇒ +2R, durée 6 h.',
+          '2. Respect du plan : oui pour l’entrée et la taille, non pour l’hésitation (risque de sortie anticipée).',
+          '3. Biais identifié : peur de perdre le gain (aversion à la perte) ayant failli provoquer une clôture à +0,5R au lieu de +2R.',
+          '4. Action corrective : interdiction de modifier le stop avant +1R, et trailing uniquement selon la règle ATR écrite.',
+        ],
+        modelAnswer:
+          `Journal du trade : ${subjectName}, setup « ${cleanTitle} », entrée 1,0900, stop 1,0860, objectif 1,0980, sortie 1,0980 ⇒ +2R, plan respecté sauf hésitation émotionnelle. Biais : aversion à la perte (peur de rendre le gain). Règle ajoutée au plan : « aucun déplacement de stop avant +1R ; trailing ATR uniquement ; aucune décision sous émotion ».`,
+        gradingRubric: [
+          'Fiche de journal complète et chiffrée en R (2 pts)',
+          'Biais psychologique correctement nommé et quantifié (1,5 pt)',
+          'Règle corrective concrète et applicable au plan de trading (1,5 pt)',
+        ],
+      }
+    );
+  }
+
   const quickRecapChecklist = [
     `Je sais définir clairement « ${cleanTitle} » et « ${primaryNotion} » sans regarder mes notes.`,
     `Je maîtrise la règle de référence (« ${primaryFormula} ») et ses conditions d’application.`,
-    `J’ai résolu au moins 3 des 4 exercices pratiques en justifiant chaque étape.`,
+    `J’ai résolu au moins ${Math.max(3, practicalExercises.length - 1)} des ${practicalExercises.length} exercices pratiques en justifiant chaque étape.`,
     `Je sais repérer et éviter immédiatement le piège : ${primaryTrap}.`,
   ];
 
@@ -609,6 +707,7 @@ export function buildDetailedCourseExperience(params: {
     prerequisites,
     glossary,
     enrichedSections,
+    diagramGallery: subjectDiagramGallery,
     workedCaseStudy,
     practicalExercises,
     quickRecapChecklist,

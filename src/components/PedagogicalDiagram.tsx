@@ -1,6 +1,32 @@
 import React from 'react';
 import { CourseSection } from '../types';
 
+/**
+ * Cadre SVG commun à tous les schémas (v17.4) : garantit un rendu homogène,
+ * accessible (role="img" + aria-label) et 100 % hors ligne.
+ */
+const DiagramFrame: React.FC<{
+  viewBox: string;
+  ariaLabel: string;
+  caption: string;
+  heightClass?: string;
+  children: React.ReactNode;
+}> = ({ viewBox, ariaLabel, caption, heightClass = 'h-auto', children }) => (
+  <figure className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+    <svg
+      viewBox={viewBox}
+      className={`mx-auto ${heightClass} w-full max-w-md`}
+      role="img"
+      aria-label={ariaLabel}
+    >
+      {children}
+    </svg>
+    <figcaption className="mt-2 text-center text-xs text-slate-600 dark:text-slate-400">
+      {caption}
+    </figcaption>
+  </figure>
+);
+
 export const PedagogicalDiagram: React.FC<{
   diagramId: NonNullable<CourseSection['diagramId']>;
 }> = ({ diagramId }) => {
@@ -730,6 +756,498 @@ export const PedagogicalDiagram: React.FC<{
           Schéma hors ligne : mémento visuel des 5 groupes fonctionnels majeurs en chimie organique.
         </figcaption>
       </figure>
+    );
+  }
+
+  /* ==================== v17.4 — ANATOMIE & BIOLOGIE ==================== */
+
+  if (diagramId === 'corps_humain') {
+    const labels = [
+      { label: 'Cerveau', side: 'right' as const, y: 30, from: 195, to: 276 },
+      { label: 'Cœur', side: 'right' as const, y: 96, from: 190, to: 276 },
+      { label: 'Estomac', side: 'right' as const, y: 120, from: 209, to: 276 },
+      { label: 'Intestins', side: 'right' as const, y: 152, from: 199, to: 276 },
+      { label: 'Poumons', side: 'left' as const, y: 88, from: 159, to: 78 },
+      { label: 'Foie', side: 'left' as const, y: 116, from: 151, to: 78 },
+      { label: 'Reins', side: 'left' as const, y: 134, from: 151, to: 78 },
+    ];
+    return (
+      <DiagramFrame
+        viewBox="0 0 360 300"
+        ariaLabel="Schéma du corps humain : silhouette avec cerveau, poumons, cœur, foie, estomac, reins et intestins légendés"
+        caption="Schéma hors ligne : organisation des principaux organes internes du corps humain (vue de face)."
+      >
+        <g stroke="#94A3B8" fill="#F1F5F9" strokeWidth="1.5">
+          <circle cx="180" cy="34" r="19" />
+          <rect x="175" y="50" width="10" height="12" rx="4" />
+          <path d="M152 60 Q180 52 208 60 L212 116 Q210 148 205 166 L155 166 Q150 148 148 116 Z" />
+          <polyline points="152,66 130,112 136,146" fill="none" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+          <polyline points="208,66 230,112 224,146" fill="none" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="136" cy="150" r="5" />
+          <circle cx="224" cy="150" r="5" />
+          <polyline points="168,164 163,212 165,250" fill="none" strokeWidth="11" strokeLinecap="round" strokeLinejoin="round" />
+          <polyline points="192,164 197,212 195,250" fill="none" strokeWidth="11" strokeLinecap="round" strokeLinejoin="round" />
+          <line x1="165" y1="252" x2="152" y2="258" strokeWidth="7" strokeLinecap="round" />
+          <line x1="195" y1="252" x2="208" y2="258" strokeWidth="7" strokeLinecap="round" />
+        </g>
+
+        <ellipse cx="180" cy="30" rx="12" ry="9" fill="#F9A8D4" stroke="#DB2777" strokeWidth="1.2" />
+        <ellipse cx="170" cy="92" rx="10" ry="15" fill="#BFDBFE" stroke="#2563EB" strokeWidth="1.2" />
+        <ellipse cx="192" cy="92" rx="10" ry="15" fill="#BFDBFE" stroke="#2563EB" strokeWidth="1.2" />
+        <circle cx="181" cy="98" r="7" fill="#FCA5A5" stroke="#DC2626" strokeWidth="1.2" />
+        <path d="M151 108 Q166 104 176 116 Q164 126 152 120 Z" fill="#FCD34D" stroke="#B45309" strokeWidth="1.2" />
+        <ellipse cx="199" cy="120" rx="9" ry="7" fill="#FDBA74" stroke="#C2410C" strokeWidth="1.2" />
+        <ellipse cx="157" cy="130" rx="5.5" ry="7.5" fill="#C4B5FD" stroke="#6D28D9" strokeWidth="1.1" />
+        <ellipse cx="202" cy="130" rx="5.5" ry="7.5" fill="#C4B5FD" stroke="#6D28D9" strokeWidth="1.1" />
+        <rect x="163" y="138" width="34" height="24" rx="10" fill="#FDE68A" stroke="#A16207" strokeWidth="1.2" />
+        <path d="M168 145 q5.5 5.5 11 0 q5.5 5.5 11 0 M168 156 q5.5 5.5 11 0 q5.5 5.5 11 0" fill="none" stroke="#A16207" strokeWidth="1" />
+
+        {labels.map((o) => (
+          <g key={o.label}>
+            <line x1={o.from} y1={o.y} x2={o.to} y2={o.y} stroke="#CBD5E1" strokeWidth="1" strokeDasharray="3 2" />
+            <circle cx={o.from} cy={o.y} r="1.8" fill="#475569" />
+            <text
+              x={o.side === 'right' ? o.to + 3 : o.to - 3}
+              y={o.y + 3}
+              textAnchor={o.side === 'right' ? 'start' : 'end'}
+              fontSize="9"
+              fontWeight="bold"
+              fill="#334155"
+            >
+              {o.label}
+            </text>
+          </g>
+        ))}
+        <text x="24" y="290" fontSize="8" fill="#64748B">
+          Vue schématique simplifiée — repères d’anatomie de surface.
+        </text>
+      </DiagramFrame>
+    );
+  }
+
+  if (diagramId === 'appareil_digestif') {
+    const steps = [
+      { label: '1. Bouche', detail: 'Mastication + amylase salivaire (début de la digestion de l’amidon)', fill: '#EFF6FF', stroke: '#2563EB', text: '#1E3A8A' },
+      { label: '2. Œsophage', detail: 'Péristaltisme : descente du bol alimentaire en une dizaine de secondes', fill: '#ECFEFF', stroke: '#0891B2', text: '#155E75' },
+      { label: '3. Estomac', detail: 'HCl + pepsine — pH 1,5 à 3, brassage mécanique', fill: '#FEF2F2', stroke: '#DC2626', text: '#991B1B' },
+      { label: '4. Duodénum', detail: 'Bile du foie + enzymes du pancréas (lipase, trypsine)', fill: '#FEFCE8', stroke: '#CA8A04', text: '#854D0E' },
+      { label: '5. Intestin grêle', detail: 'Villosités → absorption des nutriments (6 à 7 m)', fill: '#ECFDF5', stroke: '#059669', text: '#065F46' },
+      { label: '6. Côlon → Rectum', detail: 'Réabsorption de l’eau puis formation et évacuation des selles', fill: '#F5F3FF', stroke: '#7C3AED', text: '#4C1D95' },
+    ];
+    return (
+      <DiagramFrame
+        viewBox="0 0 360 250"
+        ariaLabel="Schéma de l'appareil digestif : bouche, œsophage, estomac, duodénum, intestin grêle, côlon et rectum"
+        caption="Schéma hors ligne : les 6 étapes du tube digestif et les sécrétions associées."
+      >
+        {steps.map((st, i) => {
+          const y = 12 + i * 38;
+          return (
+            <g key={st.label}>
+              <rect x="30" y={y} width="300" height="32" rx="7" fill={st.fill} stroke={st.stroke} strokeWidth="1.5" />
+              <text x="42" y={y + 14} fontSize="9.5" fontWeight="bold" fill={st.text}>
+                {st.label}
+              </text>
+              <text x="42" y={y + 26} fontSize="7.8" fill="#475569">
+                {st.detail}
+              </text>
+              {i < steps.length - 1 && (
+                <line x1="180" y1={y + 32} x2="180" y2={y + 38} stroke="#94A3B8" strokeWidth="1.4" />
+              )}
+            </g>
+          );
+        })}
+      </DiagramFrame>
+    );
+  }
+
+  if (diagramId === 'appareil_respiratoire') {
+    return (
+      <DiagramFrame
+        viewBox="0 0 360 268"
+        ariaLabel="Schéma de l'appareil respiratoire : voies aériennes, poumons, alvéoles et hématose"
+        caption="Schéma hors ligne : ventilation (nez → alvéoles) et hématose alvéolo-capillaire (O₂ / CO₂)."
+      >
+        <ellipse cx="180" cy="34" rx="14" ry="10" fill="#E0F2FE" stroke="#0284C7" strokeWidth="1.5" />
+        <line x1="194" y1="32" x2="206" y2="30" stroke="#94A3B8" strokeWidth="1" />
+        <text x="209" y="33" fontSize="8.5" fill="#0369A1" fontWeight="bold">Nez / bouche</text>
+        <rect x="172" y="46" width="16" height="36" rx="7" fill="#BAE6FD" stroke="#0284C7" strokeWidth="1.4" />
+        <text x="196" y="60" fontSize="8.5" fill="#0C4A6E" fontWeight="bold">Trachée</text>
+        <text x="196" y="70" fontSize="7.5" fill="#0C4A6E">(cartilages en C)</text>
+        <path d="M180 82 L130 104" stroke="#0284C7" strokeWidth="5" strokeLinecap="round" />
+        <path d="M180 82 L230 104" stroke="#0284C7" strokeWidth="5" strokeLinecap="round" />
+        <text x="112" y="92" textAnchor="end" fontSize="8" fill="#0C4A6E" fontWeight="bold">Bronches</text>
+        <line x1="128" y1="100" x2="115" y2="94" stroke="#94A3B8" strokeWidth="1" />
+        <path d="M96 104 Q64 142 92 180 Q120 160 118 104 Z" fill="#BFDBFE" stroke="#2563EB" strokeWidth="1.5" />
+        <path d="M264 104 Q296 142 268 180 Q240 160 242 104 Z" fill="#BFDBFE" stroke="#2563EB" strokeWidth="1.5" />
+        <text x="96" y="192" textAnchor="middle" fontSize="9" fill="#1E3A8A" fontWeight="bold">Poumon droit</text>
+        <text x="264" y="192" textAnchor="middle" fontSize="9" fill="#1E3A8A" fontWeight="bold">Poumon gauche</text>
+        <line x1="118" y1="132" x2="148" y2="132" stroke="#93C5FD" strokeWidth="1.2" strokeDasharray="3 2" />
+        <line x1="242" y1="132" x2="212" y2="132" stroke="#93C5FD" strokeWidth="1.2" strokeDasharray="3 2" />
+        <circle cx="180" cy="140" r="30" fill="#F8FAFC" stroke="#0EA5E9" strokeWidth="1.8" />
+        <text x="180" y="135" textAnchor="middle" fontSize="7.5" fill="#0369A1" fontWeight="bold">Alvéole</text>
+        <text x="180" y="147" textAnchor="middle" fontSize="6.4" fill="#0369A1">300 M / poumon</text>
+        <path d="M156 168 Q180 182 204 168" fill="none" stroke="#DC2626" strokeWidth="2.6" />
+        <text x="180" y="208" textAnchor="middle" fontSize="8" fill="#991B1B" fontWeight="bold">Capillaire — hématose</text>
+        <path d="M96 228 Q180 210 264 228" fill="none" stroke="#64748B" strokeWidth="3" />
+        <text x="180" y="244" textAnchor="middle" fontSize="8" fill="#475569">Diaphragme (muscle inspirateur principal)</text>
+        <text x="180" y="260" textAnchor="middle" fontSize="8" fill="#334155">O₂ inspiré → sang (Hb) · CO₂ sanguin → alvéole → expiration</text>
+      </DiagramFrame>
+    );
+  }
+
+  if (diagramId === 'systeme_nerveux') {
+    return (
+      <DiagramFrame
+        viewBox="0 0 360 258"
+        ariaLabel="Schéma du système nerveux : cerveau, tronc cérébral, moelle épinière et nerfs périphériques"
+        caption="Schéma hors ligne : système nerveux central (encéphale + moelle) et système nerveux périphérique."
+      >
+        <ellipse cx="180" cy="44" rx="52" ry="34" fill="#FCE7F3" stroke="#BE185D" strokeWidth="1.8" />
+        <path d="M148 34 q14 -11 28 0 q14 -11 28 0 M144 50 q16 -11 32 0 q16 -11 32 0 M152 64 q14 -9 28 0 q14 -9 28 0" fill="none" stroke="#BE185D" strokeWidth="1.1" />
+        <text x="180" y="92" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#9D174D">Encéphale (cerveau)</text>
+        <rect x="170" y="100" width="20" height="70" rx="9" fill="#E9D5FF" stroke="#7C3AED" strokeWidth="1.6" />
+        <text x="180" y="135" textAnchor="middle" fontSize="7" fontWeight="bold" fill="#5B21B6" transform="rotate(-90 180 135)">Moelle épinière</text>
+        {[110, 122, 134, 146, 158].map((y) => (
+          <g key={y}>
+            <line x1="170" y1={y} x2="132" y2={y + 6} stroke="#7C3AED" strokeWidth="1.3" />
+            <line x1="190" y1={y} x2="228" y2={y + 6} stroke="#7C3AED" strokeWidth="1.3" />
+            <circle cx="130" cy={y + 6} r="2.4" fill="#A78BFA" />
+            <circle cx="230" cy={y + 6} r="2.4" fill="#A78BFA" />
+          </g>
+        ))}
+        <text x="26" y="118" fontSize="8" fill="#5B21B6" fontWeight="bold">Nerfs rachidiens</text>
+        <text x="26" y="130" fontSize="8" fill="#5B21B6">(SNP, 31 paires)</text>
+        <rect x="20" y="186" width="150" height="44" rx="7" fill="#F0F9FF" stroke="#0369A1" strokeWidth="1.4" />
+        <text x="95" y="204" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#075985">SNC</text>
+        <text x="95" y="219" textAnchor="middle" fontSize="8" fill="#0C4A6E">Encéphale + moelle épinière</text>
+        <rect x="190" y="186" width="150" height="44" rx="7" fill="#F0FDF4" stroke="#15803D" strokeWidth="1.4" />
+        <text x="265" y="204" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#166534">SNP</text>
+        <text x="265" y="219" textAnchor="middle" fontSize="8" fill="#14532D">Nerfs somatiques + autonomes</text>
+        <text x="180" y="250" textAnchor="middle" fontSize="7.5" fill="#64748B">Influx nerveux : potentiel d’action de −70 mV à +30 mV</text>
+      </DiagramFrame>
+    );
+  }
+
+  if (diagramId === 'squelette') {
+    return (
+      <DiagramFrame
+        viewBox="0 0 360 284"
+        ariaLabel="Schéma simplifié du squelette humain : crâne, colonne, cage thoracique, bassin, fémur et tibia"
+        caption="Schéma hors ligne : repères osseux essentiels (206 os chez l’adulte, 270 à la naissance)."
+      >
+        <g stroke="#57534E" fill="#FAFAF9" strokeWidth="1.6">
+          <ellipse cx="180" cy="30" rx="18" ry="20" />
+          <path d="M164 42 Q180 58 196 42" fill="none" />
+          <circle cx="173" cy="28" r="2" fill="#57534E" stroke="none" />
+          <circle cx="187" cy="28" r="2" fill="#57534E" stroke="none" />
+        </g>
+        <line x1="180" y1="50" x2="180" y2="168" stroke="#57534E" strokeWidth="4" strokeLinecap="round" />
+        {[56, 64, 72, 80, 128, 138, 148, 158].map((y) => (
+          <line key={y} x1="174" y1={y} x2="186" y2={y} stroke="#78716C" strokeWidth="1.6" />
+        ))}
+        <path d="M150 74 Q180 66 210 74" fill="none" stroke="#57534E" strokeWidth="3" strokeLinecap="round" />
+        <line x1="180" y1="76" x2="180" y2="122" stroke="#78716C" strokeWidth="2.4" />
+        {[80, 90, 100, 110].map((y) => (
+          <g key={`rib${y}`}>
+            <path d={`M180 ${y} C 154 ${y + 1} 140 ${y + 8} 138 ${y + 20}`} fill="none" stroke="#57534E" strokeWidth="1.8" />
+            <path d={`M180 ${y} C 206 ${y + 1} 220 ${y + 8} 222 ${y + 20}`} fill="none" stroke="#57534E" strokeWidth="1.8" />
+          </g>
+        ))}
+        <path d="M156 168 Q150 188 164 198 Q172 190 180 198 Q188 190 196 198 Q210 188 204 168 Z" fill="#FAFAF9" stroke="#57534E" strokeWidth="1.6" />
+        <line x1="168" y1="198" x2="164" y2="234" stroke="#57534E" strokeWidth="6" strokeLinecap="round" />
+        <line x1="192" y1="198" x2="196" y2="234" stroke="#57534E" strokeWidth="6" strokeLinecap="round" />
+        <line x1="164" y1="236" x2="160" y2="264" stroke="#78716C" strokeWidth="5" strokeLinecap="round" />
+        <line x1="196" y1="236" x2="200" y2="264" stroke="#78716C" strokeWidth="5" strokeLinecap="round" />
+        <line x1="160" y1="266" x2="150" y2="270" stroke="#78716C" strokeWidth="4" strokeLinecap="round" />
+        <line x1="200" y1="266" x2="210" y2="270" stroke="#78716C" strokeWidth="4" strokeLinecap="round" />
+        <line x1="150" y1="74" x2="132" y2="112" stroke="#57534E" strokeWidth="4" strokeLinecap="round" />
+        <line x1="210" y1="74" x2="228" y2="112" stroke="#57534E" strokeWidth="4" strokeLinecap="round" />
+        <line x1="132" y1="114" x2="124" y2="144" stroke="#78716C" strokeWidth="3.4" strokeLinecap="round" />
+        <line x1="228" y1="114" x2="236" y2="144" stroke="#78716C" strokeWidth="3.4" strokeLinecap="round" />
+
+        {[
+          { label: 'Crâne', x: 204, y: 26, from: 198, to: 202, anchor: 'start' as const },
+          { label: 'Clavicule', x: 218, y: 66, from: 206, to: 214, anchor: 'start' as const },
+          { label: 'Cage thoracique', x: 246, y: 96, from: 214, to: 242, anchor: 'start' as const },
+          { label: 'Colonne vertébrale', x: 108, y: 150, from: 114, to: 174, anchor: 'end' as const },
+          { label: 'Bassin', x: 110, y: 184, from: 116, to: 152, anchor: 'end' as const },
+          { label: 'Fémur', x: 240, y: 216, from: 200, to: 236, anchor: 'start' as const },
+          { label: 'Tibia / péroné', x: 110, y: 252, from: 116, to: 158, anchor: 'end' as const },
+        ].map((b) => (
+          <g key={b.label}>
+            <line x1={b.from} y1={b.y} x2={b.to} y2={b.y} stroke="#CBD5E1" strokeWidth="1" strokeDasharray="3 2" />
+            <text x={b.x} y={b.y + 3} textAnchor={b.anchor} fontSize="8.5" fontWeight="bold" fill="#334155">
+              {b.label}
+            </text>
+          </g>
+        ))}
+      </DiagramFrame>
+    );
+  }
+
+  if (diagramId === 'cellule') {
+    return (
+      <DiagramFrame
+        viewBox="0 0 360 250"
+        ariaLabel="Schéma d'une cellule eucaryote : membrane, cytoplasme, noyau, mitochondries, réticulum et appareil de Golgi"
+        caption="Schéma hors ligne : organites d’une cellule eucaryote animale et leurs fonctions."
+      >
+        <text x="180" y="20" textAnchor="middle" fontSize="8.5" fontWeight="bold" fill="#115E59">
+          Membrane plasmique (bicouche lipidique)
+        </text>
+        <line x1="180" y1="24" x2="180" y2="46" stroke="#94A3B8" strokeWidth="1" strokeDasharray="3 2" />
+        <ellipse cx="180" cy="138" rx="140" ry="90" fill="#F0FDFA" stroke="#0F766E" strokeWidth="2.2" />
+        <ellipse cx="180" cy="138" rx="130" ry="81" fill="none" stroke="#5EEAD4" strokeWidth="1" strokeDasharray="4 3" />
+        <circle cx="148" cy="118" r="32" fill="#E0E7FF" stroke="#4338CA" strokeWidth="1.8" />
+        <circle cx="148" cy="118" r="10" fill="#A5B4FC" stroke="#4338CA" strokeWidth="1.2" />
+        <text x="148" y="78" textAnchor="middle" fontSize="8.5" fontWeight="bold" fill="#3730A3">Noyau (ADN)</text>
+        <ellipse cx="252" cy="94" rx="19" ry="9.5" fill="#FED7AA" stroke="#C2410C" strokeWidth="1.5" transform="rotate(-18 252 94)" />
+        <text x="278" y="84" fontSize="8" fill="#9A3412" fontWeight="bold">Mitochondrie</text>
+        <text x="278" y="94" fontSize="7.5" fill="#9A3412">(ATP)</text>
+        <path d="M210 142 q14 -12 28 0 q14 12 28 0" fill="none" stroke="#7C3AED" strokeWidth="2.4" />
+        <text x="238" y="160" textAnchor="middle" fontSize="7.8" fill="#5B21B6" fontWeight="bold">Réticulum rugueux</text>
+        <text x="238" y="170" textAnchor="middle" fontSize="7.2" fill="#5B21B6">(ribosomes)</text>
+        <path d="M108 170 q16 12 32 0" fill="none" stroke="#B91C1C" strokeWidth="3" />
+        <path d="M112 179 q16 12 32 0" fill="none" stroke="#B91C1C" strokeWidth="3" />
+        <text x="124" y="200" textAnchor="middle" fontSize="7.8" fill="#991B1B" fontWeight="bold">Appareil de Golgi</text>
+        <circle cx="252" cy="186" r="9" fill="#FDE68A" stroke="#B45309" strokeWidth="1.3" />
+        <text x="266" y="189" fontSize="7.8" fill="#92400E" fontWeight="bold">Lysosome</text>
+        <text x="72" y="150" textAnchor="middle" fontSize="8" fill="#0F766E" fontWeight="bold">Cytoplasme</text>
+        <text x="180" y="244" textAnchor="middle" fontSize="7.2" fill="#64748B">
+          Échelle indicative — la cellule mesure 10 à 100 µm.
+        </text>
+      </DiagramFrame>
+    );
+  }
+
+  if (diagramId === 'adn_helice') {
+    const strand = (sign: number) =>
+      Array.from({ length: 41 }, (_, i) => {
+        const y = 24 + i * 4;
+        const x = 180 + sign * 30 * Math.sin((2 * Math.PI * (y - 24)) / 152);
+        return `${x.toFixed(1)},${y}`;
+      }).join(' ');
+    const pairs = Array.from({ length: 7 }, (_, i) => {
+      const y = 30 + i * 22;
+      const offset = 30 * Math.sin((2 * Math.PI * (y - 24)) / 152);
+      return { y, x1: 180 + offset, x2: 180 - offset, label: ['A—T', 'G—C', 'T—A', 'C—G', 'A—T', 'G—C', 'T—A'][i] };
+    });
+    return (
+      <DiagramFrame
+        viewBox="0 0 360 200"
+        ariaLabel="Schéma de la double hélice d'ADN avec les paires de bases adénine-thymine et guanine-cytosine"
+        caption="Schéma hors ligne : double hélice d’ADN, appariement complémentaire A–T / G–C et brins antiparallèles."
+      >
+        <text x="150" y="14" textAnchor="middle" fontSize="8.5" fontWeight="bold" fill="#1E3A8A">
+          Brin 5′ → 3′
+        </text>
+        <text x="212" y="14" textAnchor="middle" fontSize="8.5" fontWeight="bold" fill="#065F46">
+          Brin 3′ → 5′
+        </text>
+        <polyline points={strand(1)} fill="none" stroke="#1D4ED8" strokeWidth="3.6" strokeLinejoin="round" />
+        <polyline points={strand(-1)} fill="none" stroke="#059669" strokeWidth="3.6" strokeLinejoin="round" />
+        {pairs.map((pr) => (
+          <g key={pr.y}>
+            <line x1={pr.x1} y1={pr.y} x2={pr.x2} y2={pr.y} stroke="#94A3B8" strokeWidth="3" strokeLinecap="round" />
+            <text x="232" y={pr.y + 3} fontSize="8" fontWeight="bold" fill="#334155">{pr.label}</text>
+          </g>
+        ))}
+        <text x="232" y="176" fontSize="7" fill="#475569">A=T : 2 liaisons hydrogène</text>
+        <text x="232" y="187" fontSize="7" fill="#475569">G≡C : 3 liaisons hydrogène</text>
+      </DiagramFrame>
+    );
+  }
+
+  if (diagramId === 'chandeliers_japonais') {
+    const candles = [
+      { x: 72, open: 118, close: 74, high: 58, low: 130, bull: true },
+      { x: 122, open: 74, close: 96, high: 64, low: 108, bull: false },
+      { x: 172, open: 96, close: 62, high: 50, low: 104, bull: true },
+      { x: 222, open: 62, close: 84, high: 52, low: 94, bull: false },
+      { x: 272, open: 84, close: 46, high: 34, low: 92, bull: true },
+    ];
+    return (
+      <DiagramFrame
+        viewBox="0 0 360 226"
+        ariaLabel="Schéma des chandeliers japonais : corps, mèche haute et basse, chandelier haussier vert et baissier rouge"
+        caption="Schéma hors ligne : anatomie d’un chandelier japonais (corps = ouverture → clôture, mèches = plus haut / plus bas)."
+      >
+        <line x1="30" y1="158" x2="336" y2="158" stroke="#94A3B8" strokeWidth="1.4" />
+        <line x1="30" y1="24" x2="30" y2="158" stroke="#94A3B8" strokeWidth="1.4" />
+        <text x="34" y="20" fontSize="8" fill="#475569" fontWeight="bold">Prix</text>
+        <text x="312" y="172" fontSize="8" fill="#475569">Temps</text>
+        {candles.map((c) => {
+          const color = c.bull ? '#059669' : '#DC2626';
+          const top = Math.min(c.open, c.close);
+          const height = Math.abs(c.close - c.open);
+          return (
+            <g key={c.x}>
+              <line x1={c.x} y1={c.high} x2={c.x} y2={c.low} stroke={color} strokeWidth="2" />
+              <rect x={c.x - 10} y={top} width="20" height={Math.max(6, height)} rx="2" fill={color} opacity="0.88" />
+            </g>
+          );
+        })}
+        <text x="84" y="56" fontSize="7.5" fill="#475569">Plus haut</text>
+        <line x1="82" y1="58" x2="74" y2="60" stroke="#94A3B8" strokeWidth="0.8" />
+        <text x="84" y="140" fontSize="7.5" fill="#475569">Plus bas</text>
+        <line x1="82" y1="136" x2="74" y2="130" stroke="#94A3B8" strokeWidth="0.8" />
+        <rect x="30" y="180" width="306" height="40" rx="8" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1" />
+        <rect x="42" y="188" width="12" height="10" rx="2" fill="#059669" />
+        <text x="60" y="197" fontSize="8" fill="#065F46" fontWeight="bold">Haussier : clôture &gt; ouverture</text>
+        <rect x="42" y="203" width="12" height="10" rx="2" fill="#DC2626" />
+        <text x="60" y="212" fontSize="8" fill="#991B1B" fontWeight="bold">Baissier : clôture &lt; ouverture</text>
+        <text x="206" y="197" fontSize="7.5" fill="#334155">Corps = Ouverture → Clôture</text>
+        <text x="206" y="211" fontSize="7.5" fill="#334155">Mèches = rejet / volatilité</text>
+      </DiagramFrame>
+    );
+  }
+
+  if (diagramId === 'support_resistance') {
+    return (
+      <DiagramFrame
+        viewBox="0 0 360 226"
+        ariaLabel="Graphique de support et résistance avec rebonds du prix et cassure haussière"
+        caption="Schéma hors ligne : zones de support/résistance, rebonds et cassure (breakout) suivie d’un retest."
+      >
+        <rect x="32" y="46" width="300" height="20" fill="#FEE2E2" stroke="#F87171" strokeWidth="1" strokeDasharray="4 3" />
+        <rect x="32" y="152" width="300" height="20" fill="#DCFCE7" stroke="#4ADE80" strokeWidth="1" strokeDasharray="4 3" />
+        <text x="34" y="38" fontSize="8.5" fontWeight="bold" fill="#991B1B">RÉSISTANCE (offre / vendeurs)</text>
+        <text x="34" y="192" fontSize="8.5" fontWeight="bold" fill="#166534">SUPPORT (demande / acheteurs)</text>
+        <polyline
+          points="44,160 78,58 112,156 146,54 180,158 214,56 240,44 268,60 300,30"
+          fill="none"
+          stroke="#1D4ED8"
+          strokeWidth="2.6"
+          strokeLinejoin="round"
+        />
+        <circle cx="214" cy="56" r="4" fill="#D97706" />
+        <text x="222" y="36" fontSize="7.5" fill="#92400E" fontWeight="bold">Cassure</text>
+        <line x1="220" y1="40" x2="216" y2="52" stroke="#D97706" strokeWidth="0.9" />
+        <circle cx="268" cy="60" r="4" fill="#7C3AED" />
+        <text x="286" y="82" fontSize="7.5" fill="#5B21B6" fontWeight="bold">Retest</text>
+        <line x1="272" y1="66" x2="282" y2="78" stroke="#7C3AED" strokeWidth="0.9" />
+        <text x="180" y="212" textAnchor="middle" fontSize="7.5" fill="#475569">
+          Zone de range = prix coincé entre support et résistance.
+        </text>
+      </DiagramFrame>
+    );
+  }
+
+  if (diagramId === 'gestion_risque_trading') {
+    return (
+      <DiagramFrame
+        viewBox="0 0 360 244"
+        ariaLabel="Schéma de gestion du risque en trading : entrée, stop-loss, objectif et ratio risque-récompense"
+        caption="Schéma hors ligne : dimensionnement de position et ratio Risque/Récompense (1R risqué pour 2R visé)."
+      >
+        <line x1="34" y1="34" x2="34" y2="150" stroke="#94A3B8" strokeWidth="1.4" />
+        <line x1="34" y1="150" x2="200" y2="150" stroke="#94A3B8" strokeWidth="1.4" />
+        <text x="34" y="30" fontSize="8" fill="#475569" fontWeight="bold">Prix</text>
+        <polyline
+          points="44,142 72,130 98,134 124,120 150,112 176,94 196,78"
+          fill="none"
+          stroke="#1D4ED8"
+          strokeWidth="2.6"
+          strokeLinejoin="round"
+        />
+        <line x1="44" y1="112" x2="200" y2="112" stroke="#0F766E" strokeWidth="1.6" strokeDasharray="5 3" />
+        <line x1="44" y1="136" x2="200" y2="136" stroke="#DC2626" strokeWidth="1.6" strokeDasharray="5 3" />
+        <line x1="44" y1="64" x2="200" y2="64" stroke="#059669" strokeWidth="1.6" strokeDasharray="5 3" />
+        <rect x="52" y="112" width="10" height="24" fill="#FCA5A5" stroke="#DC2626" strokeWidth="1" />
+        <rect x="52" y="64" width="10" height="48" fill="#86EFAC" stroke="#059669" strokeWidth="1" />
+        <text x="204" y="68" fontSize="8" fontWeight="bold" fill="#047857">Objectif (2R)</text>
+        <text x="204" y="116" fontSize="8" fontWeight="bold" fill="#0F766E">Entrée</text>
+        <text x="204" y="140" fontSize="8" fontWeight="bold" fill="#B91C1C">Stop-loss (1R)</text>
+        <text x="40" y="172" fontSize="8" fill="#334155" fontWeight="bold">Formule de la taille de position :</text>
+        <rect x="40" y="176" width="282" height="38" rx="6" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.2" />
+        <text x="52" y="192" fontSize="8.4" fill="#0F172A" fontWeight="bold">
+          Taille = (Capital × % de risque) ÷ |Entrée − Stop-loss|
+        </text>
+        <text x="52" y="206" fontSize="7.4" fill="#475569">
+          Ex. 1 000 000 F · risque 1 % · stop 200 F ⇒ 50 lots (10 000 F risqués).
+        </text>
+        <text x="180" y="232" textAnchor="middle" fontSize="7.5" fill="#64748B">
+          Avec un R:R de 1:2, 40 % de trades gagnants suffisent à être rentable.
+        </text>
+      </DiagramFrame>
+    );
+  }
+
+  if (diagramId === 'coupe_sol') {
+    const horizons = [
+      { h: 34, label: 'O — Litière', detail: 'Matière organique en décomposition', fill: '#EFEBE9', stroke: '#8D6E63', text: '#4E342E' },
+      { h: 44, label: 'A — Horizon humifère', detail: 'Racines fines, humus, vie microbienne', fill: '#5D4037', stroke: '#3E2723', text: '#FFFFFF' },
+      { h: 44, label: 'B — Horizon minéral', detail: 'Argiles, oxydes de fer, lessivage', fill: '#A1887F', stroke: '#6D4C41', text: '#FFFFFF' },
+      { h: 44, label: 'C — Roche altérée', detail: 'Fragments de la roche mère', fill: '#D7CCC8', stroke: '#8D6E63', text: '#4E342E' },
+      { h: 34, label: 'R — Roche mère', detail: 'Substratum non altéré', fill: '#9E9E9E', stroke: '#616161', text: '#FFFFFF' },
+    ];
+    let cursor = 16;
+    const placed = horizons.map((hz) => {
+      const item = { ...hz, y: cursor };
+      cursor += hz.h;
+      return item;
+    });
+    return (
+      <DiagramFrame
+        viewBox="0 0 360 250"
+        ariaLabel="Coupe de sol : horizons O, A, B, C et R avec racines et infiltration de l'eau"
+        caption="Schéma hors ligne : coupe pédologique (horizons O-A-B-C-R), racines et circulation de l’eau."
+      >
+        {placed.map((hz) => (
+          <g key={hz.label}>
+            <rect x="20" y={hz.y} width="240" height={hz.h} fill={hz.fill} stroke={hz.stroke} strokeWidth="1.3" />
+            <text x="32" y={hz.y + 15} fontSize="9" fontWeight="bold" fill={hz.text}>
+              {hz.label}
+            </text>
+            <text x="32" y={hz.y + 28} fontSize="7.5" fill={hz.text}>
+              {hz.detail}
+            </text>
+          </g>
+        ))}
+        <path d="M238 24 L238 176" fill="none" stroke="#15803D" strokeWidth="2.2" />
+        <path d="M238 60 q-14 -10 -20 -26 M238 88 q16 -12 22 -30 M238 118 q-16 -14 -24 -32 M238 148 q16 -12 24 -30" fill="none" stroke="#15803D" strokeWidth="1.6" />
+        <text x="224" y="210" textAnchor="end" fontSize="7.5" fill="#166534" fontWeight="bold">Racines</text>
+        <line x1="272" y1="24" x2="272" y2="216" stroke="#0284C7" strokeWidth="3" strokeDasharray="5 4" />
+        <text x="280" y="60" fontSize="7.5" fill="#0369A1">Infiltration</text>
+        <text x="280" y="71" fontSize="7.5" fill="#0369A1">(porosité)</text>
+        <text x="280" y="170" fontSize="7.5" fill="#0369A1">Nappe</text>
+        <text x="280" y="181" fontSize="7.5" fill="#0369A1">phréatique</text>
+        <text x="180" y="240" textAnchor="middle" fontSize="7.5" fill="#64748B">
+          Un sol sain = structure, matière organique, eau et biodiversité.
+        </text>
+      </DiagramFrame>
+    );
+  }
+
+  if (diagramId === 'circuit_electrique_serie') {
+    return (
+      <DiagramFrame
+        viewBox="0 0 360 206"
+        ariaLabel="Circuit électrique en série avec générateur, résistor et lampe, loi d'Ohm U = R × I"
+        caption="Schéma hors ligne : circuit série (générateur, résistor, lampe) et loi d’Ohm U = R × I."
+      >
+        <path d="M40 60 L118 60 M142 60 L210 60 M250 60 L320 60" fill="none" stroke="#0F172A" strokeWidth="2" />
+        <path d="M320 60 L320 140 L40 140 L40 60" fill="none" stroke="#0F172A" strokeWidth="2" />
+        <line x1="128" y1="46" x2="128" y2="74" stroke="#0F172A" strokeWidth="3" />
+        <line x1="137" y1="50" x2="137" y2="70" stroke="#0F172A" strokeWidth="3" />
+        <text x="132" y="38" textAnchor="middle" fontSize="8.5" fill="#334155" fontWeight="bold">Générateur E</text>
+        <rect x="210" y="48" width="40" height="24" rx="2" fill="#FEF3C7" stroke="#B45309" strokeWidth="1.6" />
+        <text x="230" y="40" textAnchor="middle" fontSize="8" fill="#92400E" fontWeight="bold">R (résistor)</text>
+        <circle cx="320" cy="100" r="16" fill="#FEF9C3" stroke="#CA8A04" strokeWidth="1.8" />
+        <line x1="312" y1="92" x2="328" y2="108" stroke="#CA8A04" strokeWidth="1.5" />
+        <line x1="328" y1="92" x2="312" y2="108" stroke="#CA8A04" strokeWidth="1.5" />
+        <text x="298" y="104" textAnchor="end" fontSize="8" fill="#854D0E" fontWeight="bold">Lampe</text>
+        <line x1="110" y1="140" x2="150" y2="140" stroke="#DC2626" strokeWidth="2" />
+        <polygon points="150,135 160,140 150,145" fill="#DC2626" />
+        <text x="166" y="136" fontSize="8" fill="#991B1B" fontWeight="bold">I (intensité)</text>
+
+        <rect x="36" y="164" width="290" height="36" rx="6" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.2" />
+        <text x="48" y="178" fontSize="8.4" fill="#0F172A" fontWeight="bold">Loi d’Ohm : U = R × I</text>
+        <text x="48" y="192" fontSize="7.4" fill="#475569">
+          Série : I identique, U = U₁ + U₂ · Dérivation : U commune.
+        </text>
+      </DiagramFrame>
     );
   }
 

@@ -277,7 +277,7 @@ export function buildCenturionPack(pack: CenturionSubjectPack): CenturionBundle 
       {
         id: `${crsId}-s4`,
         heading: '4. Exemple résolu, exercices pratiques & ancrage durable',
-        content: `${workedExample}\n\nPour consolider durablement ce chapitre, réalise les 4 exercices pratiques interactifs (Application directe, Mise en pratique guidée, Correction de copie fautive et Défi synthèse), puis enchaîne avec le QCM chronométré et la Méthode Active (Feynman, Texte à trous, Séquençage ou Rédaction /20).`,
+        content: `${workedExample}\n\nPour consolider durablement ce chapitre, réalise les exercices pratiques interactifs (Application directe, Mise en pratique guidée, Correction de copie fautive, Défi synthèse et, en trading, ateliers de gestion du risque et journal de trade), puis enchaîne avec le QCM chronométré et la Méthode Active (Feynman, Texte à trous, Séquençage ou Rédaction /20).`,
         keyTakeaway: `Savoir expliquer « ${title} » sans notes, appliquer la règle sur un cas concret et vérifier ses hypothèses avant de conclure.`,
       },
     ];

@@ -216,6 +216,8 @@ export const SUBJECT_CLASS_PROFILES: Record<string, ClassLevelId[]> = {
   architecture_design: LYCEE_TO_MASTER,
   sciences_politiques: PREM_TO_MASTER,
   finance_marches_banque: PREM_TO_MASTER,
+  // v17.4 — Trading & Marchés Financiers (101e matière du catalogue)
+  trading_marches: PREM_TO_MASTER,
   medecine_clinique: UNIV_L1_MASTER,
 
   // Millennium v17 — 34 nouvelles matières (total 100 matières × 100 chapitres = 10 000 chapitres)

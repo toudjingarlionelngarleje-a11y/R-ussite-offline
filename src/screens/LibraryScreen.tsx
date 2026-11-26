@@ -172,7 +172,7 @@ export const LibraryScreen: React.FC = () => {
                   {ch.difficulty} · {ch.estimatedMinutes} min
                 </span>
                 <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                  Cours détaillé + 4 ex. pratiques
+                  Cours détaillé + ex. pratiques
                 </span>
                 {completed && (
                   <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
@@ -609,7 +609,7 @@ export const LibraryScreen: React.FC = () => {
             Bibliothèque de contenus · 6e → Université
           </h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            {SUBJECTS.length} matières · {CHAPTERS.length.toLocaleString('fr-FR')} chapitres (72/matière) · {allFiches.length.toLocaleString('fr-FR')} fiches · 11 niveaux de classe 100 % hors ligne.
+            {SUBJECTS.length} matières · {CHAPTERS.length.toLocaleString('fr-FR')} chapitres (100/matière) · {allFiches.length.toLocaleString('fr-FR')} fiches · 11 niveaux de classe 100 % hors ligne.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

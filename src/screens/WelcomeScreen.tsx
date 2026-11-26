@@ -58,7 +58,7 @@ export const WelcomeScreen: React.FC = () => {
           <div className="lg:col-span-7">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-xs font-bold text-blue-800 dark:border-blue-900 dark:bg-blue-950/60 dark:text-blue-200">
               <WifiOff className="h-3.5 w-3.5" />
-              {SUBJECTS.length} matières × 100 chapitres = 10 000 cours & fiches hors ligne
+              {SUBJECTS.length} matières × 100 chapitres = {(SUBJECTS.length * 100).toLocaleString('fr-FR')} cours & fiches hors ligne
             </div>
             <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl dark:text-white">
               Prépare tes examens et concours,{' '}
@@ -164,7 +164,7 @@ export const WelcomeScreen: React.FC = () => {
             {
               icon: DownloadCloud,
               title: 'Offline-first léger',
-              desc: 'Télécharge une fois en Wi-Fi et révise partout sans réseau sur 100 matières.',
+              desc: `Télécharge une fois en Wi-Fi et révise partout sans réseau sur ${SUBJECTS.length} matières.`,
               tone: 'text-blue-700 bg-blue-50 dark:bg-blue-950/50 dark:text-blue-300',
             },
             {
