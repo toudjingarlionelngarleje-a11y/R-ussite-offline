@@ -3,20 +3,25 @@ import { COACH_NOTIONS_SCIENCES } from './notionsSciences';
 import { COACH_NOTIONS_LETTRES } from './notionsLettres';
 import { COACH_NOTIONS_PRO } from './notionsPro';
 import { COACH_NOTIONS_METHODE } from './notionsMethode';
-import { COACH_METHODS } from './methods';
+import { COACH_METHODS as COACH_METHODS_BASE } from './methods';
+import { COACH_METHODS_V22, COACH_NOTIONS_V22 } from './notionsV22';
 import { CoachDomain, CoachMethod, CoachNotion, COACH_DOMAIN_LABELS, COACH_METHOD_KIND_LABELS } from './types';
 
 export * from './types';
-export { COACH_METHODS };
+export { COACH_METHODS_V22, COACH_NOTIONS_V22 };
 export { COACH_NOTIONS_SCIENCES, COACH_NOTIONS_LETTRES, COACH_NOTIONS_PRO, COACH_NOTIONS_METHODE };
 
-/** Les 121 notions du coach, tous niveaux confondus. */
+/** Les 192 notions du coach, tous niveaux confondus. */
 export const COACH_NOTIONS: CoachNotion[] = [
   ...COACH_NOTIONS_SCIENCES,
   ...COACH_NOTIONS_LETTRES,
   ...COACH_NOTIONS_PRO,
   ...COACH_NOTIONS_METHODE,
+  ...COACH_NOTIONS_V22,
 ];
+
+/** Les 20 méthodes du coach : 15 historiques + 5 apportées en v22.0. */
+export const COACH_METHODS: CoachMethod[] = [...COACH_METHODS_BASE, ...COACH_METHODS_V22];
 
 /** Ordre d’affichage des domaines dans l’explorateur du coach. */
 export const COACH_DOMAINS: CoachDomain[] = [

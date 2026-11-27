@@ -49,24 +49,26 @@ npm run build
 npm run preview
 ```
 
-## Catalogue — extensions v19.0, v20.0 et v21.0 (30 nouveaux chapitres par matière)
+## Catalogue — extensions v19.0, v20.0, v21.0 (30 nouveaux chapitres par matière) et v22.0 (6 parcours, 24 annales, Coach enrichi)
 
 - **+3 210 chapitres** : chacune des **107 matières** reçoit **30 chapitres supplémentaires** en trois vagues de 10, numérotés à la suite de son programme existant, soit **14 630 chapitres** au total (11 420 en v18.0).
-- **Chaque nouveau chapitre est complet** : cours en 4 sections, fiche synthétique, QCM corrigé à 4 options, flashcards et rattachement aux annales — soit **14 630 cours, 14 630 fiches, 14 775 QCM, 13 705 flashcards et 1 996 annales**.
+- **Chaque nouveau chapitre est complet** : cours en 4 sections, fiche synthétique, QCM corrigé à 4 options, flashcards et rattachement aux annales — soit **14 630 cours, 14 630 fiches, 14 775 QCM, 13 705 flashcards et 2 020 annales**.
 - **Vague v19.0 — approfondissement** : diagnostic, fondements, cadre normatif, méthode experte, exercice guidé, étude de cas, pièges, fiche mémo, entraînement chronométré, synthèse transversale.
 - **Vague v20.0 — consolidation** : prérequis croisés, modélisation, boîte à outils, atelier pratique, protocole, cas de terrain, remédiation, mémo express, concours blanc, ouverture.
 - **Vague v21.0 — professionnalisation** : mise en situation, concepts clés, démonstration, application immédiate, atelier corrigé, contexte professionnel et normes, auto-évaluation, consolidation, épreuve type et barème, bilan et transfert.
 - **Modules rédigés matière par matière** dans `src/data/extensionV19/`, `extensionV20/` et `extensionV21/` : un thème différent par vague (ex. maths : optimisation → équations différentielles → géométrie vectorielle de l’espace).
 - **Numérotation continue** : 130, 150, 170 ou 190 chapitres par matière ; les descriptions affichent leur volume réel.
-- **Aucune ressource externe** : packs embarqués (chunks `data-x19`, `data-x20`, `data-x21`, ~44 à 48 kB chacun) et cache PWA `secure-v19`.
+- **Nouveautés v22.0 — 6 parcours d’examen inédits** : Eaux, Forêts, Climat & Environnement ; Statistique publique, Démographie & Prévision ; Transports, Logistique & Commerce International ; Hôtellerie, Restauration & Tourisme Durable ; Cybersécurité Industrielle & Systèmes OT ; Éducation Physique, Sport & Santé — soit **77 examens & concours** au total, chacun rattaché à 6 matières existantes (aucune matière créée).
+- **24 annales v22.0** (6 parcours × 4 sessions 2023-2026) assemblées à partir des questions du catalogue, avec durées, barèmes, consignes et format d’épreuve propres — **2 020 annales** au total.
+- **Aucune ressource externe** : packs embarqués (chunks `data-x19`, `data-x20`, `data-x21`, ~44 à 48 kB chacun) et cache PWA `secure-v20`.
 
 ## Coach IA — base de connaissances hors ligne (v18.0)
 
 Le coach pédagogique s’appuie sur une base de connaissances embarquée, sans aucun appel réseau :
 
-- **152 notions** structurées (définition, formule, 3 à 4 points clés, exemple, piège classique, astuce mémoire) couvrant 16 domaines et 25 matières, du collège au supérieur.
-- **15 méthodes d’épreuve et routines de travail** (dissertation, commentaire composé, étude de document, résolution de problème, QCM, oral, plan à 7 jours, veille d’examen, flashcards, relecture…).
-- **Moteur de recherche local** (`src/lib/coachEngine.ts`) : insensible aux accents et à la casse, tolérant aux pluriels, enrichi de 662 synonymes, détection d’intention (définition, formule, exemple, piège, méthode, quiz, plan, orientation, motivation) et prise en compte du niveau et de la filière de l’élève.
+- **192 notions** structurées (définition, formule, 3 à 4 points clés, exemple, piège classique, astuce mémoire) couvrant 16 domaines et 31 matières, du collège au supérieur (40 notions ajoutées en v22.0 : dérivées partielles, cycle de Krebs, cogito, traite atlantique, ISO 9001, SQ3R…).
+- **20 méthodes d’épreuve et routines de travail** (dissertation, commentaire composé, étude de document, résolution de problème, QCM, oral, plan à 7 jours, veille d’examen, flashcards, relecture, préparation orale express, gestion du trac, plan final J-7, auto-correction de copie, routine de la veille…).
+- **Moteur de recherche local** (`src/lib/coachEngine.ts`) : insensible aux accents et à la casse, tolérant aux pluriels, enrichi de 821 synonymes, détection d’intention (définition, formule, exemple, piège, méthode, quiz, plan, orientation, motivation) et prise en compte du niveau et de la filière de l’élève.
 - **Personnalisation** : notions à consolider issues des erreurs et du test de positionnement, compte à rebours avant l’épreuve, suggestions contextuelles, quiz et mini-sessions ciblés sur une notion.
 - **Transparence** : chaque réponse affiche son niveau de fiabilité et renvoie vers la fiche ou le cours associé ; les contenus restent des compléments pédagogiques et ne remplacent jamais la correction officielle.
 
@@ -77,3 +79,4 @@ Fichiers : `src/data/coachKnowledge/` (données) et `src/lib/coachEngine.ts` (mo
 > **v19.0** : 1 070 nouveaux chapitres d’approfondissement (10 par matière sur les 107), soit 12 490 chapitres / cours / fiches au total ; cache PWA `secure-v17`.
 > **v20.0** : deuxième vague de 1 070 chapitres (10 par matière), soit **13 560 chapitres / cours / fiches**, 13 705 QCM, 12 635 flashcards et 1 675 annales ; cache PWA `secure-v18`.
 > **v21.0** : troisième vague de 1 070 chapitres (10 par matière), soit **14 630 chapitres / cours / fiches**, 14 775 QCM, 13 705 flashcards et 1 996 annales ; cache PWA `secure-v19`.
+> **v22.0** : 6 nouveaux parcours d’examen (77 au total), **24 annales inédites** (2 020 au total) et Coach IA porté à **192 notions / 20 méthodes** (821 synonymes) ; volumes de chapitres inchangés (14 630), cache PWA `secure-v20`.

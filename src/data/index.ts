@@ -180,6 +180,7 @@ import {
   extensionCoverage as extensionCoverageV21,
   ALL_X21_MODULES,
 } from './extensionV21';
+import { V22_EXAMS, V22_EXAM_LINKS, buildAnnalesV22 } from './extensionV22';
 import {
   TRADING_ANNALES,
   TRADING_CHAPTERS,
@@ -318,6 +319,8 @@ export const EXAMS: ExamTrack[] = [
   ...TRADING_NEW_EXAMS,
   ...PREMIERE_NEW_EXAMS,
   ...LYCEE_NEW_EXAMS,
+  // v22.0 — 6 nouveaux parcours d’examen inédits
+  ...V22_EXAMS,
 ].map((exam) => ({
   ...exam,
   classLevels: inferExamClassLevels(exam),
@@ -493,6 +496,7 @@ export const SUBJECTS = [
     new Set([
       ...s.examIds,
       ...(EXTRA_EXAM_LINKS[s.id] ?? []),
+      ...(V22_EXAM_LINKS[s.id] ?? []),
       ...(DYNAMIC_EXAM_LINKS_BY_SUBJECT[s.id] ?? []),
     ])
   ),
@@ -711,6 +715,8 @@ export const ANNALES = [
   ...X20_EXTENSION.annales,
   // v21.0 — 321 annales supplémentaires (107 matières × 3 sujets)
   ...X21_EXTENSION.annales,
+  // v22.0 — 24 annales inédites (6 nouveaux parcours × 4 sessions)
+  ...buildAnnalesV22(QUESTIONS),
 ].map((a) => {
   const examClasses = EXAM_CLASS_MAP[a.examId];
   const subjectClasses = getSubjectClassLevels(a.subjectId);

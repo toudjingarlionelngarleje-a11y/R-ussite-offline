@@ -36,6 +36,7 @@ export default defineConfig({
           if (id.includes('/extensionV19/')) return 'data-x19';
           if (id.includes('/extensionV20/')) return 'data-x20';
           if (id.includes('/extensionV21/')) return 'data-x21';
+          if (id.includes('/extensionV22/')) return 'data-x22';
         },
       },
     },
