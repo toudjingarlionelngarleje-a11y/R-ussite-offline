@@ -60,3 +60,6 @@ Le coach pédagogique s’appuie sur une base de connaissances embarquée, sans 
 - **Transparence** : chaque réponse affiche son niveau de fiabilité et renvoie vers la fiche ou le cours associé ; les contenus restent des compléments pédagogiques et ne remplacent jamais la correction officielle.
 
 Fichiers : `src/data/coachKnowledge/` (données) et `src/lib/coachEngine.ts` (moteur).
+
+> **v18.0.1** : 3 notions d’orientation ajoutées (admission post-bac, métiers & secteurs, alternance) et tous les libellés de volume dérivés de `COACH_KNOWLEDGE_STATS`.
+> **v18.0.2** : les compteurs de l’accueil et de l’inscription affichent les volumes réels du catalogue (11 420 chapitres, 11 420 cours & fiches) au lieu de l’estimation « 107 × 100 ».
