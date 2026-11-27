@@ -214,4 +214,65 @@ export const COACH_NOTIONS_METHODE: CoachNotion[] = [
       'Choisir une filière uniquement par prestige ou par influence familiale, sans vérifier les prérequis.',
     related: ['feynman', 'stress-examen'],
   },
+  {
+    id: 'admission-post-bac',
+    term: 'Admission post-bac et dossier',
+    subjectId: 'methodes_travail',
+    domain: 'orientation',
+    aliases: ['admission', 'parcoursup', 'dossier scolaire', 'voeux', 'entretien de motivation'],
+    classLevels: ['1ere', 'terminale', 'l1'],
+    definition:
+      'L’admission post-bac repose sur un dossier (notes, appréciations, projet motivé) et parfois un entretien. Les vœux sont classés et traités par algorithme ; la qualité du dossier et la cohérence du projet pèsent autant que la moyenne.',
+    formula: 'dossier = résultats + progression + projet motivé + cohérence des vœux',
+    keys: [
+      'Préparer les vœux en trois cercles : ambitieux, réalistes, de sécurité.',
+      'Soigner les appréciations : la progression est souvent valorisée.',
+      'Relire le projet motivé : pourquoi cette formation, pourquoi moi, quel projet.',
+    ],
+    example:
+      'Un élève de Terminale S vise une licence de biologie : il argumente par ses résultats en SVT, un stage d’observation et un projet professionnel précis.',
+    pitfall:
+      'Ne formuler que des vœux ambitieux et découvrir les attendus après la clôture du dossier.',
+    related: ['orientation-post-bac', 'metiers-secteurs'],
+  },
+  {
+    id: 'metiers-secteurs',
+    term: 'Métiers et secteurs porteurs',
+    subjectId: 'methodes_travail',
+    domain: 'orientation',
+    aliases: ['metier', 'secteur porteur', 'debouches', 'emploi', 'competences'],
+    classLevels: ['3e', '2nde', '1ere', 'terminale', 'l1'],
+    definition:
+      'Un secteur porteur est un domaine où les besoins en compétences dépassent l’offre de main-d’œuvre. Choisir un métier suppose de croiser ses intérêts, ses aptitudes et la réalité du marché du travail.',
+    keys: [
+      'Les compétences transférables (numérique, langues, gestion de projet) élargissent les débouchés.',
+      'Un métier s’explore : stage, immersion, entretien avec un professionnel.',
+      'Les secteurs évoluent : se former en continu est la meilleure sécurité.',
+    ],
+    example:
+      'Les métiers de la santé, du numérique, de l’énergie et de l’agroalimentaire recrutent durablement en Afrique centrale.',
+    pitfall:
+      'Choisir un métier uniquement pour son prestige ou son salaire annoncé, sans vérifier les conditions réelles d’exercice.',
+    related: ['orientation-post-bac', 'alternance-apprentissage'],
+  },
+  {
+    id: 'alternance-apprentissage',
+    term: 'Alternance et apprentissage',
+    subjectId: 'methodes_travail',
+    domain: 'orientation',
+    aliases: ['alternance', 'apprentissage', 'contrat de professionnalisation', 'formation en alternance'],
+    classLevels: ['terminale', 'l1', 'l2', 'l3'],
+    definition:
+      'L’alternance combine formation théorique et expérience en entreprise. Elle permet d’acquérir des compétences professionnelles et un premier réseau, avec un rythme de travail plus exigeant.',
+    keys: [
+      'Chercher une entreprise tôt : le contrat conditionne l’entrée en formation.',
+      'L’alternance demande organisation et autonomie (rythme école/entreprise).',
+      'Elle favorise l’insertion mais ne remplace pas la réflexion sur le projet professionnel.',
+    ],
+    example:
+      'Un BTS en alternance alterne deux semaines en entreprise et deux semaines en centre de formation.',
+    pitfall:
+      'Signer un contrat dans une entreprise sans vérifier que les missions correspondent à la formation visée.',
+    related: ['metiers-secteurs', 'admission-post-bac'],
+  },
 ];

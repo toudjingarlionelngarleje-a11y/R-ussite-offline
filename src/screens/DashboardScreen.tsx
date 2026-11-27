@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { COACH_KNOWLEDGE_STATS } from '../data/coachKnowledge';
 import {
   AlertCircle,
   ArrowRight,
@@ -312,7 +313,7 @@ export const DashboardScreen: React.FC = () => {
               Tes priorités personnalisées aujourd’hui
             </h2>
             <p className="mt-0.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-              149 notions détaillées · 15 méthodes d’épreuve · 100 % hors ligne
+              {COACH_KNOWLEDGE_STATS.notions} notions détaillées · {COACH_KNOWLEDGE_STATS.methods} méthodes d’épreuve · 100 % hors ligne
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
