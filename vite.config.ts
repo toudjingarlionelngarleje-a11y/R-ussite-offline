@@ -34,6 +34,7 @@ export default defineConfig({
           if (id.includes('/curriculumExpansion/')) return 'data-curriculum';
           if (id.includes('/coachKnowledge/')) return 'data-coach';
           if (id.includes('/extensionV19/')) return 'data-x19';
+          if (id.includes('/extensionV20/')) return 'data-x20';
         },
       },
     },

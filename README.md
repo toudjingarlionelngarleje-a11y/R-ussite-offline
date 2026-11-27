@@ -49,13 +49,15 @@ npm run build
 npm run preview
 ```
 
-## Catalogue — extension universelle v19.0 (10 nouveaux chapitres par matière)
+## Catalogue — extensions v19.0 et v20.0 (20 nouveaux chapitres par matière)
 
-- **+1 070 chapitres d’approfondissement** : chacune des **107 matières** reçoit 10 chapitres numérotés à la suite de son programme existant, soit **12 490 chapitres** au total (contre 11 420 en v18.0).
-- **Chaque nouveau chapitre est complet** : cours en 4 sections, fiche synthétique, QCM corrigé à 4 options, flashcards et rattachement aux annales — soit **12 490 cours, 12 490 fiches, 12 635 QCM, 11 565 flashcards et 1 354 annales**.
-- **Progression en 10 étapes** (diagnostic initial, fondements approfondis, cadre normatif, méthode experte, exercice guidé, étude de cas, copies fautives, fiche mémo, entraînement chronométré, synthèse transversale), rédigée matière par matière dans `src/data/extensionV19/`.
-- **Numérotation continue** : chaque matière démarre ses nouveaux chapitres après son dernier chapitre existant ; les descriptions de matières affichent désormais leur volume réel (110, 130 ou 170 chapitres).
-- **Aucune ressource externe** : le pack est embarqué (chunk `data-x19`, ~48 kB) et le cache PWA passe en `secure-v17`.
+- **+2 140 chapitres** : chacune des **107 matières** reçoit **20 chapitres supplémentaires** en deux vagues de 10, numérotés à la suite de son programme existant, soit **13 560 chapitres** au total (11 420 en v18.0).
+- **Chaque nouveau chapitre est complet** : cours en 4 sections, fiche synthétique, QCM corrigé à 4 options, flashcards et rattachement aux annales — soit **13 560 cours, 13 560 fiches, 13 705 QCM, 12 635 flashcards et 1 675 annales**.
+- **Vague v19.0 — 10 étapes d’approfondissement** : diagnostic, fondements, cadre normatif, méthode experte, exercice guidé, étude de cas, pièges, fiche mémo, entraînement chronométré, synthèse transversale.
+- **Vague v20.0 — 10 étapes de consolidation** : prérequis croisés, modélisation, boîte à outils, atelier pratique, protocole, cas de terrain, remédiation, mémo express, concours blanc, ouverture.
+- **Modules rédigés matière par matière** dans `src/data/extensionV19/` et `src/data/extensionV20/` (un thème différent par vague : équations différentielles en maths, induction en physique, immunologie en SVT, sociétés OHADA en droit, etc.).
+- **Numérotation continue** : 120, 140, 160 ou 180 chapitres par matière ; les descriptions affichent leur volume réel.
+- **Aucune ressource externe** : packs embarqués (chunks `data-x19` et `data-x20`, ~48 et ~44 kB) et cache PWA `secure-v18`.
 
 ## Coach IA — base de connaissances hors ligne (v18.0)
 
@@ -72,3 +74,4 @@ Fichiers : `src/data/coachKnowledge/` (données) et `src/lib/coachEngine.ts` (mo
 > **v18.0.1** : 3 notions d’orientation ajoutées (admission post-bac, métiers & secteurs, alternance) et tous les libellés de volume dérivés de `COACH_KNOWLEDGE_STATS`.
 > **v18.0.2** : les compteurs de l’accueil et de l’inscription affichent les volumes réels du catalogue (11 420 chapitres, 11 420 cours & fiches) au lieu de l’estimation « 107 × 100 ».
 > **v19.0** : 1 070 nouveaux chapitres d’approfondissement (10 par matière sur les 107), soit 12 490 chapitres / cours / fiches au total ; cache PWA `secure-v17`.
+> **v20.0** : deuxième vague de 1 070 chapitres (10 par matière), soit **13 560 chapitres / cours / fiches**, 13 705 QCM, 12 635 flashcards et 1 675 annales ; cache PWA `secure-v18`.
