@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   AlertOctagon,
@@ -13,8 +13,10 @@ import {
   ShieldAlert,
   ShieldCheck,
   Terminal,
+  Timer,
   Trash2,
   Upload,
+  UserX,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import {
@@ -26,6 +28,12 @@ import {
   SecuritySystemItem,
 } from '../lib/securityFirewall';
 import { WAF_FAMILY_LABELS, WAF_RULES_BY_FAMILY, WafFamily } from '../lib/wafRules';
+import {
+  ADMIN_LOCKDOWN_LADDER,
+  adminLockRemainingMs,
+  formatAdminDuration,
+  formatAdminRemaining,
+} from '../lib/adminGuard';
 import { SecuritySeverity } from '../types';
 
 const LAYERS: ('Toutes' | SecuritySystemItem['layer'])[] = [
@@ -36,6 +44,7 @@ const LAYERS: ('Toutes' | SecuritySystemItem['layer'])[] = [
   'Service Worker PWA',
   'Cryptographie & Stockage',
   'Cloud Zero-Trust & Auth',
+  'Anti-Escalade & Identité',
 ];
 
 const ATTACK_SIMULATIONS = [
@@ -105,6 +114,12 @@ const ATTACK_SIMULATIONS = [
     source: 'Bac à sable WAF (Secrets)',
     payload: '-----BEGIN RSA PRIVATE KEY----- MIIEowIBAAKCAQEA...',
   },
+  {
+    id: 'admin',
+    label: 'Commande Admin__ (prise de contrôle)',
+    source: 'Bac à sable Garde Anti-Escalade',
+    payload: 'Admin__',
+  },
 ];
 
 function severityBadge(sev: SecuritySeverity): string {
@@ -132,6 +147,8 @@ export const SecurityCenterScreen: React.FC = () => {
     logSecurityEvent,
     clearSecurityLogs,
     triggerPanicLockdown,
+    releaseAdminLockdown,
+    previewAdminCommand,
     notify,
   } = useApp();
 
@@ -143,6 +160,45 @@ export const SecurityCenterScreen: React.FC = () => {
   const [lastTestOutcome, setLastTestOutcome] = useState<{ safe: boolean; message: string } | null>(null);
   const [fileScanResult, setFileScanResult] = useState<FileScanResult | null>(null);
   const [scanningFile, setScanningFile] = useState(false);
+
+  // Garde anti-escalade « Admin__ »
+  const [adminProbe, setAdminProbe] = useState('Admin__');
+  const [adminProbeResult, setAdminProbeResult] = useState<{
+    blocked: boolean;
+    ruleId?: string;
+    description?: string;
+  } | null>(null);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  const [ownerEmail, setOwnerEmail] = useState('');
+  const [ownerPassword, setOwnerPassword] = useState('');
+  const [ownerUnlocking, setOwnerUnlocking] = useState(false);
+  const [ownerUnlockError, setOwnerUnlockError] = useState<string | null>(null);
+  const [clearBans, setClearBans] = useState(false);
+
+  const adminLocked = Boolean(sec.adminLockdownUntil);
+  const adminRemaining = adminLockRemainingMs(sec, nowTick);
+  const bannedIdentities = sec.adminBlockedIdentities ?? [];
+  const escalationEvents = sec.events.filter((ev) => ev.category === 'PRIVILEGE_ESCALATION');
+
+  useEffect(() => {
+    if (!adminLocked) return;
+    const id = window.setInterval(() => setNowTick(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [adminLocked]);
+
+  const handleOwnerUnlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ownerEmail.trim() || !ownerPassword) return;
+    setOwnerUnlocking(true);
+    setOwnerUnlockError(null);
+    const res = await releaseAdminLockdown(ownerEmail, ownerPassword, { clearBans });
+    setOwnerUnlocking(false);
+    if (!res.ok) {
+      setOwnerUnlockError(res.error ?? 'Déblocage refusé.');
+      return;
+    }
+    setOwnerPassword('');
+  };
 
   const activeSystemsCount = useMemo(
     () => SECURITY_SYSTEMS_CATALOG.filter((sys) => sys.isActive(state)).length,
@@ -165,6 +221,17 @@ export const SecurityCenterScreen: React.FC = () => {
   );
 
   const handleRunSimulation = (sim: (typeof ATTACK_SIMULATIONS)[number]) => {
+    if (sim.id === 'admin') {
+      // Simulation à blanc : on prouve la détection SANS verrouiller l'application du testeur.
+      const preview = previewAdminCommand(sim.payload);
+      setLastTestOutcome({
+        safe: !preview.blocked,
+        message: preview.blocked
+          ? `Commande « Admin__ » bloquée par ${preview.ruleId} — ${preview.description} (simulation à blanc : aucun verrouillage appliqué).`
+          : 'Aucune commande privilégiée détectée.',
+      });
+      return;
+    }
     const res = testSecurityInput(sim.source, sim.payload);
     setLastTestOutcome(res);
   };
@@ -258,7 +325,7 @@ export const SecurityCenterScreen: React.FC = () => {
               {activeSystemsCount} / {SECURITY_SYSTEMS_CATALOG.length}
             </p>
             <p className="text-[11px] text-emerald-300">
-              dont {FIREWALL_SYSTEMS.length} pare-feux WAF · 6 couches
+              dont {FIREWALL_SYSTEMS.length} pare-feux WAF + 6 anti-escalade · {LAYERS.length - 1} couches
             </p>
           </div>
           <div className="rounded-xl bg-white/10 p-3.5">
@@ -427,6 +494,7 @@ export const SecurityCenterScreen: React.FC = () => {
               { key: 'bruteForceProtection', label: 'Anti-Bruteforce & Mots de Passe Forts' },
               { key: 'zeroTrustCloudValidation', label: 'Validation Cloud Zero-Trust Supabase' },
               { key: 'integrityCheckEnabled', label: 'Sceau d’Intégrité SHA-256 IndexedDB' },
+              { key: 'adminCommandGuard', label: 'Garde Anti-Escalade « Admin__ »' },
             ] as const
           ).map((toggle) => (
             <label
@@ -477,7 +545,198 @@ export const SecurityCenterScreen: React.FC = () => {
         </div>
       </section>
 
-      {/* Catalogue complet des systèmes de sécurité actifs (100 pare-feux WAF + boucliers) */}
+      {/* Garde anti-escalade « Admin__ » */}
+      <section className="hc-card space-y-4 rounded-2xl border border-red-200 bg-white p-5 shadow-sm dark:border-red-900/50 dark:bg-slate-900">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-white">
+              <ShieldAlert className="h-5 w-5 text-red-600" />
+              Garde anti-escalade « <span className="font-mono">Admin__</span> »
+            </h2>
+            <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+              Toute saisie de la commande privilégiée coupe la session, bannit l’identité et
+              verrouille l’application. Aucun rôle ne s’obtient par une chaîne de caractères.
+            </p>
+          </div>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-black ${
+              adminLocked
+                ? 'bg-red-600 text-white'
+                : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+            }`}
+          >
+            {adminLocked ? <Lock className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+            {adminLocked ? `BLOQUÉ · ${formatAdminRemaining(adminRemaining)}` : 'GARDE ARMÉE'}
+          </span>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-red-200/80 bg-red-50/70 p-3 dark:border-red-900/40 dark:bg-red-950/20">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-red-700 dark:text-red-300">
+              Tentatives (24 h)
+            </p>
+            <p className="mt-1 text-2xl font-black text-red-700 dark:text-red-300">
+              {sec.adminCommandAttempts}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/40">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+              Niveau de verrouillage
+            </p>
+            <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">
+              {sec.adminLockdownLevel} / 4
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/40">
+            <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+              <Timer className="h-3 w-3" /> Compte à rebours
+            </p>
+            <p className="mt-1 text-2xl font-black tabular-nums text-slate-900 dark:text-white">
+              {adminLocked ? formatAdminRemaining(adminRemaining) : '—'}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/40">
+            <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+              <UserX className="h-3 w-3" /> Identités bannies
+            </p>
+            <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">
+              {bannedIdentities.length}
+            </p>
+          </div>
+        </div>
+
+        {bannedIdentities.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 rounded-xl bg-slate-50 p-2.5 dark:bg-slate-800/50">
+            {bannedIdentities.map((identity) => (
+              <span
+                key={identity}
+                className="rounded-lg bg-white px-2 py-1 font-mono text-[10px] font-bold text-red-700 ring-1 ring-red-200 dark:bg-slate-900 dark:text-red-300 dark:ring-red-900/50"
+              >
+                {identity}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+          <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+            Simulateur (à blanc) · aucune conséquence
+          </p>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setAdminProbeResult(previewAdminCommand(adminProbe));
+            }}
+            className="mt-2 flex flex-col gap-2 sm:flex-row"
+          >
+            <input
+              value={adminProbe}
+              onChange={(e) => setAdminProbe(e.target.value)}
+              placeholder="Ex. : Admin__, __Admin__, Ａｄｍｉｎ＿＿, 4dm1n__"
+              className="flex-1 rounded-lg border border-slate-200 px-3 py-2 font-mono text-xs text-slate-900 outline-none focus:border-red-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            />
+            <button
+              type="submit"
+              className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-500"
+            >
+              Analyser
+            </button>
+          </form>
+          {adminProbeResult && (
+            <p
+              className={`mt-2 rounded-lg px-3 py-2 text-[11px] font-semibold ${
+                adminProbeResult.blocked
+                  ? 'bg-red-50 text-red-700 ring-1 ring-red-200 dark:bg-red-950/30 dark:text-red-300 dark:ring-red-900/50'
+                  : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-300 dark:ring-emerald-900/50'
+              }`}
+            >
+              {adminProbeResult.blocked
+                ? `BLOQUÉ par ${adminProbeResult.ruleId} — ${adminProbeResult.description}`
+                : 'Saisie saine : aucune commande privilégiée détectée.'}
+            </p>
+          )}
+          <p className="mt-2 text-[10px] leading-relaxed text-slate-400">
+            Un test réel verrouille immédiatement l’application (niveau 1 = 5 min) et bannit
+            l’identité courante. Échelle :{' '}
+            {ADMIN_LOCKDOWN_LADDER.map((step) => formatAdminDuration(step.minutes)).join(' → ')}.
+          </p>
+        </div>
+
+        {adminLocked && (
+          <form
+            onSubmit={handleOwnerUnlock}
+            className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+          >
+            <p className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-300">
+              <KeyRound className="h-3.5 w-3.5" /> Déblocage Propriétaire (e-mail + mot de passe PBKDF2)
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <input
+                type="email"
+                value={ownerEmail}
+                onChange={(e) => setOwnerEmail(e.target.value)}
+                placeholder="E-mail Propriétaire"
+                className="rounded-lg border border-emerald-200 px-3 py-2 text-xs dark:border-emerald-900/50 dark:bg-slate-950 dark:text-white"
+              />
+              <input
+                type="password"
+                value={ownerPassword}
+                onChange={(e) => setOwnerPassword(e.target.value)}
+                placeholder="Mot de passe Propriétaire"
+                className="rounded-lg border border-emerald-200 px-3 py-2 text-xs dark:border-emerald-900/50 dark:bg-slate-950 dark:text-white"
+              />
+            </div>
+            <label className="flex items-center gap-2 text-[10px] font-semibold text-emerald-800 dark:text-emerald-300">
+              <input
+                type="checkbox"
+                checked={clearBans}
+                onChange={(e) => setClearBans(e.target.checked)}
+                className="h-3.5 w-3.5 accent-emerald-600"
+              />
+              Purger aussi la liste des identités bannies
+            </label>
+            {ownerUnlockError && (
+              <p className="text-[11px] font-bold text-red-700 dark:text-red-300">{ownerUnlockError}</p>
+            )}
+            <button
+              type="submit"
+              disabled={ownerUnlocking || !ownerEmail.trim() || !ownerPassword}
+              className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-black text-white hover:bg-emerald-600 disabled:opacity-50"
+            >
+              {ownerUnlocking ? 'Vérification...' : 'Lever le blocage'}
+            </button>
+          </form>
+        )}
+
+        <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+          {escalationEvents.length === 0 ? (
+            <p className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
+              Aucune tentative d’escalade enregistrée. Les 4 signatures actives (ADM-001 à ADM-004)
+              restent armées à chaque frappe.
+            </p>
+          ) : (
+            escalationEvents.slice(0, 8).map((ev) => (
+              <div
+                key={ev.id}
+                className="rounded-xl border border-red-200 bg-red-50/60 p-2.5 text-[11px] dark:border-red-900/40 dark:bg-red-950/20"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded bg-red-600 px-1.5 py-0.5 font-mono text-[10px] font-bold text-white">
+                    {ev.ruleId}
+                  </span>
+                  <span className="font-bold text-slate-800 dark:text-slate-100">{ev.source}</span>
+                  <span className="font-mono text-[10px] text-slate-400">
+                    {new Date(ev.timestamp).toLocaleString('fr-FR')}
+                  </span>
+                </div>
+                <p className="mt-1 text-slate-600 dark:text-slate-300">{ev.description}</p>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      {/* Catalogue complet des systèmes de sécurité actifs (100 pare-feux WAF + 6 anti-escalade + boucliers) */}
       <section className="hc-card space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-white">

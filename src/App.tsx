@@ -2,6 +2,7 @@ import React from 'react';
 import { Layout } from './components/Layout';
 import { AppProvider, useApp } from './context/AppContext';
 import { ActiveMethodScreen } from './screens/ActiveMethodScreen';
+import { AdminLockScreen } from './screens/AdminLockScreen';
 import { AnnalesScreen } from './screens/AnnalesScreen';
 import { AuthScreen } from './screens/AuthScreen';
 import { CoachScreen } from './screens/CoachScreen';
@@ -30,7 +31,7 @@ import { TwoFactorGateScreen } from './screens/TwoFactorGateScreen';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 
 const ScreenRouter: React.FC = () => {
-  const { screen, hydrated, requiresTwoFactorGate, activeProfile } = useApp();
+  const { screen, hydrated, requiresTwoFactorGate, activeProfile, adminLockdownUntil } = useApp();
 
   if (!hydrated) {
     return (
@@ -38,6 +39,11 @@ const ScreenRouter: React.FC = () => {
         Chargement de ton espace hors ligne...
       </div>
     );
+  }
+
+  // Garde anti-escalade « Admin__ » : blocage TOTAL de l'application (priorité absolue).
+  if (adminLockdownUntil) {
+    return <AdminLockScreen />;
   }
 
   // Hard Auth Gate: visitors without an active real account must sign in or register (no demo bypass)

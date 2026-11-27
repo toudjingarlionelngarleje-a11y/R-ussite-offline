@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reussite-offline-secure-v11';
+const CACHE_NAME = 'reussite-offline-secure-v12';
 const STATIC_ASSETS = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg'];
 const MAX_CACHE_ENTRIES = 340;
 
@@ -30,6 +30,9 @@ const SUSPICIOUS_URL_PATTERNS = [
   /drop\s+table/i,
   /etc\/passwd/i,
   /wp-admin|wp-login|\.env|\.git\//i,
+  // Garde anti-escalade « Admin__ » : aucune requête contenant la commande privilégiée
+  /admin[\s_]*_{2,}/i,
+  /_{2,}[\s]*admin/i,
 ];
 
 function isUrlSafe(url) {

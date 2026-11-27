@@ -584,6 +584,7 @@ export type SecurityThreatCategory =
   | 'URL_POISONING'
   | 'STORAGE_INTEGRITY'
   | 'ZERO_TRUST_CLOUD'
+  | 'PRIVILEGE_ESCALATION'
   | 'SYSTEM_AUDIT';
 
 export type SecuritySeverity = 'info' | 'low' | 'medium' | 'high' | 'critical';
@@ -609,6 +610,7 @@ export interface SecurityConfig {
   bruteForceProtection: boolean;
   zeroTrustCloudValidation: boolean;
   integrityCheckEnabled: boolean;
+  adminCommandGuard: boolean; // garde anti-escalade « Admin__ » (default true)
   autoLockMinutes: number; // 0 = disabled, default 30
 }
 
@@ -634,6 +636,16 @@ export interface SecurityState {
   integrityStatus: 'verified' | 'tampered' | 'unchecked';
   failedLoginAttempts: number;
   lockoutUntil: string | null;
+  /** Nombre de tentatives d'escalade « Admin__ » dans la fenêtre de réhabilitation. */
+  adminCommandAttempts: number;
+  /** Niveau du verrouillage progressif (0 = aucun, 1→4 = 5 min / 30 min / 3 h / 24 h). */
+  adminLockdownLevel: number;
+  /** Fin du blocage total de l'application (ISO 8601) ou null. */
+  adminLockdownUntil: string | null;
+  /** Date de la dernière tentative d'escalade (ISO 8601). */
+  adminLastAttemptAt: string | null;
+  /** Identités (e-mail / pseudo / id) bannies pour tentative d'escalade. */
+  adminBlockedIdentities: string[];
 }
 
 export interface AppState {

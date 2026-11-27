@@ -1,4 +1,5 @@
 import { WAF_FAMILY_LABELS, WAF_RULES as WAF_RULE_DEFS } from './wafRules';
+import { detectAdminCommand } from './adminGuard';
 import {
   AppState,
   SecurityConfig,
@@ -39,7 +40,8 @@ export interface SecuritySystemItem {
     | 'Réseau & En-têtes HTTP'
     | 'Service Worker PWA'
     | 'Cryptographie & Stockage'
-    | 'Cloud Zero-Trust & Auth';
+    | 'Cloud Zero-Trust & Auth'
+    | 'Anti-Escalade & Identité';
   name: string;
   description: string;
   code: string;
@@ -55,6 +57,7 @@ export const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
   bruteForceProtection: true,
   zeroTrustCloudValidation: true,
   integrityCheckEnabled: true,
+  adminCommandGuard: true,
   autoLockMinutes: 30,
 };
 
@@ -69,7 +72,7 @@ export function createInitialSecurityState(): SecurityState {
         severity: 'info',
         source: 'Bouclier Réussite Offline',
         ruleId: 'SYS-BOOT-001',
-        description: `Initialisation réussie des ${FIREWALL_SYSTEMS.length + 28} systèmes de sécurité dont ${FIREWALL_SYSTEMS.length} pare-feux WAF (Antivirus, PBKDF2/AES-256, Garde DOM, Service Worker sécurisé & Zero-Trust).`,
+        description: `Initialisation réussie des ${FIREWALL_SYSTEMS.length + ADMIN_GUARD_SYSTEMS.length + 28} systèmes de sécurité dont ${FIREWALL_SYSTEMS.length} pare-feux WAF, 6 gardes anti-escalade « Admin__ » (Antivirus, PBKDF2/AES-256, Garde DOM, Service Worker sécurisé & Zero-Trust).`,
         blocked: false,
       },
     ],
@@ -80,6 +83,11 @@ export function createInitialSecurityState(): SecurityState {
     integrityStatus: 'verified',
     failedLoginAttempts: 0,
     lockoutUntil: null,
+    adminCommandAttempts: 0,
+    adminLockdownLevel: 0,
+    adminLockdownUntil: null,
+    adminLastAttemptAt: null,
+    adminBlockedIdentities: [],
   };
 }
 
@@ -244,6 +252,21 @@ export function inspectTextInput(
       description: `Charge utile anormalement volumineuse (${rawInput.length} car.) bloquée contre saturation mémoire.`,
       sanitizedText,
     };
+  }
+
+  // Garde anti-escalade « Admin__ » (priorité absolue : aucun rôle ne s'obtient par saisie)
+  if (config.adminCommandGuard !== false) {
+    const adminHit = detectAdminCommand(rawInput);
+    if (adminHit) {
+      return {
+        safe: false,
+        category: 'PRIVILEGE_ESCALATION',
+        severity: 'critical',
+        ruleId: adminHit.ruleId,
+        description: adminHit.description,
+        sanitizedText: '',
+      };
+    }
   }
 
   if (config.antivirusEnabled) {
@@ -801,7 +824,7 @@ export function runFullSecurityScan(state: AppState): {
 }
 
 // ============================================================================
-// 9. CATALOGUE COMPLET DES SYSTÈMES DE SÉCURITÉ ACTIFS (100 pare-feux WAF + 28 boucliers)
+// 9. CATALOGUE COMPLET DES SYSTÈMES DE SÉCURITÉ ACTIFS (100 pare-feux WAF + 6 anti-escalade + 28 boucliers)
 // ============================================================================
 
 /**
@@ -817,9 +840,74 @@ export const FIREWALL_SYSTEMS: SecuritySystemItem[] = WAF_RULE_DEFS.map((rule, i
   isActive: (s: AppState) => s.security?.config.firewallEnabled ?? true,
 }));
 
+/**
+ * 6 gardes anti-escalade « Admin__ » : blocage de la commande, verrou d'élévation,
+ * échelle de blocage progressif, bannissement d'identité, contrôle Propriétaire
+ * hors-bande et journal SIEM dédié. Chacune est réellement exécutée.
+ */
+export const ADMIN_GUARD_SYSTEMS: SecuritySystemItem[] = [
+  {
+    id: 'sys-adm-command',
+    layer: 'Anti-Escalade & Identité',
+    code: 'ADM-01',
+    name: 'Détecteur de Commande « Admin__ » (Normalisation Unicode)',
+    description:
+      'Analyse NFKD, caractères invisibles, pleine largeur, underscores combinants et leet speak avant toute écriture. La commande est bloquée à la saisie.',
+    isActive: (s) => s.security?.config.adminCommandGuard ?? true,
+  },
+  {
+    id: 'sys-adm-norole',
+    layer: 'Anti-Escalade & Identité',
+    code: 'ADM-02',
+    name: 'Verrou Anti-Élévation : Aucun Rôle par Saisie',
+    description:
+      'Aucun rôle, privilège ou accès Propriétaire ne peut être obtenu par une chaîne de caractères : le rôle vient uniquement du compte vérifié et de la RLS Supabase.',
+    isActive: () => true,
+  },
+  {
+    id: 'sys-adm-ladder',
+    layer: 'Anti-Escalade & Identité',
+    code: 'ADM-03',
+    name: 'Blocage Progressif 5 min → 30 min → 3 h → 24 h',
+    description:
+      'Chaque nouvelle tentative d’escalade prolonge le blocage total de l’application selon une échelle stricte, avec compte à rebours non contournable.',
+    isActive: (s) => s.security?.config.adminCommandGuard ?? true,
+  },
+  {
+    id: 'sys-adm-ban',
+    layer: 'Anti-Escalade & Identité',
+    code: 'ADM-04',
+    name: 'Bannissement Définitif d’Identité (E-mail / Nom)',
+    description:
+      'L’identité qui saisit la commande est bannie : plus aucune inscription, connexion ni activation Cloud possible avec cet e-mail ou ce nom.',
+    isActive: (s) => s.security?.config.adminCommandGuard ?? true,
+  },
+  {
+    id: 'sys-adm-owner',
+    layer: 'Anti-Escalade & Identité',
+    code: 'ADM-05',
+    name: 'Contrôle Propriétaire Hors-Bande (E-mail + PBKDF2)',
+    description:
+      'La levée d’un blocage exige l’e-mail Propriétaire et son mot de passe vérifié PBKDF2. Aucun bouton « devenir admin » n’existe dans l’application.',
+    isActive: () => true,
+  },
+  {
+    id: 'sys-adm-siem',
+    layer: 'Anti-Escalade & Identité',
+    code: 'ADM-06',
+    name: 'Journal SIEM des Tentatives d’Escalade (Sévérité Critique)',
+    description:
+      'Chaque tentative est horodatée et conservée avec la règle déclenchée (ADM-001 à ADM-004), l’extrait neutralisé et le niveau de blocage appliqué.',
+    isActive: () => true,
+  },
+];
+
 export const SECURITY_SYSTEMS_CATALOG: SecuritySystemItem[] = [
   // Couche 1 : Pare-feu WAF (100 systèmes — un pare-feu armé par signature)
   ...FIREWALL_SYSTEMS,
+
+  // Couche 1 bis : Anti-escalade « Admin__ » (6 systèmes)
+  ...ADMIN_GUARD_SYSTEMS,
 
   // Couche 2 : Antivirus & Anti-Malware (8 systèmes)
   {

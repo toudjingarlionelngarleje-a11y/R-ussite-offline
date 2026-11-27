@@ -37,8 +37,21 @@ import {
 import {
   applyOwnerEntitlements,
   DEFAULT_OWNER_SETTINGS,
+  isOwnerEmail,
   isOwnerProfile,
 } from '../lib/owner';
+import {
+  addBannedIdentity,
+  adminLockRemainingMs,
+  AdminCommandHit,
+  ADMIN_REHABILITATION_MS,
+  computeAdminLockdown,
+  detectAdminCommand,
+  formatAdminDuration,
+  isIdentityBanned,
+  normalizeIdentityKey,
+  previewAdminCommand,
+} from '../lib/adminGuard';
 import {
   activateLegacyCloudAccountPassword,
   buildPortableCloudSnapshot,
@@ -622,6 +635,16 @@ interface AppContextValue {
   clearSecurityLogs: () => void;
   triggerPanicLockdown: () => void;
 
+  // Garde anti-escalade « Admin__ » (v17.6)
+  adminLockdownUntil: string | null;
+  adminLockdownRemainingMs: number;
+  releaseAdminLockdown: (
+    email: string,
+    password: string,
+    options?: { clearBans?: boolean }
+  ) => Promise<{ ok: boolean; error?: string }>;
+  previewAdminCommand: (text: string) => { blocked: boolean; ruleId?: string; description?: string };
+
   // Owner / Founder Exclusive Controls
   updateOwnerSettings: (patch: Partial<OwnerGlobalSettings>) => Promise<void>;
   downloadFullOfflineCatalog: () => void;
@@ -806,6 +829,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       notify(`Pare-feu DOM : ${threatEvent.description}`, 'error');
     });
   }, [domGuardEnabled, notify]);
+
+  // Lever automatiquement le verrouillage anti-escalade arrivé à échéance (state -> re-render)
+  useEffect(() => {
+    const until = state.security?.adminLockdownUntil;
+    if (!until) return;
+    const remaining = Date.parse(until) - Date.now();
+    if (Number.isNaN(remaining)) return;
+    if (remaining <= 0) {
+      setState((prev) => {
+        const sec = prev.security;
+        if (!sec?.adminLockdownUntil) return prev;
+        return { ...prev, security: { ...sec, adminLockdownUntil: null, adminLockdownLevel: 0 } };
+      });
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setState((prev) => {
+        const sec = prev.security;
+        if (!sec?.adminLockdownUntil) return prev;
+        return { ...prev, security: { ...sec, adminLockdownUntil: null, adminLockdownLevel: 0 } };
+      });
+    }, Math.min(remaining + 400, 2_000_000_000));
+    return () => window.clearTimeout(timer);
+  }, [state.security?.adminLockdownUntil]);
 
   // Auto-lock session after prolonged inactivity
   const autoLockMinutes = state.security?.config.autoLockMinutes ?? 30;
@@ -1019,10 +1066,109 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, []);
 
+  /**
+   * Enregistre une tentative d'escalade « Admin__ » : blocage immédiat, coupure de session,
+   * bannissement d'identité et verrouillage progressif de l'application.
+   * Le Propriétaire n'est jamais banni automatiquement (risque de verrouillage définitif),
+   * mais sa session est coupée et la tentative reste journalisée en critique.
+   */
+  const registerAdminEscalation = useCallback(
+    (
+      source: string,
+      hit: AdminCommandHit,
+      identityHint?: string | null
+    ): { level: number; minutes: number; until: string } => {
+      const sec = state.security ?? createInitialSecurityState();
+      const now = Date.now();
+      const lastMs = sec.adminLastAttemptAt ? Date.parse(sec.adminLastAttemptAt) : 0;
+      const withinWindow =
+        !Number.isNaN(lastMs) && lastMs > 0 && now - lastMs < ADMIN_REHABILITATION_MS;
+      const attempts = (withinWindow ? sec.adminCommandAttempts ?? 0 : 0) + 1;
+      const policy = computeAdminLockdown(attempts, now);
+
+      const active = state.profiles.find((p) => p.id === state.activeProfileId) ?? null;
+      const ownerSession = isOwnerProfile(active);
+      let identities = [...(sec.adminBlockedIdentities ?? [])];
+      if (!ownerSession) {
+        const candidates = [identityHint, active?.email];
+        for (const candidate of candidates) {
+          if (!candidate) continue;
+          if (isOwnerEmail(candidate)) continue;
+          identities = addBannedIdentity(identities, candidate);
+        }
+      }
+
+      clearTwoFactorSessionVerification();
+      setTwoFactorVerifiedProfileId(null);
+
+      setState((prev) => {
+        const pSec = prev.security ?? createInitialSecurityState();
+        const ev: SecurityEvent = {
+          id: `sec-adm-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+          timestamp: new Date(now).toISOString(),
+          category: 'PRIVILEGE_ESCALATION',
+          severity: 'critical',
+          source,
+          ruleId: hit.ruleId,
+          description: `${hit.description} Niveau de blocage ${policy.level} : accès verrouillé ${formatAdminDuration(policy.minutes)}.`,
+          blocked: true,
+          sampleSnippet: hit.excerpt.slice(0, 70),
+        };
+        return {
+          ...prev,
+          activeProfileId: null,
+          security: {
+            ...pSec,
+            adminCommandAttempts: attempts,
+            adminLockdownLevel: policy.level,
+            adminLockdownUntil: policy.until,
+            adminLastAttemptAt: new Date(now).toISOString(),
+            adminBlockedIdentities: identities,
+            blockedCount: pSec.blockedCount + 1,
+            quarantinedCount: pSec.quarantinedCount + 1,
+            events: [ev, ...pSec.events].slice(0, 60),
+          },
+        };
+      });
+
+      notify(
+        ownerSession
+          ? `🚨 Commande « Admin__ » bloquée (${hit.ruleId}). Session Propriétaire coupée et accès verrouillé ${formatAdminDuration(policy.minutes)}.`
+          : `🚨 Commande « Admin__ » bloquée (${hit.ruleId}). Accès verrouillé ${formatAdminDuration(policy.minutes)} et identité bannie.`,
+        'error'
+      );
+
+      return { level: policy.level, minutes: policy.minutes, until: policy.until };
+    },
+    [state, notify]
+  );
+
   const guardInput = useCallback(
-    (source: string, rawText: string, maxLength = 4000): { allowed: boolean; cleanText: string } => {
+    (
+      source: string,
+      rawText: string,
+      maxLength = 4000,
+      identityHint?: string | null
+    ): {
+      allowed: boolean;
+      cleanText: string;
+      threat?: ReturnType<typeof inspectTextInput>;
+    } => {
       const secCfg = state.security?.config ?? DEFAULT_SECURITY_CONFIG;
       const check = inspectTextInput(rawText, secCfg, maxLength);
+
+      // Garde anti-escalade « Admin__ » : blocage + verrouillage immédiat de l'application.
+      if (!check.safe && check.category === 'PRIVILEGE_ESCALATION') {
+        const hit = detectAdminCommand(rawText);
+        if (hit) {
+          const isSecret = /mot de passe|pin|secret|jeton/i.test(source);
+          const isIdentityField = /nom|e-?mail|profil|connexion|inscription/i.test(source);
+          const hint = identityHint ?? (isIdentityField && !isSecret ? rawText : null);
+          registerAdminEscalation(source, hit, hint);
+        }
+        return { allowed: false, cleanText: '', threat: check };
+      }
+
       if (!check.safe) {
         const ev: SecurityEvent = {
           id: `sec-waf-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
@@ -1037,11 +1183,78 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
         logSecurityEvent(ev);
         notify(`🛡️ Pare-feu : ${ev.description}`, 'error');
-        return { allowed: false, cleanText: check.sanitizedText };
+        return { allowed: false, cleanText: check.sanitizedText, threat: check };
       }
-      return { allowed: true, cleanText: check.sanitizedText };
+      return { allowed: true, cleanText: check.sanitizedText, threat: check };
     },
-    [state.security?.config, logSecurityEvent, notify]
+    [state.security?.config, logSecurityEvent, notify, registerAdminEscalation]
+  );
+
+  /** Aperçu sans effet de bord (simulation à blanc dans le Centre de Sécurité). */
+  const previewAdminGuard = useCallback((text: string) => previewAdminCommand(text), []);
+
+  /** Levée du verrouillage par le seul compte Propriétaire (e-mail + mot de passe PBKDF2). */
+  const releaseAdminLockdown = useCallback(
+    async (
+      email: string,
+      password: string,
+      options?: { clearBans?: boolean }
+    ): Promise<{ ok: boolean; error?: string }> => {
+      const target = state.profiles.find(
+        (p) => isOwnerProfile(p) && normalizeIdentityKey(p.email) === normalizeIdentityKey(email)
+      );
+      if (!target) {
+        return {
+          ok: false,
+          error: 'Seul le compte Propriétaire vérifié peut lever un verrouillage anti-escalade.',
+        };
+      }
+      const valid = await verifyPasswordHash(password, target.passwordHash);
+      if (!valid) {
+        logSecurityEvent({
+          id: `sec-adm-unlock-fail-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          category: 'PRIVILEGE_ESCALATION',
+          severity: 'critical',
+          source: 'Déblocage Propriétaire (Admin__)',
+          ruleId: 'ADM-UNLOCK-FAIL',
+          description: 'Tentative de levée du blocage anti-escalade refusée : mot de passe Propriétaire invalide.',
+          blocked: true,
+        });
+        return { ok: false, error: 'Mot de passe Propriétaire invalide. Le blocage est maintenu.' };
+      }
+
+      setState((prev) => {
+        const pSec = prev.security ?? createInitialSecurityState();
+        const ev: SecurityEvent = {
+          id: `sec-adm-unlock-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          category: 'SYSTEM_AUDIT',
+          severity: 'info',
+          source: 'Déblocage Propriétaire (Admin__)',
+          ruleId: 'ADM-UNLOCK-OK',
+          description: `Verrouillage anti-escalade levé par le Propriétaire (${target.email}) après vérification PBKDF2.${
+            options?.clearBans ? ' Liste des identités bannies purgée.' : ' Les identités bannies restent bloquées.'
+          }`,
+          blocked: false,
+        };
+        return {
+          ...prev,
+          security: {
+            ...pSec,
+            adminCommandAttempts: 0,
+            adminLockdownLevel: 0,
+            adminLockdownUntil: null,
+            adminLastAttemptAt: null,
+            adminBlockedIdentities: options?.clearBans ? [] : pSec.adminBlockedIdentities ?? [],
+            events: [ev, ...pSec.events].slice(0, 60),
+          },
+        };
+      });
+      notify('✅ Verrouillage anti-escalade levé par le Propriétaire. Journal conservé.', 'success');
+      return { ok: true };
+    },
+    [state.profiles, logSecurityEvent, notify]
   );
 
   const syncNow = useCallback(async () => {
@@ -1175,10 +1388,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
-      const nameGuard = guardInput('Inscription (Nom)', input.name, 100);
-      const emailGuard = guardInput('Inscription (E-mail)', input.email, 140);
+      const secState = state.security ?? createInitialSecurityState();
+      if (isIdentityBanned(secState, input.email) || isIdentityBanned(secState, input.name)) {
+        logSecurityEvent({
+          id: `sec-adm-ban-reg-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          category: 'PRIVILEGE_ESCALATION',
+          severity: 'critical',
+          source: 'Inscription (Identité bannie)',
+          ruleId: 'ADM-BAN-002',
+          description:
+            'Inscription refusée : cet e-mail ou ce nom est banni définitivement après une tentative de prise de contrôle « Admin__ ».',
+          blocked: true,
+        });
+        return {
+          ok: false,
+          error:
+            'Inscription refusée : cette identité est bannie après une tentative de prise de contrôle. Contacte le Propriétaire.',
+        };
+      }
+
+      const nameGuard = guardInput('Inscription (Nom)', input.name, 100, input.email);
+      const emailGuard = guardInput('Inscription (E-mail)', input.email, 140, input.email);
       if (!nameGuard.allowed || !emailGuard.allowed) {
+        if (
+          nameGuard.threat?.category === 'PRIVILEGE_ESCALATION' ||
+          emailGuard.threat?.category === 'PRIVILEGE_ESCALATION'
+        ) {
+          return {
+            ok: false,
+            error:
+              'Commande privilégiée « Admin__ » détectée : inscription refusée, identité bannie et accès verrouillé.',
+          };
+        }
         return { ok: false, error: 'Entrée bloquée par le pare-feu anti-injection.' };
+      }
+
+      const pwdAdminHit = detectAdminCommand(input.password);
+      if (pwdAdminHit) {
+        const policy = registerAdminEscalation(
+          'Inscription (Mot de passe)',
+          pwdAdminHit,
+          emailGuard.cleanText
+        );
+        return {
+          ok: false,
+          error: `Commande privilégiée « Admin__ » détectée dans le mot de passe : inscription refusée, accès bloqué ${formatAdminDuration(
+            policy.minutes
+          )} et identité bannie.`,
+        };
       }
 
       const trimmedEmail = emailGuard.cleanText.toLowerCase();
@@ -1315,9 +1573,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
-      const emailGuard = guardInput('Connexion (E-mail)', email, 140);
+      // Identité bannie après tentative de prise de contrôle « Admin__ » : refus immédiat.
+      if (isIdentityBanned(sec, email)) {
+        logSecurityEvent({
+          id: `sec-adm-ban-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          category: 'PRIVILEGE_ESCALATION',
+          severity: 'critical',
+          source: 'Connexion (Identité bannie)',
+          ruleId: 'ADM-BAN-001',
+          description:
+            'Connexion refusée : cette identité est bannie définitivement après une tentative de prise de contrôle par la commande « Admin__ ».',
+          blocked: true,
+          sampleSnippet: email.slice(0, 70),
+        });
+        return {
+          ok: false,
+          error:
+            'Identité bannie : la commande « Admin__ » a été utilisée depuis ce compte. Seul le Propriétaire peut lever ce blocage.',
+        };
+      }
+
+      const emailGuard = guardInput('Connexion (E-mail)', email, 140, email);
       if (!emailGuard.allowed) {
+        if (emailGuard.threat?.category === 'PRIVILEGE_ESCALATION') {
+          const until = state.security?.adminLockdownUntil;
+          return {
+            ok: false,
+            error: `Commande privilégiée « Admin__ » détectée : accès bloqué${
+              until ? ` jusqu’à ${new Date(until).toLocaleTimeString('fr-FR')}` : ''
+            }. Aucun rôle ne peut être obtenu par saisie.`,
+          };
+        }
         return { ok: false, error: 'Tentative d’injection bloquée par le pare-feu.' };
+      }
+
+      const pwdAdminHit = detectAdminCommand(password);
+      if (pwdAdminHit) {
+        const policy = registerAdminEscalation(
+          'Connexion (Mot de passe)',
+          pwdAdminHit,
+          emailGuard.cleanText
+        );
+        return {
+          ok: false,
+          error: `Commande privilégiée « Admin__ » détectée dans le mot de passe : accès bloqué ${formatAdminDuration(
+            policy.minutes
+          )} et identité bannie.`,
+        };
       }
 
       const trimmedEmail = emailGuard.cleanText.toLowerCase();
@@ -1701,17 +2004,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateActiveProfile = useCallback(
     (patch: Partial<UserProfile>) => {
+      // Anti-escalade : les champs de privilège ne sont jamais modifiables par un patch d'interface.
+      const safePatch: Partial<UserProfile> = { ...patch };
+      delete safePatch.id;
+      delete safePatch.email;
+      delete safePatch.passwordHash;
+      delete safePatch.role;
+      delete safePatch.twoFactor;
+      delete safePatch.createdAt;
+      if (!isOwner) delete safePatch.plan;
+      if (typeof safePatch.name === 'string') {
+        const nameCheck = guardInput(
+          'Profil (Nom)',
+          safePatch.name,
+          100,
+          state.profiles.find((p) => p.id === state.activeProfileId)?.email ?? null
+        );
+        if (!nameCheck.allowed) return;
+        safePatch.name = nameCheck.cleanText;
+      }
+
       const current = state.profiles.find((p) => p.id === state.activeProfileId);
-      const nextProfile = current ? applyOwnerEntitlements({ ...current, ...patch }) : null;
+      const nextProfile = current ? applyOwnerEntitlements({ ...current, ...safePatch }) : null;
 
       setState((prev) => {
         if (!prev.activeProfileId) return prev;
         const profiles = prev.profiles.map((p) =>
-          p.id === prev.activeProfileId ? applyOwnerEntitlements({ ...p, ...patch }) : p
+          p.id === prev.activeProfileId ? applyOwnerEntitlements({ ...p, ...safePatch }) : p
         );
         const updated = profiles.find((p) => p.id === prev.activeProfileId)!;
         const nextPlan =
-          patch.examDate || patch.selectedSubjectIds || patch.dailyMinutes || patch.restDays || patch.onboardingCompleted
+          safePatch.examDate || safePatch.selectedSubjectIds || safePatch.dailyMinutes || safePatch.restDays || safePatch.onboardingCompleted
             ? generateAdaptiveStudyPlan(updated, SUBJECTS, {}, 0)
             : prev.studyPlan;
         return { ...prev, profiles, studyPlan: nextPlan };
@@ -1722,7 +2045,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       enqueueSync('profile_update', 'Mise à jour du profil et des objectifs', 2);
     },
-    [enqueueSync, isOnline, state]
+    [enqueueSync, guardInput, isOnline, isOwner, state]
   );
 
   const deleteActiveAccount = useCallback(async () => {
@@ -2178,6 +2501,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addCustomPlanGoal = useCallback(
     (title: string, date: string, durationMinutes: number, subjectId?: string) => {
+      const titleCheck = guardInput('Objectif personnel', title, 160);
+      if (!titleCheck.allowed) return;
+      title = titleCheck.cleanText;
       const [y, m, d] = date.split('-').map(Number);
       const dt = new Date(y, m - 1, d);
       const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
@@ -3402,6 +3728,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     testSecurityInput,
     clearSecurityLogs,
     triggerPanicLockdown,
+    adminLockdownUntil: state.security?.adminLockdownUntil ?? null,
+    adminLockdownRemainingMs: adminLockRemainingMs(state.security),
+    releaseAdminLockdown,
+    previewAdminCommand: previewAdminGuard,
     updateOwnerSettings,
     downloadFullOfflineCatalog,
     publishOwnerQuickQuestion,

@@ -44,7 +44,7 @@
         },
         {
           "key": "X-Security-Shield",
-          "value": "Reussite-Offline-WAF-v2"
+          "value": "Reussite-Offline-WAF-v3-AdminGuard"
         }
       ]
     },

@@ -11,7 +11,7 @@ export const OWNER_PROFILE_IDS = ['profile-1795361028411'];
 export const DEFAULT_OWNER_SETTINGS: OwnerGlobalSettings = {
   announcementEnabled: false,
   announcementText:
-    'Bienvenue sur Réussite Offline ! Prépare tes examens et concours 2026 avec 65 concours, 101 matières, 10 100 chapitres et 100 pare-feux WAF (128 systèmes de sécurité actifs).',
+    'Bienvenue sur Réussite Offline ! Prépare tes examens et concours 2026 avec 65 concours, 101 matières, 10 100 chapitres, 100 pare-feux WAF et 134 systèmes de sécurité actifs — dont la garde anti-escalade qui bloque toute commande « Admin__ » et bannit l’identité qui l’essaie.',
   announcementTone: 'info',
   maintenanceMode: false,
   registrationsOpen: true,
@@ -25,9 +25,14 @@ export function isOwnerEmail(email?: string | null): boolean {
   return OWNER_EMAILS.includes(email.trim().toLowerCase());
 }
 
+/**
+ * Le rôle « owner » porté par les DONNÉES ne suffit JAMAIS : une simple chaîne
+ * `role: 'owner'` dans un profil (ou un patch d'interface) ne doit pas donner les
+ * pleins pouvoirs. Seul l'e-mail officiel ou l'identifiant historique du fondateur
+ * accorde le statut Propriétaire.
+ */
 export function isOwnerProfile(profile?: UserProfile | null): boolean {
   if (!profile) return false;
-  if (profile.role === 'owner') return true;
   if (OWNER_PROFILE_IDS.includes(profile.id)) return true;
   return isOwnerEmail(profile.email);
 }
@@ -56,9 +61,11 @@ export function applyOwnerEntitlements(profile: UserProfile): UserProfile {
       },
     };
   }
+  // Un profil non-Propriétaire qui prétend être 'owner' est ramené à son rôle réel.
+  const fallbackRole = profile.category === 'enseignant' ? 'teacher' : 'user';
   return {
     ...profile,
-    role: profile.role ?? (profile.category === 'enseignant' ? 'teacher' : 'user'),
+    role: profile.role === 'owner' ? fallbackRole : profile.role ?? fallbackRole,
   };
 }
 
