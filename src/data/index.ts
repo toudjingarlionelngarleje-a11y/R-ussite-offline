@@ -116,6 +116,15 @@ import {
   LYCEE_QUESTIONS,
 } from './lyceeStreams';
 import {
+  COLLEGE_LYCEE_ANNALES,
+  COLLEGE_LYCEE_CHAPTERS,
+  COLLEGE_LYCEE_COURSES,
+  COLLEGE_LYCEE_FICHES,
+  COLLEGE_LYCEE_FLASHCARDS,
+  COLLEGE_LYCEE_NEW_SUBJECTS,
+  COLLEGE_LYCEE_QUESTIONS,
+} from './collegeLycee';
+import {
   CLASS_LEVELS,
   HYPER72_ANNALES,
   HYPER72_CHAPTERS,
@@ -458,6 +467,7 @@ export const SUBJECTS = [
   ...CENTURION_NEW_SUBJECTS,
   ...MILLENNIUM_NEW_SUBJECTS,
   ...TRADING_NEW_SUBJECTS,
+  ...COLLEGE_LYCEE_NEW_SUBJECTS,
 ].map((s) => ({
   ...s,
   classLevels:
@@ -492,6 +502,8 @@ const RAW_CHAPTERS = [
   ...PREMIERE_CHAPTERS,
   // v17.8 — 400 chapitres dédiés à la Seconde et à la Terminale (S et L)
   ...LYCEE_CHAPTERS,
+  // v17.9 — 720 chapitres scolaires (6 matières collège/lycée × 120 chapitres)
+  ...COLLEGE_LYCEE_CHAPTERS,
 ];
 
 // Attribuer un niveau de classe (6e → Master) à 100% des chapitres sans écraser les attributions explicites
@@ -536,6 +548,8 @@ export const COURSES = [
   ...PREMIERE_COURSES,
   // v17.8 — 400 chapitres dédiés à la Seconde et à la Terminale (S et L)
   ...LYCEE_COURSES,
+  // v17.9 — 720 chapitres scolaires (6 matières collège/lycée × 120 chapitres)
+  ...COLLEGE_LYCEE_COURSES,
 ].map((crs) => ({
   ...crs,
   classLevel: crs.classLevel ?? CHAPTER_CLASS_MAP[crs.chapterId] ?? getSubjectClassLevels(crs.subjectId)[0],
@@ -559,6 +573,8 @@ export const FICHES = [
   ...PREMIERE_FICHES,
   // v17.8 — 400 chapitres dédiés à la Seconde et à la Terminale (S et L)
   ...LYCEE_FICHES,
+  // v17.9 — 720 chapitres scolaires (6 matières collège/lycée × 120 chapitres)
+  ...COLLEGE_LYCEE_FICHES,
 ].map((fic) => ({
   ...fic,
   classLevel: fic.classLevel ?? CHAPTER_CLASS_MAP[fic.chapterId] ?? getSubjectClassLevels(fic.subjectId)[0],
@@ -581,6 +597,8 @@ const CORE_AND_MEGA_QUESTIONS = [
   ...PREMIERE_QUESTIONS,
   // v17.8 — 400 chapitres dédiés à la Seconde et à la Terminale (S et L)
   ...LYCEE_QUESTIONS,
+  // v17.9 — 720 chapitres scolaires (6 matières collège/lycée × 120 chapitres)
+  ...COLLEGE_LYCEE_QUESTIONS,
 ];
 
 const SUBJECT_META_MAP: Record<string, { name: string; examIds: string[] }> = Object.fromEntries(
@@ -620,6 +638,8 @@ export const ANNALES = [
   ...PREMIERE_ANNALES,
   // v17.8 — 400 chapitres dédiés à la Seconde et à la Terminale (S et L)
   ...LYCEE_ANNALES,
+  // v17.9 — 720 chapitres scolaires (6 matières collège/lycée × 120 chapitres)
+  ...COLLEGE_LYCEE_ANNALES,
 ].map((a) => {
   const examClasses = EXAM_CLASS_MAP[a.examId];
   const subjectClasses = getSubjectClassLevels(a.subjectId);
@@ -650,4 +670,6 @@ export const FLASHCARDS = [
   ...PREMIERE_FLASHCARDS,
   // v17.8 — 400 chapitres dédiés à la Seconde et à la Terminale (S et L)
   ...LYCEE_FLASHCARDS,
+  // v17.9 — 720 chapitres scolaires (6 matières collège/lycée × 120 chapitres)
+  ...COLLEGE_LYCEE_FLASHCARDS,
 ];

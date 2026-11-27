@@ -335,6 +335,14 @@ export const SUBJECT_CLASS_PROFILES: Record<string, ClassLevelId[]> = {
   agroalimentaire_transformation: LYCEE_TO_MASTER,
   peche_aquaculture: LYCEE_TO_MASTER,
   audiovisuel_cinema_podcast: ALL_CLASSES,
+
+  // v17.9 — Matières strictement scolaires (collège et/ou lycée)
+  latin_grec: ['6e', '5e', '4e', '3e', '2nde', '1ere', 'terminale'],
+  arts_plastiques: ['6e', '5e', '4e', '3e', '2nde', '1ere', 'terminale'],
+  methodes_travail: ['6e', '5e', '4e', '3e', '2nde', '1ere', 'terminale'],
+  technologie_college: ['6e', '5e', '4e', '3e'],
+  sciences_ingenieur: ['2nde', '1ere', 'terminale'],
+  preparation_bac: ['2nde', '1ere', 'terminale'],
 };
 
 import {

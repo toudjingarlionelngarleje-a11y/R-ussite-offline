@@ -50,6 +50,11 @@ export const SECONDE_SCIENCE_SUBJECT_IDS: string[] = [
   'arabe',
   'portugais_lusophone',
   'chinois_mandarin',
+  'latin_grec',
+  'arts_plastiques',
+  'methodes_travail',
+  'preparation_bac',
+  'sciences_ingenieur',
 ];
 
 /** Matières de la voie littéraire en Seconde (2nde L / 2nde A). */
@@ -83,6 +88,10 @@ export const SECONDE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'eps_sciences_sport',
   'maths',
   'svt',
+  'latin_grec',
+  'arts_plastiques',
+  'methodes_travail',
+  'preparation_bac',
 ];
 
 /** Matières de la voie scientifique en Première (1ère S / C / D). */
@@ -119,6 +128,11 @@ export const PREMIERE_SCIENCE_SUBJECT_IDS: string[] = [
   'espagnol',
   'allemand',
   'methodo_redaction',
+  'latin_grec',
+  'arts_plastiques',
+  'methodes_travail',
+  'preparation_bac',
+  'sciences_ingenieur',
 ];
 
 /** Matières de la voie littéraire en Première (1ère L / A4 / A5). */
@@ -147,6 +161,10 @@ export const PREMIERE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'svt',
   'eps_sciences_sport',
   'educ_civique',
+  'latin_grec',
+  'arts_plastiques',
+  'methodes_travail',
+  'preparation_bac',
 ];
 
 /** Matières de la voie scientifique en Terminale (Tle S / C / D / E). */
@@ -204,6 +222,11 @@ export const TERMINALE_SCIENCE_SUBJECT_IDS: string[] = [
   'arabe',
   'portugais_lusophone',
   'chinois_mandarin',
+  'sciences_ingenieur',
+  'latin_grec',
+  'arts_plastiques',
+  'methodes_travail',
+  'preparation_bac',
 ];
 
 /**
@@ -266,4 +289,8 @@ export const TERMINALE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'informatique',
   'eps_sciences_sport',
   'educ_civique',
+  'latin_grec',
+  'arts_plastiques',
+  'methodes_travail',
+  'preparation_bac',
 ];
