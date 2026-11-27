@@ -176,6 +176,11 @@ import {
   ALL_X20_MODULES,
 } from './extensionV20';
 import {
+  buildExtensionV21,
+  extensionCoverage as extensionCoverageV21,
+  ALL_X21_MODULES,
+} from './extensionV21';
+import {
   TRADING_ANNALES,
   TRADING_CHAPTERS,
   TRADING_COURSES,
@@ -535,7 +540,18 @@ const RAW_CHAPTERS_V19 = [...RAW_CHAPTERS_BASE, ...X19_EXTENSION.chapters];
 export const X20_EXTENSION = buildExtensionV20(RAW_CHAPTERS_V19, SUBJECTS);
 export const X20_COVERAGE = extensionCoverageV20(ALL_X20_MODULES);
 
-const RAW_CHAPTERS = [...RAW_CHAPTERS_V19, ...X20_EXTENSION.chapters];
+const RAW_CHAPTERS_V20 = [...RAW_CHAPTERS_V19, ...X20_EXTENSION.chapters];
+
+/**
+ * v21.0 — Troisième vague : 10 chapitres de plus pour chacune des 107 matières
+ * (mise en situation, concepts, démonstration, application, atelier corrigé,
+ * contexte professionnel, auto-évaluation, consolidation, épreuve type, bilan),
+ * numérotés à la suite des vagues v19.0 et v20.0.
+ */
+export const X21_EXTENSION = buildExtensionV21(RAW_CHAPTERS_V20, SUBJECTS);
+export const X21_COVERAGE = extensionCoverageV21(ALL_X21_MODULES);
+
+const RAW_CHAPTERS = [...RAW_CHAPTERS_V20, ...X21_EXTENSION.chapters];
 
 // Attribuer un niveau de classe (6e → Master) à 100% des chapitres sans écraser les attributions explicites
 const UNASSIGNED_BY_SUBJECT: Record<string, string[]> = {};
@@ -585,6 +601,8 @@ export const COURSES = [
   ...X19_EXTENSION.courses,
   // v20.0 — 1 070 cours supplémentaires (107 matières × 10)
   ...X20_EXTENSION.courses,
+  // v21.0 — 1 070 cours supplémentaires (107 matières × 10)
+  ...X21_EXTENSION.courses,
 ].map((crs) => ({
   ...crs,
   classLevel: crs.classLevel ?? CHAPTER_CLASS_MAP[crs.chapterId] ?? getSubjectClassLevels(crs.subjectId)[0],
@@ -614,6 +632,8 @@ export const FICHES = [
   ...X19_EXTENSION.fiches,
   // v20.0 — 1 070 fiches supplémentaires (107 matières × 10)
   ...X20_EXTENSION.fiches,
+  // v21.0 — 1 070 fiches supplémentaires (107 matières × 10)
+  ...X21_EXTENSION.fiches,
 ].map((fic) => ({
   ...fic,
   classLevel: fic.classLevel ?? CHAPTER_CLASS_MAP[fic.chapterId] ?? getSubjectClassLevels(fic.subjectId)[0],
@@ -642,6 +662,8 @@ const CORE_AND_MEGA_QUESTIONS = [
   ...X19_EXTENSION.questions,
   // v20.0 — 1 070 QCM supplémentaires (107 matières × 10)
   ...X20_EXTENSION.questions,
+  // v21.0 — 1 070 QCM supplémentaires (107 matières × 10)
+  ...X21_EXTENSION.questions,
 ];
 
 const SUBJECT_META_MAP: Record<string, { name: string; examIds: string[] }> = Object.fromEntries(
@@ -687,6 +709,8 @@ export const ANNALES = [
   ...X19_EXTENSION.annales,
   // v20.0 — 321 annales supplémentaires (107 matières × 3 sujets)
   ...X20_EXTENSION.annales,
+  // v21.0 — 321 annales supplémentaires (107 matières × 3 sujets)
+  ...X21_EXTENSION.annales,
 ].map((a) => {
   const examClasses = EXAM_CLASS_MAP[a.examId];
   const subjectClasses = getSubjectClassLevels(a.subjectId);
@@ -723,4 +747,6 @@ export const FLASHCARDS = [
   ...X19_EXTENSION.flashcards,
   // v20.0 — 1 070 flashcards supplémentaires (107 matières × 10)
   ...X20_EXTENSION.flashcards,
+  // v21.0 — 1 070 flashcards supplémentaires (107 matières × 10)
+  ...X21_EXTENSION.flashcards,
 ];

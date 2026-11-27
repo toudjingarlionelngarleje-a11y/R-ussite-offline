@@ -178,7 +178,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('genie_mecanique'),
     color: '#475569',
     icon: 'Cog',
-    description: '120 chapitres : statique, cinématique, dynamique, RDM, CAO, usinage CNC, transmissions et maintenance prédictive.',
+    description: '130 chapitres : statique, cinématique, dynamique, RDM, CAO, usinage CNC, transmissions et maintenance prédictive.',
     sizeKb: 1580,
   },
   {
@@ -189,7 +189,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('thermodynamique_froid'),
     color: '#0369a1',
     icon: 'Flame',
-    description: '120 chapitres : transferts thermiques, cycles moteurs et frigorifiques, climatisation solaire, chaîne du froid et efficacité énergétique.',
+    description: '130 chapitres : transferts thermiques, cycles moteurs et frigorifiques, climatisation solaire, chaîne du froid et efficacité énergétique.',
     sizeKb: 1560,
   },
   {
@@ -200,7 +200,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('genie_chimique_procedes'),
     color: '#0f766e',
     icon: 'FlaskConical',
-    description: '120 chapitres : bilans matière/énergie, distillation, réacteurs chimiques, raffinage, sécurité procédés HAZOP et chimie verte.',
+    description: '130 chapitres : bilans matière/énergie, distillation, réacteurs chimiques, raffinage, sécurité procédés HAZOP et chimie verte.',
     sizeKb: 1590,
   },
   {
@@ -211,7 +211,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('science_materiaux'),
     color: '#64748b',
     icon: 'Layers',
-    description: '120 chapitres : cristallographie, aciers et diagramme Fer-Carbone, corrosion, polymères, composites, céramiques et matériaux biosourcés.',
+    description: '130 chapitres : cristallographie, aciers et diagramme Fer-Carbone, corrosion, polymères, composites, céramiques et matériaux biosourcés.',
     sizeKb: 1540,
   },
   {
@@ -222,7 +222,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('automatique_controle'),
     color: '#4f46e5',
     icon: 'Cpu',
-    description: '120 chapitres : Laplace, fonctions de transfert, régulateurs PID, automates programmables (Grafcet/Ladder), SCADA et industrie 4.0.',
+    description: '130 chapitres : Laplace, fonctions de transfert, régulateurs PID, automates programmables (Grafcet/Ladder), SCADA et industrie 4.0.',
     sizeKb: 1570,
   },
 
@@ -235,7 +235,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('genie_logiciel_devops'),
     color: '#2563eb',
     icon: 'Code2',
-    description: '120 chapitres : architectures propres, design patterns, tests automatisés, Git, Docker/Kubernetes, CI/CD, microservices et SRE.',
+    description: '130 chapitres : architectures propres, design patterns, tests automatisés, Git, Docker/Kubernetes, CI/CD, microservices et SRE.',
     sizeKb: 1610,
   },
   {
@@ -246,7 +246,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('bases_donnees_bigdata'),
     color: '#0891b2',
     icon: 'Database',
-    description: '120 chapitres : modélisation Merise/UML, SQL avancé, PostgreSQL, indexation, transactions ACID, NoSQL, Data Warehouses et Spark.',
+    description: '130 chapitres : modélisation Merise/UML, SQL avancé, PostgreSQL, indexation, transactions ACID, NoSQL, Data Warehouses et Spark.',
     sizeKb: 1590,
   },
   {
@@ -257,7 +257,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('developpement_mobile_web'),
     color: '#7c3aed',
     icon: 'Smartphone',
-    description: '120 chapitres : HTML/CSS/TypeScript, React, API REST/GraphQL, PWA Service Workers, IndexedDB, Android/iOS et accessibilité WCAG.',
+    description: '130 chapitres : HTML/CSS/TypeScript, React, API REST/GraphQL, PWA Service Workers, IndexedDB, Android/iOS et accessibilité WCAG.',
     sizeKb: 1620,
   },
   {
@@ -268,7 +268,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('design_ux_infographie'),
     color: '#db2777',
     icon: 'Palette',
-    description: '120 chapitres : recherche utilisateur, ergonomie mobile, design systems, typographie, couleurs, prototypage Figma et tests d’utilisabilité.',
+    description: '130 chapitres : recherche utilisateur, ergonomie mobile, design systems, typographie, couleurs, prototypage Figma et tests d’utilisabilité.',
     sizeKb: 1530,
   },
   {
@@ -279,7 +279,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('iot_systemes_embarques'),
     color: '#059669',
     icon: 'Wifi',
-    description: '120 chapitres : ESP32/ARM, bus I2C/SPI/UART, LoRaWAN, MQTT, capteurs agricoles/eau, autonomie solaire et sécurité IoT.',
+    description: '130 chapitres : ESP32/ARM, bus I2C/SPI/UART, LoRaWAN, MQTT, capteurs agricoles/eau, autonomie solaire et sécurité IoT.',
     sizeKb: 1570,
   },
 
@@ -292,7 +292,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('soins_infirmiers'),
     color: '#e11d48',
     icon: 'HeartPulse',
-    description: '120 chapitres : démarche de soins, asepsie, perfusions, pansements, surveillance constantes, triage urgences et éthique infirmière.',
+    description: '130 chapitres : démarche de soins, asepsie, perfusions, pansements, surveillance constantes, triage urgences et éthique infirmière.',
     sizeKb: 1640,
   },
   {
@@ -303,7 +303,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('microbiologie_biomed'),
     color: '#be123c',
     icon: 'Microscope',
-    description: '120 chapitres : bactériologie, virologie, paludisme et parasitoses tropicales, antibiogramme, PCR, hématologie et biosécurité labo.',
+    description: '130 chapitres : bactériologie, virologie, paludisme et parasitoses tropicales, antibiogramme, PCR, hématologie et biosécurité labo.',
     sizeKb: 1650,
   },
   {
@@ -314,7 +314,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('chirurgie_traumatologie'),
     color: '#b91c1c',
     icon: 'Activity',
-    description: '120 chapitres : ATLS polytraumatisé, hémorragies, fractures, brûlures, bloc opératoire, cicatrisation et gestes qui sauvent.',
+    description: '130 chapitres : ATLS polytraumatisé, hémorragies, fractures, brûlures, bloc opératoire, cicatrisation et gestes qui sauvent.',
     sizeKb: 1610,
   },
   {
@@ -325,7 +325,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('odontologie_stomato'),
     color: '#0d9488',
     icon: 'Smile',
-    description: '120 chapitres : anatomie dentaire, cariologie, parodontologie, endodontie, urgences maxillo-faciales et prévention communautaire.',
+    description: '130 chapitres : anatomie dentaire, cariologie, parodontologie, endodontie, urgences maxillo-faciales et prévention communautaire.',
     sizeKb: 1550,
   },
   {
@@ -336,7 +336,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('sante_mentale_psychiatrie'),
     color: '#7e22ce',
     icon: 'Brain',
-    description: '120 chapitres : sémiologie psychiatrique, dépression, anxiété, psychotraumatisme, addictions, mhGAP OMS et premiers secours psychologiques.',
+    description: '130 chapitres : sémiologie psychiatrique, dépression, anxiété, psychotraumatisme, addictions, mhGAP OMS et premiers secours psychologiques.',
     sizeKb: 1580,
   },
 
@@ -349,7 +349,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('droit_fiscal_douanes'),
     color: '#b45309',
     icon: 'Receipt',
-    description: '120 chapitres : TVA, IS, IRPP, contrôle fiscal, tarifs extérieurs communs CEMAC/UEMOA, valeur en douane et contentieux fiscal.',
+    description: '130 chapitres : TVA, IS, IRPP, contrôle fiscal, tarifs extérieurs communs CEMAC/UEMOA, valeur en douane et contentieux fiscal.',
     sizeKb: 1620,
   },
   {
@@ -360,7 +360,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('droit_foncier_environnement'),
     color: '#15803d',
     icon: 'Scale',
-    description: '120 chapitres : immatriculation foncière, droits coutumiers, expropriation, codes minier/forestier, EIES et justice environnementale.',
+    description: '130 chapitres : immatriculation foncière, droits coutumiers, expropriation, codes minier/forestier, EIES et justice environnementale.',
     sizeKb: 1560,
   },
   {
@@ -371,7 +371,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('droit_international_public'),
     color: '#1d4ed8',
     icon: 'Globe',
-    description: '120 chapitres : sources du DIP, Convention de Vienne, souveraineté, immunités diplomatiques, CIJ, droit de la mer et Charte africaine.',
+    description: '130 chapitres : sources du DIP, Convention de Vienne, souveraineté, immunités diplomatiques, CIJ, droit de la mer et Charte africaine.',
     sizeKb: 1590,
   },
   {
@@ -382,7 +382,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('criminologie_securite'),
     color: '#334155',
     icon: 'Shield',
-    description: '120 chapitres : théories criminologiques, scène de crime, criminalistique ADN/balistique, cybercriminalité, renseignement et déontologie.',
+    description: '130 chapitres : théories criminologiques, scène de crime, criminalistique ADN/balistique, cybercriminalité, renseignement et déontologie.',
     sizeKb: 1580,
   },
   {
@@ -393,7 +393,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('droit_assurances_cima'),
     color: '#0284c7',
     icon: 'FileCheck',
-    description: '120 chapitres : contrat d’assurance Code CIMA, assurance auto/vie/transport, tarification actuarielle, sinistres, solvabilité et micro-assurance.',
+    description: '130 chapitres : contrat d’assurance Code CIMA, assurance auto/vie/transport, tarification actuarielle, sinistres, solvabilité et micro-assurance.',
     sizeKb: 1550,
   },
 
@@ -406,7 +406,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('audit_controle_interne'),
     color: '#1e40af',
     icon: 'ClipboardCheck',
-    description: '120 chapitres : normes ISA, référentiel COSO, cartographie des risques, audit des cycles comptables, détection de fraude et rapport CAC.',
+    description: '130 chapitres : normes ISA, référentiel COSO, cartographie des risques, audit des cycles comptables, détection de fraude et rapport CAC.',
     sizeKb: 1600,
   },
   {
@@ -417,7 +417,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('econometrie_prevision'),
     color: '#4338ca',
     icon: 'LineChart',
-    description: '120 chapitres : MCO, hétéroscédasticité, variables instrumentales, données de panel, séries temporelles ARIMA/VAR et inférence causale.',
+    description: '130 chapitres : MCO, hétéroscédasticité, variables instrumentales, données de panel, séries temporelles ARIMA/VAR et inférence causale.',
     sizeKb: 1590,
   },
   {
@@ -428,7 +428,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('economie_developpement'),
     color: '#047857',
     icon: 'Sprout',
-    description: '120 chapitres : IDH et pauvreté multidimensionnelle, croissance endogène, industrialisation africaine, capital humain, ODD et transferts sociaux.',
+    description: '130 chapitres : IDH et pauvreté multidimensionnelle, croissance endogène, industrialisation africaine, capital humain, ODD et transferts sociaux.',
     sizeKb: 1570,
   },
   {
@@ -439,7 +439,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('negociation_commerce_b2b'),
     color: '#ea580c',
     icon: 'ShoppingBag',
-    description: '120 chapitres : prospection B2B, méthode SONCAS/SPIN, traitement des objections, CRM, négociation raisonnée Harvard et e-commerce africain.',
+    description: '130 chapitres : prospection B2B, méthode SONCAS/SPIN, traitement des objections, CRM, négociation raisonnée Harvard et e-commerce africain.',
     sizeKb: 1540,
   },
   {
@@ -450,7 +450,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('qualite_hse_iso'),
     color: '#ca8a04',
     icon: 'Award',
-    description: '120 chapitres : ISO 9001, ISO 14001, ISO 45001, Lean Six Sigma, AMDEC, arbre des causes, sécurité chantier et audits qualité.',
+    description: '130 chapitres : ISO 9001, ISO 14001, ISO 45001, Lean Six Sigma, AMDEC, arbre des causes, sécurité chantier et audits qualité.',
     sizeKb: 1580,
   },
 
@@ -463,7 +463,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('portugais_lusophone'),
     color: '#16a34a',
     icon: 'Languages',
-    description: '120 chapitres de la 6e au Master : phonétique, grammaire, conjugaison, portugais des affaires, Angola/Mozambique/Cap-Vert/Brésil.',
+    description: '130 chapitres de la 6e au Master : phonétique, grammaire, conjugaison, portugais des affaires, Angola/Mozambique/Cap-Vert/Brésil.',
     sizeKb: 1520,
   },
   {
@@ -474,7 +474,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('chinois_mandarin'),
     color: '#dc2626',
     icon: 'Languages',
-    description: '120 chapitres : Pinyin et 4 tons, caractères HSK 1 à 5, syntaxe, négoce Chine-Afrique, logistique import et étiquette culturelle.',
+    description: '130 chapitres : Pinyin et 4 tons, caractères HSK 1 à 5, syntaxe, négoce Chine-Afrique, logistique import et étiquette culturelle.',
     sizeKb: 1550,
   },
   {
@@ -485,7 +485,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('litterature_africaine'),
     color: '#9333ea',
     icon: 'BookOpen',
-    description: '180 chapitres : oralité et épopées, Négritude, romans postcoloniaux, voix féminines, écritures contemporaines et commentaire composé.',
+    description: '190 chapitres : oralité et épopées, Négritude, romans postcoloniaux, voix féminines, écritures contemporaines et commentaire composé.',
     sizeKb: 1560,
   },
   {
@@ -496,7 +496,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('archeologie_histoire_afrique'),
     color: '#a16207',
     icon: 'Landmark',
-    description: '120 chapitres : berceau de l’humanité (Toumaï), Égypte/Nubie, Kanem-Bornou, Mali, Songhaï, résistances, indépendances et archéologie.',
+    description: '130 chapitres : berceau de l’humanité (Toumaï), Égypte/Nubie, Kanem-Bornou, Mali, Songhaï, résistances, indépendances et archéologie.',
     sizeKb: 1600,
   },
   {
@@ -507,7 +507,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('geographie_amenagement'),
     color: '#0284c7',
     icon: 'Map',
-    description: '120 chapitres : géomorphologie, climatologie, dynamiques urbaines/rurales, corridors africains, croquis de synthèse et aménagement.',
+    description: '130 chapitres : géomorphologie, climatologie, dynamiques urbaines/rurales, corridors africains, croquis de synthèse et aménagement.',
     sizeKb: 1550,
   },
 
@@ -520,7 +520,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('foresterie_biodiversite'),
     color: '#15803d',
     icon: 'Trees',
-    description: '120 chapitres : sylviculture, Bassin du Congo et savanes sahéliennes, aires protégées (Zakouma), REDD+, agroforesterie et faune.',
+    description: '130 chapitres : sylviculture, Bassin du Congo et savanes sahéliennes, aires protégées (Zakouma), REDD+, agroforesterie et faune.',
     sizeKb: 1570,
   },
   {
@@ -531,7 +531,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('agroalimentaire_transformation'),
     color: '#d97706',
     icon: 'Wheat',
-    description: '120 chapitres : séchage solaire, pasteurisation, fermentation, emballage, transformation céréales/fruits/lait, normes Codex et PME agro.',
+    description: '130 chapitres : séchage solaire, pasteurisation, fermentation, emballage, transformation céréales/fruits/lait, normes Codex et PME agro.',
     sizeKb: 1580,
   },
   {
@@ -542,7 +542,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('peche_aquaculture'),
     color: '#0891b2',
     icon: 'Waves',
-    description: '120 chapitres : biologie piscicole (tilapia, silure), qualité d’eau des étangs, alimentation, aquaponie, pêche continentale et transformation.',
+    description: '130 chapitres : biologie piscicole (tilapia, silure), qualité d’eau des étangs, alimentation, aquaponie, pêche continentale et transformation.',
     sizeKb: 1540,
   },
   {
@@ -553,7 +553,7 @@ export const MILLENNIUM_NEW_SUBJECTS: Subject[] = [
     classLevels: getSubjectClassLevels('audiovisuel_cinema_podcast'),
     color: '#e11d48',
     icon: 'Film',
-    description: '120 chapitres : scénario, cadrage, lumière, prise de son, montage vidéo, podcast éducatif, cinéma africain (FESPACO) et droits d’auteur.',
+    description: '130 chapitres : scénario, cadrage, lumière, prise de son, montage vidéo, podcast éducatif, cinéma africain (FESPACO) et droits d’auteur.',
     sizeKb: 1560,
   },
 ];
