@@ -32,6 +32,10 @@ export interface CenturionSubjectPack {
   startOrder?: number;
   annalesCount?: number;
   diagramId?: CourseSection['diagramId'];
+  /** Nombre total de chapitres de la matière (affiché « chapitre n°X/total »), 100 par défaut. */
+  totalChapters?: number;
+  /** Préfixe d'identifiants d'annales (évite toute collision entre packs d'une même matière). */
+  idPrefix?: string;
   topics: CenturionTopicTuple[];
 }
 
@@ -216,6 +220,7 @@ export function buildCenturionPack(pack: CenturionSubjectPack): CenturionBundle 
   const levels = getSubjectClassLevels(pack.subjectId);
   const total = pack.topics.length;
   const startOrder = pack.startOrder ?? 73;
+  const totalLabel = pack.totalChapters ?? 100;
 
   pack.topics.forEach((tuple, idx) => {
     const [slug, title, keyNotion, rule, trap, explicitCls, explicitDiff] = tuple;
@@ -257,7 +262,7 @@ export function buildCenturionPack(pack: CenturionSubjectPack): CenturionBundle 
       {
         id: `${crsId}-s1`,
         heading: `1. Comprendre « ${title} » : définitions, enjeux & cadre (${classMeta.label})`,
-        content: `Ce chapitre n°${order}/100 en ${pack.subjectName} (${classMeta.label}) vise une maîtrise complète de « ${title} ».\n\nNotion centrale à comprendre en profondeur : ${keyNotion}.\n\nPourquoi ce chapitre compte à l’examen : il relie les bases théoriques du programme à des situations pratiques concrètes évaluées aussi bien en questions de cours, en exercices d’application qu’en études de cas rédigées.`,
+        content: `Ce chapitre n°${order}/${totalLabel} en ${pack.subjectName} (${classMeta.label}) vise une maîtrise complète de « ${title} ».\n\nNotion centrale à comprendre en profondeur : ${keyNotion}.\n\nPourquoi ce chapitre compte à l’examen : il relie les bases théoriques du programme à des situations pratiques concrètes évaluées aussi bien en questions de cours, en exercices d’application qu’en études de cas rédigées.`,
         keyTakeaway: `Niveau ${classMeta.label} — Notion centrale : ${keyNotion}.`,
         diagramId: pack.diagramId,
       },
@@ -300,7 +305,7 @@ export function buildCenturionPack(pack: CenturionSubjectPack): CenturionBundle 
       chapterId: chId,
       classLevel: cls,
       title: `Fiche ${classMeta.shortLabel} — ${title}`,
-      subtitle: `${pack.subjectName} · Chapitre ${order}/100 · ${classMeta.label}`,
+      subtitle: `${pack.subjectName} · Chapitre ${order}/${totalLabel} · ${classMeta.label}`,
       sizeKb: 14 + (idx % 6),
       notionsEssentielles: [
         keyNotion,
@@ -313,7 +318,7 @@ export function buildCenturionPack(pack: CenturionSubjectPack): CenturionBundle 
       ],
       formules: [{ label: `Règle d’or — ${title}`, formule: rule }],
       datesReperes: [
-        { repere: classMeta.label, detail: `${pack.subjectName} — Chapitre ${order}/100 (${difficulty})` },
+        { repere: classMeta.label, detail: `${pack.subjectName} — Chapitre ${order}/${totalLabel} (${difficulty})` },
         { repere: 'Point d’ancrage', detail: keyNotion },
       ],
       methodes: [
@@ -418,7 +423,7 @@ export function buildCenturionPack(pack: CenturionSubjectPack): CenturionBundle 
     const clsMeta = getClassLevelMeta(targetCls);
 
     annales.push({
-      id: `ann-c100-${pack.subjectId}-${cfg.year}-${aIdx + 1}`,
+      id: `ann-${pack.idPrefix ?? 'c100'}-${pack.subjectId}-${cfg.year}-${aIdx + 1}`,
       title: `Annale corrigée ${pack.subjectName} (${clsMeta.shortLabel}) — Sujet officiel ${cfg.year} #${aIdx + 1}`,
       examId: pack.primaryExamId,
       subjectId: pack.subjectId,

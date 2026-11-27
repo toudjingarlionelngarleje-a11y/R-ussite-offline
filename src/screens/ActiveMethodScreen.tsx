@@ -23,7 +23,14 @@ import {
   Target,
   XCircle,
 } from 'lucide-react';
-import { CHAPTERS, CLASS_LEVELS, COURSES, SUBJECTS, useApp } from '../context/AppContext';
+import {
+  CHAPTERS,
+  COURSES,
+  SELECTABLE_CLASS_LEVELS,
+  SUBJECTS,
+  chapterMatchesLevel,
+  useApp,
+} from '../context/AppContext';
 import { saveActiveMethodSessionToCloud } from '../lib/supabaseSync';
 import { ActiveMethodMode, ActiveMethodSessionRecord, ClassLevelId, Fiche } from '../types';
 
@@ -182,7 +189,7 @@ export const ActiveMethodScreen: React.FC = () => {
   const subjectChapters = useMemo(() => {
     const base = CHAPTERS.filter((c) => c.subjectId === subjectId).sort((a, b) => a.order - b.order);
     if (classFilter === 'all') return base;
-    const filtered = base.filter((c) => c.classLevel === classFilter);
+    const filtered = base.filter((c) => chapterMatchesLevel(c.classLevel, classFilter, c.subjectId));
     return filtered.length > 0 ? filtered : base;
   }, [subjectId, classFilter]);
 
@@ -537,9 +544,9 @@ export const ActiveMethodScreen: React.FC = () => {
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             >
               <option value="all">Toutes (100 ch.)</option>
-              {CLASS_LEVELS.map((cl) => (
+              {SELECTABLE_CLASS_LEVELS.map((cl) => (
                 <option key={cl.id} value={cl.id}>
-                  {cl.shortLabel}
+                  {cl.label}
                 </option>
               ))}
             </select>

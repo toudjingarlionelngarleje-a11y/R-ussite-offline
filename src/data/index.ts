@@ -98,6 +98,15 @@ import {
   buildMissingChapterExercises,
 } from './megaExpansion50';
 import {
+  PREMIERE_ANNALES,
+  PREMIERE_CHAPTERS,
+  PREMIERE_COURSES,
+  PREMIERE_FICHES,
+  PREMIERE_FLASHCARDS,
+  PREMIERE_NEW_EXAMS,
+  PREMIERE_QUESTIONS,
+} from './premiereStreams';
+import {
   CLASS_LEVELS,
   HYPER72_ANNALES,
   HYPER72_CHAPTERS,
@@ -108,10 +117,15 @@ import {
   HYPER72_NEW_SUBJECTS,
   HYPER72_QUESTIONS,
   SCHOOL_CYCLES,
+  SELECTABLE_CLASS_LEVELS,
+  PREMIERE_STREAM_LEVELS,
   assignClassLevelForOrder,
+  chapterMatchesLevel,
+  expandPremiereStreamLevels,
   formatClassRange,
   getClassLevelMeta,
   getSubjectClassLevels,
+  getSubjectClassLevelsExpanded,
 } from './hyperExpansion72';
 import {
   CENTURION100_ANNALES,
@@ -149,8 +163,13 @@ export {
   USER_CATEGORIES,
   CLASS_LEVELS,
   SCHOOL_CYCLES,
+  SELECTABLE_CLASS_LEVELS,
+  PREMIERE_STREAM_LEVELS,
+  chapterMatchesLevel,
+  expandPremiereStreamLevels,
   getClassLevelMeta,
   getSubjectClassLevels,
+  getSubjectClassLevelsExpanded,
   formatClassRange,
 };
 
@@ -162,7 +181,10 @@ export const STUDY_LEVELS: string[] = [
   ...BASE_STUDY_LEVELS,
 ];
 
-export function mapStudyLevelToClassId(studyLevel?: string): ClassLevelId | null {
+export function mapStudyLevelToClassId(
+  studyLevel?: string,
+  examId?: string
+): ClassLevelId | null {
   if (!studyLevel) return null;
   const s = studyLevel.toLowerCase();
   if (s.includes('6e') || s.includes('sixième')) return '6e';
@@ -170,7 +192,25 @@ export function mapStudyLevelToClassId(studyLevel?: string): ClassLevelId | null
   if (s.includes('4e') || s.includes('quatrième')) return '4e';
   if (s.includes('3e') || s.includes('troisième') || s.includes('bepc')) return '3e';
   if (s.includes('2nde') || s.includes('seconde')) return '2nde';
-  if (s.includes('1ère') || s.includes('1ere') || s.includes('première')) return '1ere';
+  if (
+    s.includes('première') ||
+    s.includes('1ère') ||
+    s.includes('1ere') ||
+    s.includes('premiere')
+  ) {
+    const literary =
+      /littéraire|litteraire|série a|serie a|1ère l|1ere l|1ère a|1ere a|a4|a5/.test(s);
+    const scientific =
+      /scientifique|série c|serie c|série d|serie d|1ère s|1ere s|1ère c|1ere c|1ère d|1ere d/.test(
+        s
+      );
+    if (literary) return '1ere-l';
+    if (scientific) return '1ere-s';
+    if (examId === 'bac-litteraire' || examId === 'bac-a4-lettres' || examId === 'premiere-litteraire') {
+      return '1ere-l';
+    }
+    return '1ere-s';
+  }
   if (s.includes('terminale') || s.includes('baccalauréat') || s.includes('tle')) return 'terminale';
   if (s.includes('licence 1') || s.includes('bts 1') || s.includes('l1')) return 'l1';
   if (s.includes('licence 2') || s.includes('bts 2') || s.includes('l2')) return 'l2';
@@ -217,6 +257,7 @@ export const EXAMS: ExamTrack[] = [
   ...CENTURION_NEW_EXAMS,
   ...MILLENNIUM_NEW_EXAMS,
   ...TRADING_NEW_EXAMS,
+  ...PREMIERE_NEW_EXAMS,
 ].map((exam) => ({
   ...exam,
   classLevels: inferExamClassLevels(exam),
@@ -383,7 +424,10 @@ export const SUBJECTS = [
   ...TRADING_NEW_SUBJECTS,
 ].map((s) => ({
   ...s,
-  classLevels: s.classLevels && s.classLevels.length > 0 ? s.classLevels : getSubjectClassLevels(s.id),
+  classLevels:
+    s.classLevels && s.classLevels.length > 0
+      ? expandPremiereStreamLevels(s.classLevels, s.id)
+      : getSubjectClassLevelsExpanded(s.id),
   examIds: Array.from(
     new Set([
       ...s.examIds,
@@ -408,6 +452,8 @@ const RAW_CHAPTERS = [
   ...CENTURION100_CHAPTERS,
   ...MILLENNIUM_CHAPTERS,
   ...TRADING_CHAPTERS,
+  // v17.7 — 200 chapitres dédiés à la Première (100 scientifique + 100 littéraire)
+  ...PREMIERE_CHAPTERS,
 ];
 
 // Attribuer un niveau de classe (6e → Master) à 100% des chapitres sans écraser les attributions explicites
@@ -449,6 +495,7 @@ export const COURSES = [
   ...CENTURION100_COURSES,
   ...MILLENNIUM_COURSES,
   ...TRADING_COURSES,
+  ...PREMIERE_COURSES,
 ].map((crs) => ({
   ...crs,
   classLevel: crs.classLevel ?? CHAPTER_CLASS_MAP[crs.chapterId] ?? getSubjectClassLevels(crs.subjectId)[0],
@@ -469,6 +516,7 @@ export const FICHES = [
   ...CENTURION100_FICHES,
   ...MILLENNIUM_FICHES,
   ...TRADING_FICHES,
+  ...PREMIERE_FICHES,
 ].map((fic) => ({
   ...fic,
   classLevel: fic.classLevel ?? CHAPTER_CLASS_MAP[fic.chapterId] ?? getSubjectClassLevels(fic.subjectId)[0],
@@ -488,6 +536,7 @@ const CORE_AND_MEGA_QUESTIONS = [
   ...CENTURION100_QUESTIONS,
   ...MILLENNIUM_QUESTIONS,
   ...TRADING_QUESTIONS,
+  ...PREMIERE_QUESTIONS,
 ];
 
 const SUBJECT_META_MAP: Record<string, { name: string; examIds: string[] }> = Object.fromEntries(
@@ -524,6 +573,7 @@ export const ANNALES = [
   ...CENTURION100_ANNALES,
   ...MILLENNIUM_ANNALES,
   ...TRADING_ANNALES,
+  ...PREMIERE_ANNALES,
 ].map((a) => {
   const examClasses = EXAM_CLASS_MAP[a.examId];
   const subjectClasses = getSubjectClassLevels(a.subjectId);
@@ -551,4 +601,5 @@ export const FLASHCARDS = [
   ...CENTURION100_FLASHCARDS,
   ...MILLENNIUM_FLASHCARDS,
   ...TRADING_FLASHCARDS,
+  ...PREMIERE_FLASHCARDS,
 ];

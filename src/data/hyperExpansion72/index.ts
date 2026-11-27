@@ -10,9 +10,18 @@ import { HYPER72_PACK_D3 } from './packD3_NewGenetPenalLing';
 export {
   CLASS_LEVELS,
   SCHOOL_CYCLES,
+  SELECTABLE_CLASS_LEVELS,
+  PREMIERE_STREAM_LEVELS,
+  PREMIERE_CORE_LEVEL,
   SUBJECT_CLASS_PROFILES,
+  PREMIERE_SCIENCE_SUBJECT_IDS,
+  PREMIERE_LITTERAIRE_SUBJECT_IDS,
+  chapterMatchesLevel,
+  expandPremiereStreamLevels,
+  isSubjectInPremiereStream,
   getClassLevelMeta,
   getSubjectClassLevels,
+  getSubjectClassLevelsExpanded,
   assignClassLevelForOrder,
   formatClassRange,
 } from './classLevels';

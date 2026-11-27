@@ -26,7 +26,8 @@ export const COUNTRIES = [
 
 export const STUDY_LEVELS = [
   'Seconde / 2nde',
-  'Première / 1ère',
+  'Première S / 1ère C-D (scientifique)',
+  'Première L / 1ère A4-A5 (littéraire)',
   'Terminale (Baccalauréat)',
   'Licence 1 / BTS 1',
   'Licence 2 / BTS 2',

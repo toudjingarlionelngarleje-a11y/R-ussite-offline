@@ -47,13 +47,38 @@ export const CLASS_LEVELS: ClassLevelMeta[] = [
     description: 'Tronc commun du lycée et découverte des filières scientifiques, littéraires et techniques.',
   },
   {
+    id: '1ere-s',
+    label: 'Première Scientifique (1ère S / C / D)',
+    shortLabel: '1ère S',
+    cycle: 'lycee',
+    cycleLabel: 'Lycée',
+    order: 6.1,
+    premiereStream: 'science',
+    description:
+      'Filière scientifique : mathématiques, physique-chimie, sciences de la vie et de la Terre, informatique et sciences de l’ingénieur — spécialisation et préparation anticipée du Baccalauréat séries C et D.',
+  },
+  {
+    id: '1ere-l',
+    label: 'Première Littéraire (1ère L / A4 / A5)',
+    shortLabel: '1ère L',
+    cycle: 'lycee',
+    cycleLabel: 'Lycée',
+    order: 6.2,
+    premiereStream: 'litteraire',
+    description:
+      'Filière littéraire : français et littérature, philosophie, histoire-géographie, langues vivantes, littérature africaine et culture générale — spécialisation et préparation anticipée du Baccalauréat série A.',
+  },
+  {
     id: '1ere',
-    label: 'Première (1ère)',
-    shortLabel: '1ère',
+    label: 'Première — Tronc commun (1ère S & L)',
+    shortLabel: '1ère S/L',
     cycle: 'lycee',
     cycleLabel: 'Lycée',
     order: 6,
-    description: 'Spécialisation des séries A, C, D, F, G et préparation anticipée du Baccalauréat.',
+    hidden: true,
+    premiereStream: 'commun',
+    description:
+      'Tronc commun national de Première (français, histoire-géographie, langues vivantes, EPS, éducation civique) suivi par les élèves des filières scientifique et littéraire.',
   },
   {
     id: 'terminale',
@@ -109,7 +134,12 @@ export const SCHOOL_CYCLES: {
   levels: ClassLevelId[];
 }[] = [
   { id: 'college', label: 'Collège', rangeLabel: '6e → 3e', levels: ['6e', '5e', '4e', '3e'] },
-  { id: 'lycee', label: 'Lycée', rangeLabel: '2nde → Tle', levels: ['2nde', '1ere', 'terminale'] },
+  {
+    id: 'lycee',
+    label: 'Lycée',
+    rangeLabel: '2nde → Tle',
+    levels: ['2nde', '1ere-s', '1ere-l', 'terminale'],
+  },
   {
     id: 'universite',
     label: 'Université & Concours',
@@ -257,13 +287,148 @@ export const SUBJECT_CLASS_PROFILES: Record<string, ClassLevelId[]> = {
   audiovisuel_cinema_podcast: ALL_CLASSES,
 };
 
+/** Niveau technique du tronc commun de Première (partagé par les deux filières). */
+export const PREMIERE_CORE_LEVEL: ClassLevelId = '1ere';
+
+/** Les deux filières explicites de Première. */
+export const PREMIERE_STREAM_LEVELS: ClassLevelId[] = ['1ere-s', '1ere-l'];
+
+/** Niveaux affichés dans les sélecteurs (le tronc commun technique reste masqué). */
+export const SELECTABLE_CLASS_LEVELS: ClassLevelMeta[] = CLASS_LEVELS.filter((c) => !c.hidden);
+
+/** Matières enseignées en Première scientifique (spécialités + tronc commun). */
+export const PREMIERE_SCIENCE_SUBJECT_IDS: string[] = [
+  'maths',
+  'physique',
+  'svt',
+  'chimie_bio',
+  'chimie_organique',
+  'informatique',
+  'technologie_robotique',
+  'statistiques',
+  'genetique_biotech',
+  'electronique_electrotech',
+  'astronomie_spatial',
+  'hydrologie_eau_climat',
+  'energies_renouv',
+  'agronomie_env',
+  'genie_mecanique',
+  'thermodynamique_froid',
+  'genie_chimique_procedes',
+  'science_materiaux',
+  'genie_logiciel_devops',
+  'bases_donnees_bigdata',
+  'developpement_mobile_web',
+  'iot_systemes_embarques',
+  'francais',
+  'anglais',
+  'histoire_geo',
+  'eps_sciences_sport',
+  'educ_civique',
+  'culture_gen',
+  'arabe',
+  'espagnol',
+  'allemand',
+  'methodo_redaction',
+];
+
+/** Matières enseignées en Première littéraire (spécialités + tronc commun). */
+export const PREMIERE_LITTERAIRE_SUBJECT_IDS: string[] = [
+  'francais',
+  'philo',
+  'histoire_geo',
+  'litterature_africaine',
+  'anglais',
+  'espagnol',
+  'allemand',
+  'arabe',
+  'portugais_lusophone',
+  'chinois_mandarin',
+  'culture_gen',
+  'linguistique_oralite',
+  'methodo_redaction',
+  'arts_musique_patrimoine',
+  'audiovisuel_cinema_podcast',
+  'journalisme_comm',
+  'sociologie_anthropo',
+  'psychologie_cog',
+  'archeologie_histoire_afrique',
+  'geographie_amenagement',
+  'maths',
+  'svt',
+  'eps_sciences_sport',
+  'educ_civique',
+];
+
+const STREAM_SUBJECTS: Record<'1ere-s' | '1ere-l', string[]> = {
+  '1ere-s': PREMIERE_SCIENCE_SUBJECT_IDS,
+  '1ere-l': PREMIERE_LITTERAIRE_SUBJECT_IDS,
+};
+
+/** La matière est-elle enseignée dans cette filière de Première ? */
+export function isSubjectInPremiereStream(
+  subjectId: string,
+  stream: '1ere-s' | '1ere-l'
+): boolean {
+  return STREAM_SUBJECTS[stream].includes(subjectId);
+}
+
+/**
+ * Un chapitre appartient à une filière s'il porte explicitement son niveau,
+ * ou s'il relève du tronc commun d'une matière enseignée dans cette filière.
+ */
+export function chapterMatchesLevel(
+  chapterLevel: ClassLevelId | undefined,
+  selectedLevel: ClassLevelId,
+  subjectId?: string
+): boolean {
+  if (!chapterLevel) return false;
+  if (chapterLevel === selectedLevel) return true;
+  if (
+    chapterLevel === PREMIERE_CORE_LEVEL &&
+    (selectedLevel === '1ere-s' || selectedLevel === '1ere-l')
+  ) {
+    return subjectId ? isSubjectInPremiereStream(subjectId, selectedLevel) : true;
+  }
+  return false;
+}
+
+/**
+ * Remplace le niveau technique « 1ere » par les filières réellement enseignées
+ * pour la matière concernée (scientifique, littéraire, ou les deux).
+ */
+export function expandPremiereStreamLevels(
+  levels: ClassLevelId[],
+  subjectId?: string
+): ClassLevelId[] {
+  if (!levels.includes(PREMIERE_CORE_LEVEL)) return levels;
+  const streams: ClassLevelId[] = [];
+  if (!subjectId || isSubjectInPremiereStream(subjectId, '1ere-s')) streams.push('1ere-s');
+  if (!subjectId || isSubjectInPremiereStream(subjectId, '1ere-l')) streams.push('1ere-l');
+  const out: ClassLevelId[] = [];
+  for (const level of levels) {
+    if (level === PREMIERE_CORE_LEVEL) {
+      if (streams.length === 0) continue; // matière non enseignée en Première
+      out.push(...streams);
+    } else {
+      out.push(level);
+    }
+  }
+  return Array.from(new Set(out));
+}
+
+/** Liste de classes d'une matière, filières de Première incluses et filtrées. */
+export function getSubjectClassLevelsExpanded(subjectId: string): ClassLevelId[] {
+  return expandPremiereStreamLevels(getSubjectClassLevels(subjectId), subjectId);
+}
+
 const CLASS_LEVEL_MAP: Record<ClassLevelId, ClassLevelMeta> = Object.fromEntries(
   CLASS_LEVELS.map((c) => [c.id, c])
 ) as Record<ClassLevelId, ClassLevelMeta>;
 
 export function getClassLevelMeta(id?: ClassLevelId): ClassLevelMeta {
-  if (!id || !CLASS_LEVEL_MAP[id]) return CLASS_LEVELS[6]; // Terminale fallback
-  return CLASS_LEVEL_MAP[id];
+  if (id && CLASS_LEVEL_MAP[id]) return CLASS_LEVEL_MAP[id];
+  return CLASS_LEVEL_MAP['terminale']; // Terminale fallback
 }
 
 export function getSubjectClassLevels(subjectId: string): ClassLevelId[] {
@@ -285,7 +450,9 @@ export function assignClassLevelForOrder(
 
 export function formatClassRange(levels?: ClassLevelId[]): string {
   if (!levels || levels.length === 0) return 'Tle → Master';
-  const sorted = [...levels].sort((a, b) => getClassLevelMeta(a).order - getClassLevelMeta(b).order);
+  const visible = levels.filter((l) => !getClassLevelMeta(l).hidden);
+  if (visible.length === 0) return 'Tle → Master';
+  const sorted = [...visible].sort((a, b) => getClassLevelMeta(a).order - getClassLevelMeta(b).order);
   const first = getClassLevelMeta(sorted[0]).shortLabel;
   const last = getClassLevelMeta(sorted[sorted.length - 1]).shortLabel;
   return first === last ? first : `${first} → ${last}`;

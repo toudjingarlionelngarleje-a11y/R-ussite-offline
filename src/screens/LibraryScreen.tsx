@@ -21,7 +21,9 @@ import {
   COURSES,
   EXAMS,
   SCHOOL_CYCLES,
+  SELECTABLE_CLASS_LEVELS,
   SUBJECTS,
+  chapterMatchesLevel,
   formatClassRange,
   getClassLevelMeta,
   mapStudyLevelToClassId,
@@ -48,7 +50,7 @@ export const LibraryScreen: React.FC = () => {
   } = useApp();
 
   const activeProfile = state.profiles.find((p) => p.id === state.activeProfileId);
-  const profileClassId = mapStudyLevelToClassId(activeProfile?.studyLevel);
+  const profileClassId = mapStudyLevelToClassId(activeProfile?.studyLevel, activeProfile?.examId);
 
   const [query, setQuery] = useState('');
   const [examFilter, setExamFilter] = useState<string>('all');
@@ -73,10 +75,12 @@ export const LibraryScreen: React.FC = () => {
 
   const chapterCountBySubjectAndClass = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const ch of CHAPTERS) {
-      if (ch.classLevel) {
-        const key = `${ch.subjectId}:${ch.classLevel}`;
-        map[key] = (map[key] ?? 0) + 1;
+    for (const cl of CLASS_LEVELS) {
+      for (const ch of CHAPTERS) {
+        if (chapterMatchesLevel(ch.classLevel, cl.id, ch.subjectId)) {
+          const key = `${ch.subjectId}:${cl.id}`;
+          map[key] = (map[key] ?? 0) + 1;
+        }
       }
     }
     return map;
@@ -96,7 +100,7 @@ export const LibraryScreen: React.FC = () => {
     for (const cl of CLASS_LEVELS) {
       res[cl.id] = {
         subjects: SUBJECTS.filter((s) => s.classLevels?.includes(cl.id)).length,
-        chapters: CHAPTERS.filter((c) => c.classLevel === cl.id).length,
+        chapters: CHAPTERS.filter((c) => chapterMatchesLevel(c.classLevel, cl.id, c.subjectId)).length,
       };
     }
     return res;
@@ -111,8 +115,12 @@ export const LibraryScreen: React.FC = () => {
       return a.order - b.order;
     });
 
-    const subjectClasses = CLASS_LEVELS.filter((cl) =>
-      subjChapters.some((ch) => ch.classLevel === cl.id)
+    const subjectClasses = CLASS_LEVELS.filter(
+      (cl) =>
+        !cl.hidden &&
+        subjChapters.some((ch) =>
+          chapterMatchesLevel(ch.classLevel, cl.id, selectedSubject.id)
+        )
     );
 
     const activeChapterClassFilter =
@@ -121,7 +129,10 @@ export const LibraryScreen: React.FC = () => {
         : chapterClassFilter;
 
     const filteredChapters = subjChapters.filter((ch) => {
-      if (activeChapterClassFilter !== 'all' && ch.classLevel !== activeChapterClassFilter) {
+      if (
+        activeChapterClassFilter !== 'all' &&
+        !chapterMatchesLevel(ch.classLevel, activeChapterClassFilter, ch.subjectId)
+      ) {
         return false;
       }
       if (difficultyFilter !== 'all' && ch.difficulty !== difficultyFilter) return false;
@@ -143,10 +154,14 @@ export const LibraryScreen: React.FC = () => {
     const isPackDownloaded = Boolean(state.downloadedItems[packKey]);
     const progressPct = downloadingIds[packKey];
 
-    const groupedByClass = CLASS_LEVELS.map((meta) => ({
-      meta,
-      items: filteredChapters.filter((ch) => ch.classLevel === meta.id),
-    })).filter((g) => g.items.length > 0);
+    const groupedByClass = subjectClasses
+      .map((meta) => ({
+        meta,
+        items: filteredChapters.filter((ch) =>
+          chapterMatchesLevel(ch.classLevel, meta.id, selectedSubject.id)
+        ),
+      }))
+      .filter((g) => g.items.length > 0);
 
     const renderChapterCard = (ch: (typeof CHAPTERS)[number]) => {
       const course = COURSES.find((c) => c.id === ch.courseId);
@@ -388,7 +403,9 @@ export const LibraryScreen: React.FC = () => {
               Toutes ({subjChapters.length})
             </button>
             {subjectClasses.map((cl) => {
-              const count = subjChapters.filter((ch) => ch.classLevel === cl.id).length;
+              const count = subjChapters.filter((ch) =>
+                chapterMatchesLevel(ch.classLevel, cl.id, selectedSubject.id)
+              ).length;
               return (
                 <button
                   key={cl.id}
@@ -572,8 +589,8 @@ export const LibraryScreen: React.FC = () => {
   // Screen 6: Bibliothèque de contenus (principale — découpée de la 6e à l’Université)
   const visibleClasses =
     cycleFilter === 'all'
-      ? CLASS_LEVELS
-      : CLASS_LEVELS.filter((c) => c.cycle === cycleFilter);
+      ? SELECTABLE_CLASS_LEVELS
+      : SELECTABLE_CLASS_LEVELS.filter((c) => c.cycle === cycleFilter);
 
   const filteredSubjects = SUBJECTS.filter((s) => {
     const subjClasses = s.classLevels ?? [];
@@ -609,7 +626,7 @@ export const LibraryScreen: React.FC = () => {
             Bibliothèque de contenus · 6e → Université
           </h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            {SUBJECTS.length} matières · {CHAPTERS.length.toLocaleString('fr-FR')} chapitres (100/matière) · {allFiches.length.toLocaleString('fr-FR')} fiches · 11 niveaux de classe 100 % hors ligne.
+            {SUBJECTS.length} matières · {CHAPTERS.length.toLocaleString('fr-FR')} chapitres · {allFiches.length.toLocaleString('fr-FR')} fiches · {SELECTABLE_CLASS_LEVELS.length} niveaux (dont 1ère S et 1ère L) 100 % hors ligne.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

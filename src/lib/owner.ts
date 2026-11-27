@@ -11,7 +11,7 @@ export const OWNER_PROFILE_IDS = ['profile-1795361028411'];
 export const DEFAULT_OWNER_SETTINGS: OwnerGlobalSettings = {
   announcementEnabled: false,
   announcementText:
-    'Bienvenue sur Réussite Offline ! Prépare tes examens et concours 2026 avec 65 concours, 101 matières, 10 100 chapitres, 100 pare-feux WAF et 134 systèmes de sécurité actifs — dont la garde anti-escalade qui bloque toute commande « Admin__ » et bannit l’identité qui l’essaie.',
+    'Bienvenue sur Réussite Offline ! Prépare tes examens et concours 2026 avec 67 examens & concours, 101 matières, 10 300 chapitres, 100 pare-feux WAF et 134 systèmes de sécurité actifs — dont la Première désormais scindée en filière scientifique (1ère S) et littéraire (1ère L), avec 100 nouveaux chapitres dédiés à chacune.',
   announcementTone: 'info',
   maintenanceMode: false,
   registrationsOpen: true,

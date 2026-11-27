@@ -54,6 +54,8 @@ export type ClassLevelId =
   | '3e'
   | '2nde'
   | '1ere'
+  | '1ere-s'
+  | '1ere-l'
   | 'terminale'
   | 'l1'
   | 'l2'
@@ -68,6 +70,10 @@ export interface ClassLevelMeta {
   cycleLabel: string;
   order: number;
   description: string;
+  /** Niveau technique (tronc commun de Première) masqué des sélecteurs de classe. */
+  hidden?: boolean;
+  /** Filière de la Première : scientifique, littéraire ou tronc commun partagé. */
+  premiereStream?: 'science' | 'litteraire' | 'commun';
 }
 
 export type SyncStatus =

@@ -12,7 +12,15 @@ import {
   Share2,
   Trash2,
 } from 'lucide-react';
-import { ANNALES, CLASS_LEVELS, EXAMS, SUBJECTS, getClassLevelMeta, useApp } from '../context/AppContext';
+import {
+  ANNALES,
+  EXAMS,
+  SELECTABLE_CLASS_LEVELS,
+  SUBJECTS,
+  chapterMatchesLevel,
+  getClassLevelMeta,
+  useApp,
+} from '../context/AppContext';
 import { downloadExamPaperFile } from '../lib/examPaperDownload';
 import { ClassLevelId, Difficulty } from '../types';
 
@@ -62,7 +70,7 @@ export const AnnalesScreen: React.FC = () => {
   const filtered = useMemo(
     () =>
       ANNALES.filter((a) => {
-        if (classFilter !== 'all' && a.classLevel !== classFilter) return false;
+        if (classFilter !== 'all' && !chapterMatchesLevel(a.classLevel, classFilter, a.subjectId)) return false;
         if (examFilter !== 'all' && a.examId !== examFilter) return false;
         if (subjectFilter !== 'all' && a.subjectId !== subjectFilter) return false;
         if (yearFilter !== 'all' && String(a.year) !== yearFilter) return false;
@@ -232,7 +240,7 @@ export const AnnalesScreen: React.FC = () => {
           >
             Toutes (6e → Master)
           </button>
-          {CLASS_LEVELS.map((cl) => (
+          {SELECTABLE_CLASS_LEVELS.map((cl) => (
             <button
               key={cl.id}
               type="button"
