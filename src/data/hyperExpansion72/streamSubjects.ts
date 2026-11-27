@@ -55,6 +55,17 @@ export const SECONDE_SCIENCE_SUBJECT_IDS: string[] = [
   'methodes_travail',
   'preparation_bac',
   'sciences_ingenieur',
+  // v24.0 — nouvelles matières transversales enseignées dans les deux filières
+  'education_financiere',
+  'entrepreneuriat',
+  'sciences_forensiques',
+  'mediation_conflits',
+  'langues_nationales',
+  'inclusion_handicap',
+  'ia_societe',
+  'climat_adaptation',
+  'economie_circulaire',
+  'gerontologie',
 ];
 
 /** Matières de la voie littéraire en Seconde (2nde L / 2nde A). */
@@ -92,6 +103,17 @@ export const SECONDE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'arts_plastiques',
   'methodes_travail',
   'preparation_bac',
+  // v24.0 — nouvelles matières transversales enseignées dans les deux filières
+  'education_financiere',
+  'entrepreneuriat',
+  'sciences_forensiques',
+  'mediation_conflits',
+  'langues_nationales',
+  'inclusion_handicap',
+  'ia_societe',
+  'climat_adaptation',
+  'economie_circulaire',
+  'gerontologie',
 ];
 
 /** Matières de la voie scientifique en Première (1ère S / C / D). */
@@ -133,6 +155,17 @@ export const PREMIERE_SCIENCE_SUBJECT_IDS: string[] = [
   'methodes_travail',
   'preparation_bac',
   'sciences_ingenieur',
+  // v24.0 — nouvelles matières transversales enseignées dans les deux filières
+  'education_financiere',
+  'entrepreneuriat',
+  'sciences_forensiques',
+  'mediation_conflits',
+  'langues_nationales',
+  'inclusion_handicap',
+  'ia_societe',
+  'climat_adaptation',
+  'economie_circulaire',
+  'gerontologie',
 ];
 
 /** Matières de la voie littéraire en Première (1ère L / A4 / A5). */
@@ -165,6 +198,17 @@ export const PREMIERE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'arts_plastiques',
   'methodes_travail',
   'preparation_bac',
+  // v24.0 — nouvelles matières transversales enseignées dans les deux filières
+  'education_financiere',
+  'entrepreneuriat',
+  'sciences_forensiques',
+  'mediation_conflits',
+  'langues_nationales',
+  'inclusion_handicap',
+  'ia_societe',
+  'climat_adaptation',
+  'economie_circulaire',
+  'gerontologie',
 ];
 
 /** Matières de la voie scientifique en Terminale (Tle S / C / D / E). */
@@ -227,6 +271,17 @@ export const TERMINALE_SCIENCE_SUBJECT_IDS: string[] = [
   'arts_plastiques',
   'methodes_travail',
   'preparation_bac',
+  // v24.0 — nouvelles matières transversales enseignées dans les deux filières
+  'education_financiere',
+  'entrepreneuriat',
+  'sciences_forensiques',
+  'mediation_conflits',
+  'langues_nationales',
+  'inclusion_handicap',
+  'ia_societe',
+  'climat_adaptation',
+  'economie_circulaire',
+  'gerontologie',
 ];
 
 /**
@@ -293,4 +348,15 @@ export const TERMINALE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'arts_plastiques',
   'methodes_travail',
   'preparation_bac',
+  // v24.0 — nouvelles matières transversales enseignées dans les deux filières
+  'education_financiere',
+  'entrepreneuriat',
+  'sciences_forensiques',
+  'mediation_conflits',
+  'langues_nationales',
+  'inclusion_handicap',
+  'ia_societe',
+  'climat_adaptation',
+  'economie_circulaire',
+  'gerontologie',
 ];

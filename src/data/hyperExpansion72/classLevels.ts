@@ -262,6 +262,18 @@ export const SUBJECT_CLASS_PROFILES: Record<string, ClassLevelId[]> = {
   methodo_redaction: PREM_TO_MASTER,
   psychologie_cog: PREM_TO_MASTER,
 
+  // v24.0 — dix nouvelles matières transversales
+  education_financiere: FROM_3E,
+  entrepreneuriat: TLE_TO_MASTER,
+  sciences_forensiques: TLE_TO_MASTER,
+  mediation_conflits: UNIV_L1_MASTER,
+  langues_nationales: ALL_CLASSES,
+  inclusion_handicap: FROM_3E,
+  ia_societe: LYCEE_TO_MASTER,
+  climat_adaptation: FROM_3E,
+  economie_circulaire: LYCEE_TO_MASTER,
+  gerontologie: TLE_TO_MASTER,
+
   // Terminale / Prépa & Université L1 → Master
   droit_penal_proc: TLE_TO_MASTER,
   droit_ohada: TLE_TO_MASTER,

@@ -49,19 +49,22 @@ npm run build
 npm run preview
 ```
 
-## Catalogue — extensions v19.0 à v23.0 (40 nouveaux chapitres par matière) et v22.0 (6 parcours, 24 annales, Coach enrichi)
+## Catalogue — extensions v19.0 à v24.0 (10 nouvelles matières + 50 chapitres par matière) et v22.0 (6 parcours, 24 annales, Coach enrichi)
 
-- **+4 280 chapitres** : chacune des **107 matières** reçoit **40 chapitres supplémentaires** en quatre vagues de 10, numérotés à la suite de son programme existant, soit **15 700 chapitres** au total (11 420 en v18.0).
-- **Chaque nouveau chapitre est complet** : cours en 4 sections, fiche synthétique, QCM corrigé à 4 options, flashcards et rattachement aux annales — soit **15 700 cours, 15 700 fiches, 15 845 QCM, 14 775 flashcards et 2 341 annales**.
+- **+6 250 chapitres** : **117 matières** au total, dont **10 nouvelles matières** créées en v24.0 (80 chapitres chacune) et **50 chapitres supplémentaires** dans chacune des 107 matières historiques (quatre vagues de 10 en v19.0 à v23.0 + 10 en v24.0), soit **17 670 chapitres** (11 420 en v18.0).
+- **Chaque nouveau chapitre est complet** : cours en 4 sections, fiche synthétique, QCM corrigé à 4 options, flashcards et rattachement aux annales — soit **17 670 cours, 17 670 fiches, 17 815 QCM, 16 745 flashcards et 2 722 annales**.
+- **Nouvelles matières v24.0** : Éducation financière & budget personnel ; Entrepreneuriat & création d’entreprise ; Sciences forensiques & criminalistique ; Médiation & résolution des conflits ; Langues nationales & patrimoine oral ; Éducation inclusive & langue des signes ; Intelligence artificielle, éthique & société ; Climat & adaptation des territoires ; Économie circulaire & gestion des ressources ; Gérontologie & accompagnement du grand âge — chacune rattachée à des examens et concours réels et à ses niveaux d’enseignement.
 - **Vague v19.0 — approfondissement** : diagnostic, fondements, cadre normatif, méthode experte, exercice guidé, étude de cas, pièges, fiche mémo, entraînement chronométré, synthèse transversale.
 - **Vague v20.0 — consolidation** : prérequis croisés, modélisation, boîte à outils, atelier pratique, protocole, cas de terrain, remédiation, mémo express, concours blanc, ouverture.
 - **Vague v21.0 — professionnalisation** : mise en situation, concepts clés, démonstration, application immédiate, atelier corrigé, contexte professionnel et normes, auto-évaluation, consolidation, épreuve type et barème, bilan et transfert.
-- **Modules rédigés matière par matière** dans `src/data/extensionV19/`, `extensionV20/` et `extensionV21/` : un thème différent par vague (ex. maths : optimisation → équations différentielles → géométrie vectorielle de l’espace).
+- **Modules rédigés matière par matière** dans `src/data/extensionV19/`, `extensionV20/`, `extensionV21/`, `extensionV23/` et `extensionV24/` : un thème différent par vague (ex. maths : optimisation → équations différentielles → géométrie vectorielle de l’espace → modélisation mathématique).
 - **Vague v23.0 — ouverture & transfert** : rappels express, carte mentale, vocabulaire et unités, règle d’or, exemple commenté, erreurs et parades, exercices progressifs, cas de terrain, synthèse en une page, défi final.
-- **Numérotation continue** : 140, 160, 180 ou 200 chapitres par matière ; les descriptions affichent leur volume réel.
+- **Vague v24.0 — nouvelles matières** : diagnostic de départ, objectifs et contrat d’apprentissage, méthode guidée, exemple résolu, atelier pratique, erreurs et remédiation, évaluation formative, projet de terrain, présentation orale, portfolio.
+- **Vague v24.0 — consolidation (toutes matières)** : leçon essentielle, démonstration guidée, entraînement guidé, exercices autonomes, remédiation ciblée, étude de cas complète, défi chronométré, fiche mémo durable, transfert, bilan de consolidation.
+- **Numérotation continue** : 90 chapitres pour les nouvelles matières, 150 à 210 pour les matières historiques ; les descriptions affichent leur volume réel.
 - **Nouveautés v22.0 — 6 parcours d’examen inédits** : Eaux, Forêts, Climat & Environnement ; Statistique publique, Démographie & Prévision ; Transports, Logistique & Commerce International ; Hôtellerie, Restauration & Tourisme Durable ; Cybersécurité Industrielle & Systèmes OT ; Éducation Physique, Sport & Santé — soit **77 examens & concours** au total, chacun rattaché à 6 matières existantes (aucune matière créée).
 - **24 annales v22.0** (6 parcours × 4 sessions 2023-2026) assemblées à partir des questions du catalogue, avec durées, barèmes, consignes et format d’épreuve propres — **2 020 annales** au total.
-- **Aucune ressource externe** : packs embarqués (chunks `data-x19`, `data-x20`, `data-x21`, `data-x22`, `data-x23`) et cache PWA `secure-v21`.
+- **Aucune ressource externe** : packs embarqués (chunks `data-x19`, `data-x20`, `data-x21`, `data-x22`, `data-x23`, `data-x24`) et cache PWA `secure-v22`.
 
 ## Coach IA — base de connaissances hors ligne (v18.0)
 
@@ -82,3 +85,4 @@ Fichiers : `src/data/coachKnowledge/` (données) et `src/lib/coachEngine.ts` (mo
 > **v21.0** : troisième vague de 1 070 chapitres (10 par matière), soit **14 630 chapitres / cours / fiches**, 14 775 QCM, 13 705 flashcards et 1 996 annales ; cache PWA `secure-v19`.
 > **v22.0** : 6 nouveaux parcours d’examen (77 au total), **24 annales inédites** et Coach IA porté à **192 notions / 20 méthodes** (821 synonymes) ; volumes de chapitres inchangés, cache PWA `secure-v20`.
 > **v23.0** : quatrième vague de **1 070 chapitres** (10 par matière), soit **15 700 chapitres / cours / fiches**, 15 845 QCM, 2 341 annales et 14 775 flashcards ; cache PWA `secure-v21`.
+> **v24.0** : **10 nouvelles matières** (80 chapitres chacune) et **1 170 chapitres de consolidation** (10 par matière sur 117), soit **17 670 chapitres / cours / fiches**, 17 815 QCM, 2 722 annales et 16 745 flashcards ; cache PWA `secure-v22`.

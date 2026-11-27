@@ -38,6 +38,8 @@ export default defineConfig({
           if (id.includes('/extensionV21/')) return 'data-x21';
           if (id.includes('/extensionV22/')) return 'data-x22';
           if (id.includes('/extensionV23/')) return 'data-x23';
+          if (id.includes('/extensionV24/')) return 'data-x24';
+          if (id.includes('/newSubjects/')) return 'data-x24';
         },
       },
     },
