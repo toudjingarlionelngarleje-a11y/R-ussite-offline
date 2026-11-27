@@ -1,6 +1,6 @@
 import { AccountRole, OwnerGlobalSettings, UserProfile } from '../types';
 import { COACH_KNOWLEDGE_STATS } from '../data/coachKnowledge';
-import { CHAPTERS, SUBJECTS, X19_COVERAGE, X20_COVERAGE, X21_COVERAGE, X23_COVERAGE, X24_EXTENSION } from '../data';
+import { CHAPTERS, SUBJECTS, X19_COVERAGE, X20_COVERAGE, X21_COVERAGE, X23_COVERAGE, X24_EXTENSION, X25_EXTENSION, X25_NEW_SUBJECTS_EXTENSION } from '../data';
 
 /**
  * Official Owner identity for Réussite Offline.
@@ -13,7 +13,7 @@ export const OWNER_PROFILE_IDS = ['profile-1795361028411'];
 export const DEFAULT_OWNER_SETTINGS: OwnerGlobalSettings = {
   announcementEnabled: false,
   announcementText:
-    `Bienvenue sur Réussite Offline ! Prépare tes examens et concours 2026 avec 77 examens & concours, ${SUBJECTS.length} matières et ${CHAPTERS.length} chapitres, 100 pare-feux WAF et 134 systèmes de sécurité actifs — dont 6 matières strictement scolaires (latin-grec, technologie du collège, arts plastiques, méthodes & orientation, sciences de l’ingénieur, méthodologie du Bac) désormais à 170 chapitres chacune. Nouveautés v24.0 : 10 nouvelles matières (éducation financière, entrepreneuriat, sciences forensiques, médiation, langues nationales, inclusion & langue des signes, IA & société, climat & adaptation, économie circulaire, gérontologie) dotées de 80 chapitres chacune, plus ${X24_EXTENSION.chapters.length} chapitres de consolidation (10 dans chacune des ${X24_EXTENSION.subjectsCovered} matières, du diagnostic au portfolio). Le catalogue atteint ${CHAPTERS.length} chapitres, avec cours, fiches, QCM, flashcards et annales associées, et un Coach IA de ${COACH_KNOWLEDGE_STATS.notions} notions / ${COACH_KNOWLEDGE_STATS.methods} méthodes, 100 % hors ligne.`,
+    `Bienvenue sur Réussite Offline ! Prépare tes examens et concours 2026 avec 77 examens & concours, ${SUBJECTS.length} matières et ${CHAPTERS.length} chapitres, 100 pare-feux WAF et 134 systèmes de sécurité actifs — dont 6 matières strictement scolaires désormais à 180 chapitres chacune. Nouveautés v25.0 : 8 nouvelles matières illustrées (bibliothéconomie, démographie, économie de la santé, esthétique & cosmétologie, sécurité privée, mobilité urbaine, FLE & didactique, traduction professionnelle) dotées de 80 chapitres chacune, plus ${X25_EXTENSION.chapters.length} chapitres d’approfondissement dans les ${X25_EXTENSION.subjectsCovered} matières. Chaque nouveau chapitre s’ouvre sur une illustration SVG 100 % hors ligne (budget, business model, scène forensique, pyramide des âges, couches de la peau, réseau de neurones, boucle circulaire…). Le catalogue atteint ${CHAPTERS.length} chapitres, avec cours, fiches, QCM, flashcards et annales associées, et un Coach IA de ${COACH_KNOWLEDGE_STATS.notions} notions / ${COACH_KNOWLEDGE_STATS.methods} méthodes.`,
   announcementTone: 'info',
   maintenanceMode: false,
   registrationsOpen: true,

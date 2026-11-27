@@ -248,7 +248,28 @@ export interface CourseSection {
     | 'support_resistance'
     | 'gestion_risque_trading'
     | 'coupe_sol'
-    | 'circuit_electrique_serie';
+    | 'circuit_electrique_serie'
+    // v25.0 — Illustrations des nouvelles matières et des parcours transversaux
+    | 'budget_repartition'
+    | 'business_model_canvas'
+    | 'scene_forensique'
+    | 'transmission_orale'
+    | 'reseau_neurones'
+    | 'roue_autonomie'
+    | 'pyramide_ages'
+    | 'financement_sante'
+    | 'couches_peau'
+    | 'perimetres_surete'
+    | 'chaine_deplacement'
+    | 'quadrant_langagier'
+    | 'cycle_traduction'
+    | 'plan_classification'
+    | 'mediation_triangle'
+    | 'boucle_circulaire'
+    | 'chaine_risque_climat'
+    | 'accessibilite_universelle'
+    | 'arts_composition'
+    | 'planning_organisation';
 }
 
 export interface Course {

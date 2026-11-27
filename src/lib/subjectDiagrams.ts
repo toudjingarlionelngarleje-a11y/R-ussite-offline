@@ -19,6 +19,88 @@ export interface DiagramMeta {
 
 /** Titres & résumés utilisés par la galerie de schémas du lecteur de cours. */
 export const DIAGRAM_META: Partial<Record<DiagramId, { title: string; summary: string }>> = {
+
+  // v25.0 — Nouvelles illustrations pédagogiques
+  budget_repartition: {
+    title: 'Budget mensuel — répartition illustrée',
+    summary: 'Revenus, charges fixes et variables, part d’épargne et réserve de précaution.',
+  },
+  business_model_canvas: {
+    title: 'Business model canvas',
+    summary: 'Neuf blocs : partenaires, activités, offre, clients, revenus et coûts.',
+  },
+  scene_forensique: {
+    title: 'Scène de crime et prélèvements',
+    summary: 'Périmètre balisé, traces numérotées, chaîne de custody.',
+  },
+  transmission_orale: {
+    title: 'Transmission orale du conte',
+    summary: 'Du griot au public : récit, rythme, variantes et mémoire collective.',
+  },
+  reseau_neurones: {
+    title: 'Réseau de neurones',
+    summary: 'Entrées → couches cachées → sortie, poids ajustés par apprentissage.',
+  },
+  roue_autonomie: {
+    title: 'Roue de l’autonomie',
+    summary: 'Six domaines du quotidien : se déplacer, se nourrir, se laver, s’orienter, se soigner, vie sociale.',
+  },
+  pyramide_ages: {
+    title: 'Pyramide des âges',
+    summary: 'Structure par sexe et par âge, lecture des creux et des générations.',
+  },
+  financement_sante: {
+    title: 'Financement du système de santé',
+    summary: 'Ménages, employeurs et État → mutualisation → offre de soins.',
+  },
+  couches_peau: {
+    title: 'Coupe de la peau',
+    summary: 'Épiderme, derme et hypoderme : cible de chaque actif cosmétique.',
+  },
+  perimetres_surete: {
+    title: 'Périmètres de sûreté',
+    summary: 'Voie publique, enceinte, zone sensible : contrôles proportionnés.',
+  },
+  chaine_deplacement: {
+    title: 'Chaîne de déplacement',
+    summary: 'Origine, modes, correspondances et destination en temps porte à porte.',
+  },
+  quadrant_langagier: {
+    title: 'Quadrant des compétences langagières',
+    summary: 'Oral/écrit et réception/production : les quatre compétences du CECRL.',
+  },
+  cycle_traduction: {
+    title: 'Cycle de traduction',
+    summary: 'Analyse, terminologie, traduction, révision, livraison.',
+  },
+  plan_classification: {
+    title: 'Plan de classification et rayonnage',
+    summary: 'Indices de sujet, cotes et ordre des ouvrages sur les rayons.',
+  },
+  mediation_triangle: {
+    title: 'Triangle positions, intérêts, besoins',
+    summary: 'Dépasser les positions pour négocier sur les intérêts et les besoins.',
+  },
+  boucle_circulaire: {
+    title: 'Boucle de l’économie circulaire',
+    summary: 'Réduire, réemployer, réparer, recycler, valoriser.',
+  },
+  chaine_risque_climat: {
+    title: 'Chaîne du risque climatique',
+    summary: 'Risque = aléa × enjeu × vulnérabilité, réduit par l’adaptation.',
+  },
+  accessibilite_universelle: {
+    title: 'Accessibilité universelle',
+    summary: 'Cheminement, information perceptible et usage autonome.',
+  },
+  arts_composition: {
+    title: 'Cercle chromatique et composition',
+    summary: 'Couleurs complémentaires, lignes de force et équilibre des masses.',
+  },
+  planning_organisation: {
+    title: 'Planning d’organisation hebdomadaire',
+    summary: 'Blocs de travail profond, révisions et récupération planifiée.',
+  },
   corps_humain: {
     title: 'Corps humain — organes internes',
     summary: 'Silhouette légendée : cerveau, poumons, cœur, foie, estomac, reins, intestins.',
@@ -182,6 +264,41 @@ export const DIAGRAM_META: Partial<Record<DiagramId, { title: string; summary: s
  * le premier schéma est celui affiché en tête de chapitre.
  */
 const SUBJECT_GALLERIES: Record<string, DiagramId[]> = {
+  // v24.0 — matières transversales
+  education_financiere: ['budget_repartition', 'offre_demande', 'cycle_projet'],
+  entrepreneuriat: ['business_model_canvas', 'cycle_projet', 'offre_demande'],
+  sciences_forensiques: ['scene_forensique', 'adn_helice'],
+  mediation_conflits: ['mediation_triangle', 'pyramide_maslow'],
+  langues_nationales: ['transmission_orale', 'quadrant_langagier'],
+  inclusion_handicap: ['accessibilite_universelle', 'planning_organisation'],
+  ia_societe: ['reseau_neurones', 'architecture_ia'],
+  climat_adaptation: ['chaine_risque_climat', 'cycle_azote'],
+  economie_circulaire: ['boucle_circulaire', 'cycle_azote'],
+  gerontologie: ['roue_autonomie', 'corps_humain'],
+  // v25.0 — huit nouvelles matières
+  bibliotheconomie: ['plan_classification', 'cycle_projet'],
+  demographie: ['pyramide_ages', 'couches_sig'],
+  economie_sante: ['financement_sante', 'cycle_cardiaque'],
+  esthetique_cosmetologie: ['couches_peau', 'corps_humain'],
+  securite_privee: ['perimetres_surete', 'separation_pouvoirs'],
+  mobilite_urbaine: ['chaine_deplacement', 'couches_sig'],
+  fle_didactique: ['quadrant_langagier', 'pyramide_maslow'],
+  traduction_professionnelle: ['cycle_traduction', 'quadrant_langagier'],
+  // Langues, lettres et arts (jusqu’ici sans illustration)
+  francais: ['quadrant_langagier', 'pyramide_maslow'],
+  anglais: ['quadrant_langagier', 'planning_organisation'],
+  espagnol: ['quadrant_langagier', 'transmission_orale'],
+  arabe: ['quadrant_langagier', 'transmission_orale'],
+  allemand: ['quadrant_langagier', 'planning_organisation'],
+  portugais_lusophone: ['quadrant_langagier', 'transmission_orale'],
+  chinois_mandarin: ['quadrant_langagier', 'transmission_orale'],
+  linguistique_oralite: ['transmission_orale', 'quadrant_langagier'],
+  litterature_africaine: ['transmission_orale', 'pyramide_maslow'],
+  latin_grec: ['transmission_orale', 'separation_pouvoirs'],
+  arts_plastiques: ['arts_composition', 'pyramide_maslow'],
+  technologie_college: ['planning_organisation', 'circuit_electrique_serie'],
+  methodes_travail: ['planning_organisation', 'pyramide_maslow'],
+  preparation_bac: ['planning_organisation', 'pyramide_maslow'],
   // Santé, anatomie & biologie
   anatomie_physio: ['corps_humain', 'squelette', 'appareil_digestif', 'appareil_respiratoire', 'systeme_nerveux', 'cycle_cardiaque'],
   medecine_clinique: ['corps_humain', 'cycle_cardiaque', 'appareil_respiratoire', 'score_apgar'],

@@ -181,6 +181,11 @@ import {
   ALL_X21_MODULES,
 } from './extensionV21';
 import {
+  buildNewSubjectsV25,
+  buildBoostV25,
+} from './extensionV25/builder';
+import { NEW_SUBJECTS_V25 } from './newSubjectsV25/subjects';
+import {
   buildNewSubjectsV24,
   buildBoostV24,
 } from './extensionV24/builder';
@@ -496,8 +501,10 @@ export const SUBJECTS = [
   ...MILLENNIUM_NEW_SUBJECTS,
   ...TRADING_NEW_SUBJECTS,
   ...COLLEGE_LYCEE_NEW_SUBJECTS,
-  // v24.0 — dix nouvelles matières créées (90 chapitres chacune après consolidation)
+  // v24.0 — dix nouvelles matières créées (100 chapitres chacune après consolidation)
   ...NEW_SUBJECTS_V24,
+  // v25.0 — huit nouvelles matières illustrées (90 chapitres chacune après consolidation)
+  ...NEW_SUBJECTS_V25,
 ].map((s) => ({
   ...s,
   classLevels:
@@ -519,7 +526,10 @@ export const SUBJECTS = [
  * Les nouvelles matières v24.0 reçoivent leur propre programme puis la consolidation v24.0.
  */
 const NEW_SUBJECT_IDS_V24 = new Set(NEW_SUBJECTS_V24.map((s) => s.id));
-const LEGACY_SUBJECTS = SUBJECTS.filter((s) => !NEW_SUBJECT_IDS_V24.has(s.id));
+const NEW_SUBJECT_IDS_V25 = new Set(NEW_SUBJECTS_V25.map((s) => s.id));
+const LEGACY_SUBJECTS = SUBJECTS.filter((s) => !NEW_SUBJECT_IDS_V24.has(s.id) && !NEW_SUBJECT_IDS_V25.has(s.id));
+/** Les 117 matières présentes avant v25.0 (vagues v19.0 à v24.0 incluses). */
+const SUBJECTS_V24 = SUBJECTS.filter((s) => !NEW_SUBJECT_IDS_V25.has(s.id));
 
 const RAW_CHAPTERS_BASE = [
   ...BASE_CHAPTERS,
@@ -591,9 +601,19 @@ const RAW_CHAPTERS_WITH_NEW_SUBJECTS = [
 ];
 
 /** v24.0 — consolidation : 10 chapitres supplémentaires dans les 117 matières. */
-export const X24_EXTENSION = buildBoostV24(RAW_CHAPTERS_WITH_NEW_SUBJECTS, SUBJECTS);
+export const X24_EXTENSION = buildBoostV24(RAW_CHAPTERS_WITH_NEW_SUBJECTS, SUBJECTS_V24);
 
-const RAW_CHAPTERS = [...RAW_CHAPTERS_WITH_NEW_SUBJECTS, ...X24_EXTENSION.chapters];
+const RAW_CHAPTERS_V24 = [...RAW_CHAPTERS_WITH_NEW_SUBJECTS, ...X24_EXTENSION.chapters];
+
+/** v25.0 — huit nouvelles matières illustrées, 80 chapitres chacune. */
+export const X25_NEW_SUBJECTS_EXTENSION = buildNewSubjectsV25(RAW_CHAPTERS_V24, NEW_SUBJECTS_V25);
+
+const RAW_CHAPTERS_WITH_V25_SUBJECTS = [...RAW_CHAPTERS_V24, ...X25_NEW_SUBJECTS_EXTENSION.chapters];
+
+/** v25.0 — approfondissement illustré : 10 chapitres de plus dans les 125 matières. */
+export const X25_EXTENSION = buildBoostV25(RAW_CHAPTERS_WITH_V25_SUBJECTS, SUBJECTS);
+
+const RAW_CHAPTERS = [...RAW_CHAPTERS_WITH_V25_SUBJECTS, ...X25_EXTENSION.chapters];
 
 // Attribuer un niveau de classe (6e → Master) à 100% des chapitres sans écraser les attributions explicites
 const UNASSIGNED_BY_SUBJECT: Record<string, string[]> = {};
@@ -649,6 +669,8 @@ export const COURSES = [
   // v24.0 — nouvelles matières + consolidation
   ...X24_NEW_SUBJECTS_EXTENSION.courses,
   ...X24_EXTENSION.courses,
+  ...X25_NEW_SUBJECTS_EXTENSION.courses,
+  ...X25_EXTENSION.courses,
 ].map((crs) => ({
   ...crs,
   classLevel: crs.classLevel ?? CHAPTER_CLASS_MAP[crs.chapterId] ?? getSubjectClassLevels(crs.subjectId)[0],
@@ -684,6 +706,8 @@ export const FICHES = [
   // v24.0 — nouvelles matières + consolidation
   ...X24_NEW_SUBJECTS_EXTENSION.fiches,
   ...X24_EXTENSION.fiches,
+  ...X25_NEW_SUBJECTS_EXTENSION.fiches,
+  ...X25_EXTENSION.fiches,
 ].map((fic) => ({
   ...fic,
   classLevel: fic.classLevel ?? CHAPTER_CLASS_MAP[fic.chapterId] ?? getSubjectClassLevels(fic.subjectId)[0],
@@ -718,6 +742,8 @@ const CORE_AND_MEGA_QUESTIONS = [
   // v24.0 — nouvelles matières + consolidation
   ...X24_NEW_SUBJECTS_EXTENSION.questions,
   ...X24_EXTENSION.questions,
+  ...X25_NEW_SUBJECTS_EXTENSION.questions,
+  ...X25_EXTENSION.questions,
 ];
 
 const SUBJECT_META_MAP: Record<string, { name: string; examIds: string[] }> = Object.fromEntries(
@@ -770,6 +796,8 @@ export const ANNALES = [
   // v24.0 — 381 annales (117 matières × 3 sujets + 30 nouvelles matières)
   ...X24_NEW_SUBJECTS_EXTENSION.annales,
   ...X24_EXTENSION.annales,
+  ...X25_NEW_SUBJECTS_EXTENSION.annales,
+  ...X25_EXTENSION.annales,
   // v22.0 — 24 annales inédites (6 nouveaux parcours × 4 sessions)
   ...buildAnnalesV22(QUESTIONS),
 ].map((a) => {
@@ -814,4 +842,6 @@ export const FLASHCARDS = [
   // v24.0 — nouvelles matières + consolidation
   ...X24_NEW_SUBJECTS_EXTENSION.flashcards,
   ...X24_EXTENSION.flashcards,
+  ...X25_NEW_SUBJECTS_EXTENSION.flashcards,
+  ...X25_EXTENSION.flashcards,
 ];

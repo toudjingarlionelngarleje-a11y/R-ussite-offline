@@ -66,6 +66,15 @@ export const SECONDE_SCIENCE_SUBJECT_IDS: string[] = [
   'climat_adaptation',
   'economie_circulaire',
   'gerontologie',
+  // v25.0 — nouvelles matières professionnelles
+  'bibliotheconomie',
+  'demographie',
+  'economie_sante',
+  'esthetique_cosmetologie',
+  'securite_privee',
+  'mobilite_urbaine',
+  'fle_didactique',
+  'traduction_professionnelle',
 ];
 
 /** Matières de la voie littéraire en Seconde (2nde L / 2nde A). */
@@ -114,6 +123,15 @@ export const SECONDE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'climat_adaptation',
   'economie_circulaire',
   'gerontologie',
+  // v25.0 — nouvelles matières professionnelles
+  'bibliotheconomie',
+  'demographie',
+  'economie_sante',
+  'esthetique_cosmetologie',
+  'securite_privee',
+  'mobilite_urbaine',
+  'fle_didactique',
+  'traduction_professionnelle',
 ];
 
 /** Matières de la voie scientifique en Première (1ère S / C / D). */
@@ -166,6 +184,15 @@ export const PREMIERE_SCIENCE_SUBJECT_IDS: string[] = [
   'climat_adaptation',
   'economie_circulaire',
   'gerontologie',
+  // v25.0 — nouvelles matières professionnelles
+  'bibliotheconomie',
+  'demographie',
+  'economie_sante',
+  'esthetique_cosmetologie',
+  'securite_privee',
+  'mobilite_urbaine',
+  'fle_didactique',
+  'traduction_professionnelle',
 ];
 
 /** Matières de la voie littéraire en Première (1ère L / A4 / A5). */
@@ -209,6 +236,15 @@ export const PREMIERE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'climat_adaptation',
   'economie_circulaire',
   'gerontologie',
+  // v25.0 — nouvelles matières professionnelles
+  'bibliotheconomie',
+  'demographie',
+  'economie_sante',
+  'esthetique_cosmetologie',
+  'securite_privee',
+  'mobilite_urbaine',
+  'fle_didactique',
+  'traduction_professionnelle',
 ];
 
 /** Matières de la voie scientifique en Terminale (Tle S / C / D / E). */
@@ -282,6 +318,15 @@ export const TERMINALE_SCIENCE_SUBJECT_IDS: string[] = [
   'climat_adaptation',
   'economie_circulaire',
   'gerontologie',
+  // v25.0 — nouvelles matières professionnelles
+  'bibliotheconomie',
+  'demographie',
+  'economie_sante',
+  'esthetique_cosmetologie',
+  'securite_privee',
+  'mobilite_urbaine',
+  'fle_didactique',
+  'traduction_professionnelle',
 ];
 
 /**
@@ -359,4 +404,13 @@ export const TERMINALE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'climat_adaptation',
   'economie_circulaire',
   'gerontologie',
+  // v25.0 — nouvelles matières professionnelles
+  'bibliotheconomie',
+  'demographie',
+  'economie_sante',
+  'esthetique_cosmetologie',
+  'securite_privee',
+  'mobilite_urbaine',
+  'fle_didactique',
+  'traduction_professionnelle',
 ];

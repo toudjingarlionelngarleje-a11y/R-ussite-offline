@@ -262,6 +262,16 @@ export const SUBJECT_CLASS_PROFILES: Record<string, ClassLevelId[]> = {
   methodo_redaction: PREM_TO_MASTER,
   psychologie_cog: PREM_TO_MASTER,
 
+  // v25.0 — huit nouvelles matières professionnelles
+  bibliotheconomie: FROM_3E,
+  demographie: LYCEE_TO_MASTER,
+  economie_sante: TLE_TO_MASTER,
+  esthetique_cosmetologie: FROM_3E,
+  securite_privee: FROM_3E,
+  mobilite_urbaine: LYCEE_TO_MASTER,
+  fle_didactique: TLE_TO_MASTER,
+  traduction_professionnelle: TLE_TO_MASTER,
+
   // v24.0 — dix nouvelles matières transversales
   education_financiere: FROM_3E,
   entrepreneuriat: TLE_TO_MASTER,
