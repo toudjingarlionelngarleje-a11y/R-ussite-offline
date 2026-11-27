@@ -53,10 +53,14 @@ export type ClassLevelId =
   | '4e'
   | '3e'
   | '2nde'
+  | '2nde-s'
+  | '2nde-l'
   | '1ere'
   | '1ere-s'
   | '1ere-l'
   | 'terminale'
+  | 'terminale-s'
+  | 'terminale-l'
   | 'l1'
   | 'l2'
   | 'l3'
@@ -70,9 +74,9 @@ export interface ClassLevelMeta {
   cycleLabel: string;
   order: number;
   description: string;
-  /** Niveau technique (tronc commun de Première) masqué des sélecteurs de classe. */
+  /** Niveau technique (tronc commun de Seconde / Première / Terminale) masqué des sélecteurs. */
   hidden?: boolean;
-  /** Filière de la Première : scientifique, littéraire ou tronc commun partagé. */
+  /** Filière du niveau : scientifique, littéraire ou tronc commun partagé. */
   premiereStream?: 'science' | 'litteraire' | 'commun';
 }
 

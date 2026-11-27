@@ -38,13 +38,38 @@ export const CLASS_LEVELS: ClassLevelMeta[] = [
     description: 'Préparation complète au BEPC, DEF, BFEM et orientation lycée.',
   },
   {
+    id: '2nde-s',
+    label: 'Seconde Scientifique (2nde S / C)',
+    shortLabel: '2nde S',
+    cycle: 'lycee',
+    cycleLabel: 'Lycée',
+    order: 5.1,
+    premiereStream: 'science',
+    description:
+      'Filière scientifique de Seconde : mathématiques, physique-chimie, sciences de la vie et de la Terre, informatique et sciences de l’ingénieur — détermination du choix de série C ou D.',
+  },
+  {
+    id: '2nde-l',
+    label: 'Seconde Littéraire (2nde L / A)',
+    shortLabel: '2nde L',
+    cycle: 'lycee',
+    cycleLabel: 'Lycée',
+    order: 5.2,
+    premiereStream: 'litteraire',
+    description:
+      'Filière littéraire de Seconde : français, littérature, histoire-géographie, langues vivantes, culture générale et sciences humaines — détermination du choix de série A4 ou A5.',
+  },
+  {
     id: '2nde',
-    label: 'Seconde (2nde)',
-    shortLabel: '2nde',
+    label: 'Seconde — Tronc commun (2nde S & L)',
+    shortLabel: '2nde S/L',
     cycle: 'lycee',
     cycleLabel: 'Lycée',
     order: 5,
-    description: 'Tronc commun du lycée et découverte des filières scientifiques, littéraires et techniques.',
+    hidden: true,
+    premiereStream: 'commun',
+    description:
+      'Tronc commun national de Seconde (français, histoire-géographie, langues vivantes, EPS, éducation civique, mathématiques) suivi par les élèves des filières scientifique et littéraire.',
   },
   {
     id: '1ere-s',
@@ -81,13 +106,38 @@ export const CLASS_LEVELS: ClassLevelMeta[] = [
       'Tronc commun national de Première (français, histoire-géographie, langues vivantes, EPS, éducation civique) suivi par les élèves des filières scientifique et littéraire.',
   },
   {
+    id: 'terminale-s',
+    label: 'Terminale Scientifique (Tle S / C / D / E)',
+    shortLabel: 'Tle S',
+    cycle: 'lycee',
+    cycleLabel: 'Lycée',
+    order: 7.1,
+    premiereStream: 'science',
+    description:
+      'Filière scientifique de Terminale : mathématiques, physique-chimie, SVT, informatique et sciences de l’ingénieur — préparation du Baccalauréat séries C, D et E et des concours scientifiques.',
+  },
+  {
+    id: 'terminale-l',
+    label: 'Terminale Littéraire (Tle L / A · B · G)',
+    shortLabel: 'Tle L',
+    cycle: 'lycee',
+    cycleLabel: 'Lycée',
+    order: 7.2,
+    premiereStream: 'litteraire',
+    description:
+      'Filière littéraire et tertiaire de Terminale : philosophie, français et littérature, histoire-géographie, langues, sciences humaines, économie, droit et gestion — préparation du Baccalauréat séries A, B et G.',
+  },
+  {
     id: 'terminale',
-    label: 'Terminale (Tle · Bac)',
-    shortLabel: 'Tle',
+    label: 'Terminale — Tronc commun (Tle S & L)',
+    shortLabel: 'Tle S/L',
     cycle: 'lycee',
     cycleLabel: 'Lycée',
     order: 7,
-    description: 'Maîtrise complète des programmes du Baccalauréat et passerelle vers l’université.',
+    hidden: true,
+    premiereStream: 'commun',
+    description:
+      'Tronc commun national de Terminale (philosophie, français, histoire-géographie, langues vivantes, EPS, éducation civique) suivi par les élèves des filières scientifique et littéraire.',
   },
   {
     id: 'l1',
@@ -138,7 +188,7 @@ export const SCHOOL_CYCLES: {
     id: 'lycee',
     label: 'Lycée',
     rangeLabel: '2nde → Tle',
-    levels: ['2nde', '1ere-s', '1ere-l', 'terminale'],
+    levels: ['2nde-s', '2nde-l', '1ere-s', '1ere-l', 'terminale-s', 'terminale-l'],
   },
   {
     id: 'universite',
@@ -287,90 +337,83 @@ export const SUBJECT_CLASS_PROFILES: Record<string, ClassLevelId[]> = {
   audiovisuel_cinema_podcast: ALL_CLASSES,
 };
 
-/** Niveau technique du tronc commun de Première (partagé par les deux filières). */
+import {
+  SECONDE_SCIENCE_SUBJECT_IDS,
+  SECONDE_LITTERAIRE_SUBJECT_IDS,
+  PREMIERE_SCIENCE_SUBJECT_IDS,
+  PREMIERE_LITTERAIRE_SUBJECT_IDS,
+  TERMINALE_SCIENCE_SUBJECT_IDS,
+  TERMINALE_LITTERAIRE_SUBJECT_IDS,
+} from './streamSubjects';
+
+export {
+  SECONDE_SCIENCE_SUBJECT_IDS,
+  SECONDE_LITTERAIRE_SUBJECT_IDS,
+  PREMIERE_SCIENCE_SUBJECT_IDS,
+  PREMIERE_LITTERAIRE_SUBJECT_IDS,
+  TERMINALE_SCIENCE_SUBJECT_IDS,
+  TERMINALE_LITTERAIRE_SUBJECT_IDS,
+} from './streamSubjects';
+
+/** Niveaux techniques (tronc commun) partagés par les deux filières du lycée. */
+export const STREAM_BASE_LEVELS: ClassLevelId[] = ['2nde', '1ere', 'terminale'];
+
+/** Niveau technique du tronc commun de Première (compatibilité v17.7). */
 export const PREMIERE_CORE_LEVEL: ClassLevelId = '1ere';
 
-/** Les deux filières explicites de Première. */
-export const PREMIERE_STREAM_LEVELS: ClassLevelId[] = ['1ere-s', '1ere-l'];
-
-/** Niveaux affichés dans les sélecteurs (le tronc commun technique reste masqué). */
-export const SELECTABLE_CLASS_LEVELS: ClassLevelMeta[] = CLASS_LEVELS.filter((c) => !c.hidden);
-
-/** Matières enseignées en Première scientifique (spécialités + tronc commun). */
-export const PREMIERE_SCIENCE_SUBJECT_IDS: string[] = [
-  'maths',
-  'physique',
-  'svt',
-  'chimie_bio',
-  'chimie_organique',
-  'informatique',
-  'technologie_robotique',
-  'statistiques',
-  'genetique_biotech',
-  'electronique_electrotech',
-  'astronomie_spatial',
-  'hydrologie_eau_climat',
-  'energies_renouv',
-  'agronomie_env',
-  'genie_mecanique',
-  'thermodynamique_froid',
-  'genie_chimique_procedes',
-  'science_materiaux',
-  'genie_logiciel_devops',
-  'bases_donnees_bigdata',
-  'developpement_mobile_web',
-  'iot_systemes_embarques',
-  'francais',
-  'anglais',
-  'histoire_geo',
-  'eps_sciences_sport',
-  'educ_civique',
-  'culture_gen',
-  'arabe',
-  'espagnol',
-  'allemand',
-  'methodo_redaction',
-];
-
-/** Matières enseignées en Première littéraire (spécialités + tronc commun). */
-export const PREMIERE_LITTERAIRE_SUBJECT_IDS: string[] = [
-  'francais',
-  'philo',
-  'histoire_geo',
-  'litterature_africaine',
-  'anglais',
-  'espagnol',
-  'allemand',
-  'arabe',
-  'portugais_lusophone',
-  'chinois_mandarin',
-  'culture_gen',
-  'linguistique_oralite',
-  'methodo_redaction',
-  'arts_musique_patrimoine',
-  'audiovisuel_cinema_podcast',
-  'journalisme_comm',
-  'sociologie_anthropo',
-  'psychologie_cog',
-  'archeologie_histoire_afrique',
-  'geographie_amenagement',
-  'maths',
-  'svt',
-  'eps_sciences_sport',
-  'educ_civique',
-];
-
-const STREAM_SUBJECTS: Record<'1ere-s' | '1ere-l', string[]> = {
-  '1ere-s': PREMIERE_SCIENCE_SUBJECT_IDS,
-  '1ere-l': PREMIERE_LITTERAIRE_SUBJECT_IDS,
+/** Filières dérivées d'un niveau technique, dans l'ordre scientifique puis littéraire. */
+export const STREAM_LEVELS_BY_BASE: Partial<Record<ClassLevelId, [ClassLevelId, ClassLevelId]>> = {
+  '2nde': ['2nde-s', '2nde-l'],
+  '1ere': ['1ere-s', '1ere-l'],
+  terminale: ['terminale-s', 'terminale-l'],
 };
 
-/** La matière est-elle enseignée dans cette filière de Première ? */
+/** Les deux filières explicites de Première (compatibilité v17.7). */
+export const PREMIERE_STREAM_LEVELS: ClassLevelId[] = ['1ere-s', '1ere-l'];
+
+/** Les six filières du lycée (2nde, 1ère, Terminale). */
+export const LYCEE_STREAM_LEVELS: ClassLevelId[] = [
+  '2nde-s',
+  '2nde-l',
+  '1ere-s',
+  '1ere-l',
+  'terminale-s',
+  'terminale-l',
+];
+
+/** Niveau technique d'origine d'une filière (2nde-s → 2nde). */
+export const STREAM_BASE_BY_LEVEL: Partial<Record<ClassLevelId, ClassLevelId>> = Object.entries(
+  STREAM_LEVELS_BY_BASE
+).reduce((acc, [base, streams]) => {
+  for (const stream of streams) acc[stream] = base as ClassLevelId;
+  return acc;
+}, {} as Partial<Record<ClassLevelId, ClassLevelId>>);
+
+/** Niveaux affichés dans les sélecteurs (les troncs communs techniques restent masqués). */
+export const SELECTABLE_CLASS_LEVELS: ClassLevelMeta[] = CLASS_LEVELS.filter((c) => !c.hidden);
+
+/** Matières enseignées dans chaque filière du lycée. */
+export const STREAM_SUBJECTS: Partial<Record<ClassLevelId, string[]>> = {
+  '2nde-s': SECONDE_SCIENCE_SUBJECT_IDS,
+  '2nde-l': SECONDE_LITTERAIRE_SUBJECT_IDS,
+  '1ere-s': PREMIERE_SCIENCE_SUBJECT_IDS,
+  '1ere-l': PREMIERE_LITTERAIRE_SUBJECT_IDS,
+  'terminale-s': TERMINALE_SCIENCE_SUBJECT_IDS,
+  'terminale-l': TERMINALE_LITTERAIRE_SUBJECT_IDS,
+};
+
+/** La matière est-elle enseignée dans cette filière du lycée ? */
+export function isSubjectInStream(subjectId: string, stream: ClassLevelId): boolean {
+  const subjects = STREAM_SUBJECTS[stream];
+  return subjects ? subjects.includes(subjectId) : false;
+}
+
+/** Compatibilité v17.7 : filière de Première. */
 export function isSubjectInPremiereStream(
   subjectId: string,
   stream: '1ere-s' | '1ere-l'
 ): boolean {
-  return STREAM_SUBJECTS[stream].includes(subjectId);
+  return isSubjectInStream(subjectId, stream);
 }
 
 /**
@@ -384,42 +427,38 @@ export function chapterMatchesLevel(
 ): boolean {
   if (!chapterLevel) return false;
   if (chapterLevel === selectedLevel) return true;
-  if (
-    chapterLevel === PREMIERE_CORE_LEVEL &&
-    (selectedLevel === '1ere-s' || selectedLevel === '1ere-l')
-  ) {
-    return subjectId ? isSubjectInPremiereStream(subjectId, selectedLevel) : true;
+  const base = STREAM_BASE_BY_LEVEL[selectedLevel];
+  if (base && chapterLevel === base) {
+    return subjectId ? isSubjectInStream(subjectId, selectedLevel) : true;
   }
   return false;
 }
 
 /**
- * Remplace le niveau technique « 1ere » par les filières réellement enseignées
- * pour la matière concernée (scientifique, littéraire, ou les deux).
+ * Remplace chaque niveau technique du lycée (2nde, 1ere, terminale) par les
+ * filières réellement enseignées pour la matière concernée.
  */
-export function expandPremiereStreamLevels(
-  levels: ClassLevelId[],
-  subjectId?: string
-): ClassLevelId[] {
-  if (!levels.includes(PREMIERE_CORE_LEVEL)) return levels;
-  const streams: ClassLevelId[] = [];
-  if (!subjectId || isSubjectInPremiereStream(subjectId, '1ere-s')) streams.push('1ere-s');
-  if (!subjectId || isSubjectInPremiereStream(subjectId, '1ere-l')) streams.push('1ere-l');
+export function expandStreamLevels(levels: ClassLevelId[], subjectId?: string): ClassLevelId[] {
   const out: ClassLevelId[] = [];
   for (const level of levels) {
-    if (level === PREMIERE_CORE_LEVEL) {
-      if (streams.length === 0) continue; // matière non enseignée en Première
-      out.push(...streams);
-    } else {
+    const streams = STREAM_LEVELS_BY_BASE[level];
+    if (!streams) {
       out.push(level);
+      continue;
     }
+    const relevant = subjectId ? streams.filter((s) => isSubjectInStream(subjectId, s)) : streams;
+    if (relevant.length === 0) continue; // matière non enseignée à ce niveau
+    out.push(...relevant);
   }
   return Array.from(new Set(out));
 }
 
-/** Liste de classes d'une matière, filières de Première incluses et filtrées. */
+/** Compatibilité v17.7 : ancien nom de `expandStreamLevels`. */
+export const expandPremiereStreamLevels = expandStreamLevels;
+
+/** Liste de classes d'une matière, filières du lycée incluses et filtrées. */
 export function getSubjectClassLevelsExpanded(subjectId: string): ClassLevelId[] {
-  return expandPremiereStreamLevels(getSubjectClassLevels(subjectId), subjectId);
+  return expandStreamLevels(getSubjectClassLevels(subjectId), subjectId);
 }
 
 const CLASS_LEVEL_MAP: Record<ClassLevelId, ClassLevelMeta> = Object.fromEntries(

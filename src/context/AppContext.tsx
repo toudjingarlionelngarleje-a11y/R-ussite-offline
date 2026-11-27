@@ -3125,7 +3125,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const backup = {
       exportedAt: new Date().toISOString(),
       owner: activeProfile?.email,
-      appVersion: 'Réussite Offline v17.7 — Première S / L + Bouclier 36 + Console Propriétaire',
+      appVersion: 'Réussite Offline v17.8 — Lycée S / L (2nde, 1ère, Tle) + Bouclier 36 + Console Propriétaire',
       catalogSummary: {
         exams: EXAMS.length,
         subjects: SUBJECTS.length,

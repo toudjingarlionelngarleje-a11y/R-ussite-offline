@@ -107,6 +107,15 @@ import {
   PREMIERE_QUESTIONS,
 } from './premiereStreams';
 import {
+  LYCEE_ANNALES,
+  LYCEE_CHAPTERS,
+  LYCEE_COURSES,
+  LYCEE_FICHES,
+  LYCEE_FLASHCARDS,
+  LYCEE_NEW_EXAMS,
+  LYCEE_QUESTIONS,
+} from './lyceeStreams';
+import {
   CLASS_LEVELS,
   HYPER72_ANNALES,
   HYPER72_CHAPTERS,
@@ -191,7 +200,17 @@ export function mapStudyLevelToClassId(
   if (s.includes('5e') || s.includes('cinquième')) return '5e';
   if (s.includes('4e') || s.includes('quatrième')) return '4e';
   if (s.includes('3e') || s.includes('troisième') || s.includes('bepc')) return '3e';
-  if (s.includes('2nde') || s.includes('seconde')) return '2nde';
+  if (s.includes('2nde') || s.includes('seconde')) {
+    const literary =
+      /littéraire|litteraire|série a|serie a|2nde l|2nde a/.test(s);
+    const scientific = /scientifique|série c|serie c|2nde s|2nde c/.test(s);
+    if (literary) return '2nde-l';
+    if (scientific) return '2nde-s';
+    if (examId === 'seconde-litteraire' || examId === 'bac-litteraire' || examId === 'bac-a4-lettres') {
+      return '2nde-l';
+    }
+    return '2nde-s';
+  }
   if (
     s.includes('première') ||
     s.includes('1ère') ||
@@ -211,7 +230,23 @@ export function mapStudyLevelToClassId(
     }
     return '1ere-s';
   }
-  if (s.includes('terminale') || s.includes('baccalauréat') || s.includes('tle')) return 'terminale';
+  if (s.includes('terminale') || s.includes('baccalauréat') || s.includes('tle')) {
+    const literary =
+      /littéraire|litteraire|série a|serie a|série b|serie b|série g|serie g|tle l|tle a|a4|a5/.test(s);
+    const scientific =
+      /scientifique|série c|serie c|série d|serie d|série e|serie e|tle s|tle c|tle d|tle e/.test(s);
+    if (literary) return 'terminale-l';
+    if (scientific) return 'terminale-s';
+    if (
+      examId === 'terminale-litteraire' ||
+      examId === 'bac-litteraire' ||
+      examId === 'bac-a4-lettres' ||
+      examId === 'bac-b-economie'
+    ) {
+      return 'terminale-l';
+    }
+    return 'terminale-s';
+  }
   if (s.includes('licence 1') || s.includes('bts 1') || s.includes('l1')) return 'l1';
   if (s.includes('licence 2') || s.includes('bts 2') || s.includes('l2')) return 'l2';
   if (s.includes('licence 3') || s.includes('bachelor') || s.includes('l3')) return 'l3';
@@ -258,6 +293,7 @@ export const EXAMS: ExamTrack[] = [
   ...MILLENNIUM_NEW_EXAMS,
   ...TRADING_NEW_EXAMS,
   ...PREMIERE_NEW_EXAMS,
+  ...LYCEE_NEW_EXAMS,
 ].map((exam) => ({
   ...exam,
   classLevels: inferExamClassLevels(exam),
@@ -454,6 +490,8 @@ const RAW_CHAPTERS = [
   ...TRADING_CHAPTERS,
   // v17.7 — 200 chapitres dédiés à la Première (100 scientifique + 100 littéraire)
   ...PREMIERE_CHAPTERS,
+  // v17.8 — 400 chapitres dédiés à la Seconde et à la Terminale (S et L)
+  ...LYCEE_CHAPTERS,
 ];
 
 // Attribuer un niveau de classe (6e → Master) à 100% des chapitres sans écraser les attributions explicites
@@ -496,6 +534,8 @@ export const COURSES = [
   ...MILLENNIUM_COURSES,
   ...TRADING_COURSES,
   ...PREMIERE_COURSES,
+  // v17.8 — 400 chapitres dédiés à la Seconde et à la Terminale (S et L)
+  ...LYCEE_COURSES,
 ].map((crs) => ({
   ...crs,
   classLevel: crs.classLevel ?? CHAPTER_CLASS_MAP[crs.chapterId] ?? getSubjectClassLevels(crs.subjectId)[0],
@@ -517,6 +557,8 @@ export const FICHES = [
   ...MILLENNIUM_FICHES,
   ...TRADING_FICHES,
   ...PREMIERE_FICHES,
+  // v17.8 — 400 chapitres dédiés à la Seconde et à la Terminale (S et L)
+  ...LYCEE_FICHES,
 ].map((fic) => ({
   ...fic,
   classLevel: fic.classLevel ?? CHAPTER_CLASS_MAP[fic.chapterId] ?? getSubjectClassLevels(fic.subjectId)[0],
@@ -537,6 +579,8 @@ const CORE_AND_MEGA_QUESTIONS = [
   ...MILLENNIUM_QUESTIONS,
   ...TRADING_QUESTIONS,
   ...PREMIERE_QUESTIONS,
+  // v17.8 — 400 chapitres dédiés à la Seconde et à la Terminale (S et L)
+  ...LYCEE_QUESTIONS,
 ];
 
 const SUBJECT_META_MAP: Record<string, { name: string; examIds: string[] }> = Object.fromEntries(
@@ -574,6 +618,8 @@ export const ANNALES = [
   ...MILLENNIUM_ANNALES,
   ...TRADING_ANNALES,
   ...PREMIERE_ANNALES,
+  // v17.8 — 400 chapitres dédiés à la Seconde et à la Terminale (S et L)
+  ...LYCEE_ANNALES,
 ].map((a) => {
   const examClasses = EXAM_CLASS_MAP[a.examId];
   const subjectClasses = getSubjectClassLevels(a.subjectId);
@@ -602,4 +648,6 @@ export const FLASHCARDS = [
   ...MILLENNIUM_FLASHCARDS,
   ...TRADING_FLASHCARDS,
   ...PREMIERE_FLASHCARDS,
+  // v17.8 — 400 chapitres dédiés à la Seconde et à la Terminale (S et L)
+  ...LYCEE_FLASHCARDS,
 ];

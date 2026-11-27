@@ -25,10 +25,12 @@ export const COUNTRIES = [
 ];
 
 export const STUDY_LEVELS = [
-  'Seconde / 2nde',
+  'Seconde S / 2nde C (scientifique)',
+  'Seconde L / 2nde A (littéraire)',
   'Première S / 1ère C-D (scientifique)',
   'Première L / 1ère A4-A5 (littéraire)',
-  'Terminale (Baccalauréat)',
+  'Terminale S / Tle C-D-E (scientifique)',
+  'Terminale L / Tle A4-A5 (littéraire)',
   'Licence 1 / BTS 1',
   'Licence 2 / BTS 2',
   'Licence 3 / Bachelor',

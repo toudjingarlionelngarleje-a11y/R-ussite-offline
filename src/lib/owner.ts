@@ -11,7 +11,7 @@ export const OWNER_PROFILE_IDS = ['profile-1795361028411'];
 export const DEFAULT_OWNER_SETTINGS: OwnerGlobalSettings = {
   announcementEnabled: false,
   announcementText:
-    'Bienvenue sur Réussite Offline ! Prépare tes examens et concours 2026 avec 67 examens & concours, 101 matières, 10 300 chapitres, 100 pare-feux WAF et 134 systèmes de sécurité actifs — dont la Première désormais scindée en filière scientifique (1ère S) et littéraire (1ère L), avec 100 nouveaux chapitres dédiés à chacune.',
+    'Bienvenue sur Réussite Offline ! Prépare tes examens et concours 2026 avec 71 examens & concours, 101 matières, 10 700 chapitres, 100 pare-feux WAF et 134 systèmes de sécurité actifs — dont le lycée désormais organisé en filières scientifiques et littéraires dès la Seconde, avec 400 nouveaux chapitres dédiés à la 2nde S/L, la 1ère S/L et la Tle S/L.',
   announcementTone: 'info',
   maintenanceMode: false,
   registrationsOpen: true,
