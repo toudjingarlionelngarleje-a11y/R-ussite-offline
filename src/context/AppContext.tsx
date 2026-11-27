@@ -3126,7 +3126,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const backup = {
       exportedAt: new Date().toISOString(),
       owner: activeProfile?.email,
-      appVersion: `Réussite Offline v22.0 — ${CHAPTERS.length} chapitres, Coach IA ${COACH_KNOWLEDGE_STATS.notions} notions & ${COACH_KNOWLEDGE_STATS.methods} méthodes hors ligne + Bouclier 36 + Console Propriétaire`,
+      appVersion: `Réussite Offline v23.0 — ${CHAPTERS.length} chapitres, Coach IA ${COACH_KNOWLEDGE_STATS.notions} notions & ${COACH_KNOWLEDGE_STATS.methods} méthodes hors ligne + Bouclier 36 + Console Propriétaire`,
       catalogSummary: {
         exams: EXAMS.length,
         subjects: SUBJECTS.length,

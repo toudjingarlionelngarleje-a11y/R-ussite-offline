@@ -180,6 +180,11 @@ import {
   extensionCoverage as extensionCoverageV21,
   ALL_X21_MODULES,
 } from './extensionV21';
+import {
+  buildExtensionV23,
+  extensionCoverage as extensionCoverageV23,
+  ALL_X23_MODULES,
+} from './extensionV23';
 import { V22_EXAMS, V22_EXAM_LINKS, buildAnnalesV22 } from './extensionV22';
 import {
   TRADING_ANNALES,
@@ -555,7 +560,13 @@ const RAW_CHAPTERS_V20 = [...RAW_CHAPTERS_V19, ...X20_EXTENSION.chapters];
 export const X21_EXTENSION = buildExtensionV21(RAW_CHAPTERS_V20, SUBJECTS);
 export const X21_COVERAGE = extensionCoverageV21(ALL_X21_MODULES);
 
-const RAW_CHAPTERS = [...RAW_CHAPTERS_V20, ...X21_EXTENSION.chapters];
+const RAW_CHAPTERS_V21 = [...RAW_CHAPTERS_V20, ...X21_EXTENSION.chapters];
+
+/** v23.0 — quatrième vague : 10 chapitres inédits dans chacune des 107 matières. */
+export const X23_EXTENSION = buildExtensionV23(RAW_CHAPTERS_V21, SUBJECTS);
+export const X23_COVERAGE = extensionCoverageV23(ALL_X23_MODULES);
+
+const RAW_CHAPTERS = [...RAW_CHAPTERS_V21, ...X23_EXTENSION.chapters];
 
 // Attribuer un niveau de classe (6e → Master) à 100% des chapitres sans écraser les attributions explicites
 const UNASSIGNED_BY_SUBJECT: Record<string, string[]> = {};
@@ -607,6 +618,7 @@ export const COURSES = [
   ...X20_EXTENSION.courses,
   // v21.0 — 1 070 cours supplémentaires (107 matières × 10)
   ...X21_EXTENSION.courses,
+  ...X23_EXTENSION.courses,
 ].map((crs) => ({
   ...crs,
   classLevel: crs.classLevel ?? CHAPTER_CLASS_MAP[crs.chapterId] ?? getSubjectClassLevels(crs.subjectId)[0],
@@ -638,6 +650,7 @@ export const FICHES = [
   ...X20_EXTENSION.fiches,
   // v21.0 — 1 070 fiches supplémentaires (107 matières × 10)
   ...X21_EXTENSION.fiches,
+  ...X23_EXTENSION.fiches,
 ].map((fic) => ({
   ...fic,
   classLevel: fic.classLevel ?? CHAPTER_CLASS_MAP[fic.chapterId] ?? getSubjectClassLevels(fic.subjectId)[0],
@@ -668,6 +681,7 @@ const CORE_AND_MEGA_QUESTIONS = [
   ...X20_EXTENSION.questions,
   // v21.0 — 1 070 QCM supplémentaires (107 matières × 10)
   ...X21_EXTENSION.questions,
+  ...X23_EXTENSION.questions,
 ];
 
 const SUBJECT_META_MAP: Record<string, { name: string; examIds: string[] }> = Object.fromEntries(
@@ -715,6 +729,8 @@ export const ANNALES = [
   ...X20_EXTENSION.annales,
   // v21.0 — 321 annales supplémentaires (107 matières × 3 sujets)
   ...X21_EXTENSION.annales,
+  // v23.0 — 321 annales supplémentaires (107 matières × 3 sujets)
+  ...X23_EXTENSION.annales,
   // v22.0 — 24 annales inédites (6 nouveaux parcours × 4 sessions)
   ...buildAnnalesV22(QUESTIONS),
 ].map((a) => {
@@ -755,4 +771,5 @@ export const FLASHCARDS = [
   ...X20_EXTENSION.flashcards,
   // v21.0 — 1 070 flashcards supplémentaires (107 matières × 10)
   ...X21_EXTENSION.flashcards,
+  ...X23_EXTENSION.flashcards,
 ];
