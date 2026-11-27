@@ -543,7 +543,7 @@ export const ActiveMethodScreen: React.FC = () => {
               onChange={(e) => setClassFilter(e.target.value as 'all' | ClassLevelId)}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             >
-              <option value="all">Toutes (100 ch.)</option>
+              <option value="all">Toutes les classes</option>
               {SELECTABLE_CLASS_LEVELS.map((cl) => (
                 <option key={cl.id} value={cl.id}>
                   {cl.label}
@@ -585,7 +585,7 @@ export const ActiveMethodScreen: React.FC = () => {
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400">
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-slate-100 px-2.5 py-0.5 font-bold text-slate-800 dark:bg-slate-800 dark:text-slate-200">
-              Chapitre {chapter.order}/100
+              Chapitre {chapter.order}/{subjectChapters.length}
             </span>
             <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 font-bold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
               Niveau : {chapter.classLevel?.toUpperCase() ?? 'Général'}

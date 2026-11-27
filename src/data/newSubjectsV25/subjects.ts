@@ -15,7 +15,7 @@ export const NEW_SUBJECTS_V25: Subject[] = [
     color: '#B45309',
     icon: 'Library',
     description:
-      '90 chapitres : chaîne du document, classification et indexation, catalogage, recherche d’information, numérisation du patrimoine, médiation culturelle, droit d’auteur et SIGB.',
+      '100 chapitres : chaîne du document, classification et indexation, catalogage, recherche d’information, numérisation du patrimoine, médiation culturelle, droit d’auteur et SIGB.',
     sizeKb: 355,
   },
   {
@@ -27,7 +27,7 @@ export const NEW_SUBJECTS_V25: Subject[] = [
     color: '#0F766E',
     icon: 'Users',
     description:
-      '90 chapitres : sources et qualité des données, structure par âge, fécondité, mortalité, migrations, projections, transition démographique et politiques de population.',
+      '100 chapitres : sources et qualité des données, structure par âge, fécondité, mortalité, migrations, projections, transition démographique et politiques de population.',
     sizeKb: 360,
   },
   {
@@ -39,7 +39,7 @@ export const NEW_SUBJECTS_V25: Subject[] = [
     color: '#BE123C',
     icon: 'Activity',
     description:
-      '90 chapitres : demande et offre de soins, financement des systèmes, coût-efficacité, économie du médicament, prévention, inégalités sociales et gouvernance sanitaire.',
+      '100 chapitres : demande et offre de soins, financement des systèmes, coût-efficacité, économie du médicament, prévention, inégalités sociales et gouvernance sanitaire.',
     sizeKb: 350,
   },
   {
@@ -51,7 +51,7 @@ export const NEW_SUBJECTS_V25: Subject[] = [
     color: '#DB2777',
     icon: 'Sparkles',
     description:
-      '90 chapitres : physiologie de la peau, hygiène et asepsie, soins du visage, cosmétologie et formulation, épilation, onglerie, coloration et réglementation des instituts.',
+      '100 chapitres : physiologie de la peau, hygiène et asepsie, soins du visage, cosmétologie et formulation, épilation, onglerie, coloration et réglementation des instituts.',
     sizeKb: 345,
   },
   {
@@ -63,7 +63,7 @@ export const NEW_SUBJECTS_V25: Subject[] = [
     color: '#334155',
     icon: 'ShieldCheck',
     description:
-      '90 chapitres : cadre légal, analyse des risques, contrôle d’accès, vidéosurveillance, gestion des incidents, sécurité incendie, protection des personnes et prévention de la malveillance.',
+      '100 chapitres : cadre légal, analyse des risques, contrôle d’accès, vidéosurveillance, gestion des incidents, sécurité incendie, protection des personnes et prévention de la malveillance.',
     sizeKb: 350,
   },
   {
@@ -75,7 +75,7 @@ export const NEW_SUBJECTS_V25: Subject[] = [
     color: '#1D4ED8',
     icon: 'Bus',
     description:
-      '90 chapitres : diagnostic des déplacements, transports collectifs, intermodalité, mobilités actives, gestion du trafic, stationnement, plans de mobilité et évaluation des projets.',
+      '100 chapitres : diagnostic des déplacements, transports collectifs, intermodalité, mobilités actives, gestion du trafic, stationnement, plans de mobilité et évaluation des projets.',
     sizeKb: 365,
   },
   {
@@ -87,7 +87,7 @@ export const NEW_SUBJECTS_V25: Subject[] = [
     color: '#7C3AED',
     icon: 'Languages',
     description:
-      '90 chapitres : cadres de référence, quatre compétences langagières, progression, grammaire explicite, phonétique corrective, évaluation et certifications, interculturel et classe hybride.',
+      '100 chapitres : cadres de référence, quatre compétences langagières, progression, grammaire explicite, phonétique corrective, évaluation et certifications, interculturel et classe hybride.',
     sizeKb: 355,
   },
   {
@@ -99,7 +99,7 @@ export const NEW_SUBJECTS_V25: Subject[] = [
     color: '#0369A1',
     icon: 'Languages',
     description:
-      '90 chapitres : analyse du texte source, terminologie, traduction spécialisée, révision et assurance qualité, localisation, interprétation, outils CAT et déontologie du traducteur.',
+      '100 chapitres : analyse du texte source, terminologie, traduction spécialisée, révision et assurance qualité, localisation, interprétation, outils CAT et déontologie du traducteur.',
     sizeKb: 360,
   },
 ];

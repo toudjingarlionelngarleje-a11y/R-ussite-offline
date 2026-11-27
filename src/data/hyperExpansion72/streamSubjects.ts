@@ -75,6 +75,14 @@ export const SECONDE_SCIENCE_SUBJECT_IDS: string[] = [
   'mobilite_urbaine',
   'fle_didactique',
   'traduction_professionnelle',
+    'droit_notarial',
+  'immobilier_transaction',
+// v26.0
+  'blockchain_actifs_numeriques',
+  'horticulture_paysage',
+  'menuiserie_ebenisterie',
+  'jeu_video_esport',
+
 ];
 
 /** Matières de la voie littéraire en Seconde (2nde L / 2nde A). */
@@ -132,6 +140,12 @@ export const SECONDE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'mobilite_urbaine',
   'fle_didactique',
   'traduction_professionnelle',
+  // v26.0
+  'droit_notarial',
+  'immobilier_transaction',
+  'orthophonie_langage',
+  'kinesitherapie_reeducation',
+
 ];
 
 /** Matières de la voie scientifique en Première (1ère S / C / D). */
@@ -193,6 +207,15 @@ export const PREMIERE_SCIENCE_SUBJECT_IDS: string[] = [
   'mobilite_urbaine',
   'fle_didactique',
   'traduction_professionnelle',
+    'droit_notarial',
+  'immobilier_transaction',
+// v26.0
+  'blockchain_actifs_numeriques',
+  'horticulture_paysage',
+  'menuiserie_ebenisterie',
+  'jeu_video_esport',
+  'kinesitherapie_reeducation',
+
 ];
 
 /** Matières de la voie littéraire en Première (1ère L / A4 / A5). */
@@ -245,6 +268,11 @@ export const PREMIERE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'mobilite_urbaine',
   'fle_didactique',
   'traduction_professionnelle',
+  // v26.0
+  'droit_notarial',
+  'immobilier_transaction',
+  'orthophonie_langage',
+
 ];
 
 /** Matières de la voie scientifique en Terminale (Tle S / C / D / E). */
@@ -327,6 +355,16 @@ export const TERMINALE_SCIENCE_SUBJECT_IDS: string[] = [
   'mobilite_urbaine',
   'fle_didactique',
   'traduction_professionnelle',
+    'droit_notarial',
+  'immobilier_transaction',
+// v26.0
+  'blockchain_actifs_numeriques',
+  'kinesitherapie_reeducation',
+  'orthophonie_langage',
+  'horticulture_paysage',
+  'menuiserie_ebenisterie',
+  'jeu_video_esport',
+
 ];
 
 /**
@@ -413,4 +451,10 @@ export const TERMINALE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'mobilite_urbaine',
   'fle_didactique',
   'traduction_professionnelle',
+  // v26.0
+  'droit_notarial',
+  'immobilier_transaction',
+  'orthophonie_langage',
+  'jeu_video_esport',
+
 ];

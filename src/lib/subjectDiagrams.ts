@@ -77,6 +77,40 @@ export const DIAGRAM_META: Partial<Record<DiagramId, { title: string; summary: s
     title: 'Plan de classification et rayonnage',
     summary: 'Indices de sujet, cotes et ordre des ouvrages sur les rayons.',
   },
+
+  // v26.0 — Nouvelles illustrations pédagogiques
+  acte_authentique: {
+    title: 'Acte authentique et chaîne de validation',
+    summary: 'Parties, notaire et publicité foncière : de l’accord privé à l’acte opposable.',
+  },
+  reeducation_mouvement: {
+    title: 'Progression d’une rééducation fonctionnelle',
+    summary: 'Bilan mesuré, objectif, progression de charge et critères de reprise.',
+  },
+  marche_immobilier: {
+    title: 'Cycle d’une transaction immobilière',
+    summary: 'Estimation, mandat, dossier, financement et acte authentique.',
+  },
+  chaine_blocs: {
+    title: 'Chaîne de blocs et consensus',
+    summary: 'Blocs chaînés par hachage, validation par la majorité des nœuds.',
+  },
+  appareil_phonatoire: {
+    title: 'Appareil phonatoire',
+    summary: 'Souffle pulmonaire, vibration laryngée et résonance bucco-nasale.',
+  },
+  plan_paysager: {
+    title: 'Plan paysager et zonage',
+    summary: 'Usages, cheminements, massifs et palette végétale d’un jardin.',
+  },
+  assemblage_bois: {
+    title: 'Assemblages bois',
+    summary: 'Tenon-mortaise et queue d’aronde : la géométrie répond à l’effort.',
+  },
+  boucle_gameplay: {
+    title: 'Boucle de gameplay',
+    summary: 'Action, récompense, progression, playtest et itération.',
+  },
   mediation_triangle: {
     title: 'Triangle positions, intérêts, besoins',
     summary: 'Dépasser les positions pour négocier sur les intérêts et les besoins.',
@@ -277,6 +311,14 @@ const SUBJECT_GALLERIES: Record<string, DiagramId[]> = {
   gerontologie: ['roue_autonomie', 'corps_humain'],
   // v25.0 — huit nouvelles matières
   bibliotheconomie: ['plan_classification', 'cycle_projet'],
+  droit_notarial: ['acte_authentique', 'pyramide_normes', 'mediation_triangle'],
+  kinesitherapie_reeducation: ['reeducation_mouvement', 'squelette', 'couches_peau'],
+  immobilier_transaction: ['marche_immobilier', 'planning_organisation', 'bilan_syscohada'],
+  blockchain_actifs_numeriques: ['chaine_blocs', 'flux_fintech', 'reseau_neurones'],
+  orthophonie_langage: ['appareil_phonatoire', 'quadrant_langagier', 'reseau_neurones'],
+  horticulture_paysage: ['plan_paysager', 'coupe_sol', 'cycle_azote'],
+  menuiserie_ebenisterie: ['assemblage_bois', 'poutre_flexion', 'plan_classification'],
+  jeu_video_esport: ['boucle_gameplay', 'planning_organisation', 'quadrant_langagier'],
   demographie: ['pyramide_ages', 'couches_sig'],
   economie_sante: ['financement_sante', 'cycle_cardiaque'],
   esthetique_cosmetologie: ['couches_peau', 'corps_humain'],
@@ -292,7 +334,7 @@ const SUBJECT_GALLERIES: Record<string, DiagramId[]> = {
   allemand: ['quadrant_langagier', 'planning_organisation'],
   portugais_lusophone: ['quadrant_langagier', 'transmission_orale'],
   chinois_mandarin: ['quadrant_langagier', 'transmission_orale'],
-  linguistique_oralite: ['transmission_orale', 'quadrant_langagier'],
+  linguistique_oralite: ['appareil_phonatoire', 'transmission_orale', 'quadrant_langagier'],
   litterature_africaine: ['transmission_orale', 'pyramide_maslow'],
   latin_grec: ['transmission_orale', 'separation_pouvoirs'],
   arts_plastiques: ['arts_composition', 'pyramide_maslow'],
@@ -325,7 +367,7 @@ const SUBJECT_GALLERIES: Record<string, DiagramId[]> = {
   energies_renouv: ['photovoltaique', 'circuit_electrique_serie'],
   genie_mecanique: ['poutre_flexion', 'circuit_electrique_serie'],
   thermodynamique_froid: ['poutre_flexion', 'photovoltaique'],
-  genie_civil_btp: ['poutre_flexion', 'couches_geologiques'],
+  genie_civil_btp: ['assemblage_bois', 'poutre_flexion', 'couches_geologiques'],
   architecture_design: ['poutre_flexion', 'couches_sig'],
   genie_chimique_procedes: ['reaction_chimique', 'fonctions_chimie'],
   science_materiaux: ['couches_geologiques', 'poutre_flexion'],
@@ -337,14 +379,14 @@ const SUBJECT_GALLERIES: Record<string, DiagramId[]> = {
   genie_logiciel_devops: ['architecture_ia', 'modele_osi'],
   bases_donnees_bigdata: ['sql_relations', 'architecture_ia'],
   developpement_mobile_web: ['architecture_ia', 'modele_osi'],
-  design_ux_infographie: ['pyramide_maslow', 'architecture_ia'],
+  design_ux_infographie: ['boucle_gameplay', 'pyramide_maslow', 'architecture_ia'],
   iot_systemes_embarques: ['circuit_electrique_serie', 'modele_osi'],
   reseaux_telecoms: ['modele_osi', 'flux_fintech'],
   cybersecurite: ['modele_osi', 'architecture_ia'],
-  fintech_microfinance: ['flux_fintech', 'sql_relations'],
+  fintech_microfinance: ['chaine_blocs', 'flux_fintech', 'sql_relations'],
 
   // Droit, institutions, économie & gestion
-  droit: ['separation_pouvoirs', 'pyramide_normes'],
+  droit: ['acte_authentique', 'separation_pouvoirs', 'pyramide_normes'],
   droit_ohada: ['pyramide_normes', 'bilan_syscohada'],
   droit_penal_proc: ['separation_pouvoirs', 'pyramide_normes'],
   criminologie_securite: ['cycle_crise', 'separation_pouvoirs'],
@@ -375,7 +417,7 @@ const SUBJECT_GALLERIES: Record<string, DiagramId[]> = {
   commerce_maritime: ['incoterms_chaine', 'flux_fintech'],
 
   // Terre, climat & agronomie
-  agronomie_env: ['coupe_sol', 'cycle_azote', 'pyramide_alimentaire'],
+  agronomie_env: ['plan_paysager', 'coupe_sol', 'cycle_azote', 'pyramide_alimentaire'],
   agroalimentaire_transformation: ['coupe_sol', 'pyramide_alimentaire'],
   foresterie_biodiversite: ['coupe_sol', 'cycle_azote'],
   hydrologie_eau_climat: ['coupe_sol', 'couches_sig'],
@@ -383,7 +425,7 @@ const SUBJECT_GALLERIES: Record<string, DiagramId[]> = {
   peche_aquaculture: ['coupe_sol', 'cycle_azote'],
   veterinaire_elevage: ['corps_humain', 'cycle_azote'],
   geographie_amenagement: ['couches_sig', 'couches_geologiques'],
-  urbanisme_sig: ['couches_sig', 'couches_geologiques'],
+  urbanisme_sig: ['marche_immobilier', 'couches_sig', 'couches_geologiques'],
   tourisme_hotel: ['couches_sig', 'pyramide_maslow'],
 
   // Lettres, langues & sciences humaines

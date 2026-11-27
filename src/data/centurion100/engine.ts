@@ -144,7 +144,7 @@ export const CENTURION_NEW_SUBJECTS: Subject[] = [
     color: '#ca8a04',
     icon: 'Zap',
     description:
-      '160 chapitres de la 2nde au Master : lois des circuits, diodes, transistors, amplificateurs opérationnels, logique numérique, machines électriques, électronique de puissance et systèmes embarqués.',
+      '170 chapitres de la 2nde au Master : lois des circuits, diodes, transistors, amplificateurs opérationnels, logique numérique, machines électriques, électronique de puissance et systèmes embarqués.',
     sizeKb: 1620,
   },
   {
@@ -156,7 +156,7 @@ export const CENTURION_NEW_SUBJECTS: Subject[] = [
     color: '#d97706',
     icon: 'Compass',
     description:
-      '160 chapitres : dessin architectural, géométrie descriptive, architecture bioclimatique tropicale, matériaux en terre crue et béton, BIM, acoustique, patrimoine africain et mondial.',
+      '170 chapitres : dessin architectural, géométrie descriptive, architecture bioclimatique tropicale, matériaux en terre crue et béton, BIM, acoustique, patrimoine africain et mondial.',
     sizeKb: 1580,
   },
   {
@@ -168,7 +168,7 @@ export const CENTURION_NEW_SUBJECTS: Subject[] = [
     color: '#dc2626',
     icon: 'Stethoscope',
     description:
-      '160 chapitres du 1er cycle à l’Internat : examen clinique complet, cardiologie, pneumologie, neurologie, infectiologie tropicale, urgences vitales, imagerie et raisonnement diagnostique.',
+      '170 chapitres du 1er cycle à l’Internat : examen clinique complet, cardiologie, pneumologie, neurologie, infectiologie tropicale, urgences vitales, imagerie et raisonnement diagnostique.',
     sizeKb: 1740,
   },
   {
@@ -180,7 +180,7 @@ export const CENTURION_NEW_SUBJECTS: Subject[] = [
     color: '#7c3aed',
     icon: 'Landmark',
     description:
-      '160 chapitres : théorie de l’État, régimes politiques, sociologie électorale, politiques publiques, intégration africaine (UA, CEMAC, CEDEAO), géopolitique contemporaine et gouvernance.',
+      '170 chapitres : théorie de l’État, régimes politiques, sociologie électorale, politiques publiques, intégration africaine (UA, CEMAC, CEDEAO), géopolitique contemporaine et gouvernance.',
     sizeKb: 1560,
   },
   {
@@ -192,7 +192,7 @@ export const CENTURION_NEW_SUBJECTS: Subject[] = [
     color: '#0284c7',
     icon: 'Droplets',
     description:
-      '160 chapitres de la 6e au Master (type 2iE) : cycle de l’eau, hydrogéologie, forages et pompage solaire, potabilisation, assainissement écologique, bassins versants (Lac Tchad, Niger, Congo) et adaptation climatique.',
+      '170 chapitres de la 6e au Master (type 2iE) : cycle de l’eau, hydrogéologie, forages et pompage solaire, potabilisation, assainissement écologique, bassins versants (Lac Tchad, Niger, Congo) et adaptation climatique.',
     sizeKb: 1610,
   },
   {
@@ -204,7 +204,7 @@ export const CENTURION_NEW_SUBJECTS: Subject[] = [
     color: '#059669',
     icon: 'TrendingUp',
     description:
-      '160 chapitres : actualisation, VAN/TRI, analyse financière avancée, banques centrales (BEAC/BCEAO), régulation Bâle III/COBAC, marchés actions/obligations, produits dérivés, gestion des risques et actuariat.',
+      '170 chapitres : actualisation, VAN/TRI, analyse financière avancée, banques centrales (BEAC/BCEAO), régulation Bâle III/COBAC, marchés actions/obligations, produits dérivés, gestion des risques et actuariat.',
     sizeKb: 1650,
   },
 ];

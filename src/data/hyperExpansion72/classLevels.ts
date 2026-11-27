@@ -271,6 +271,15 @@ export const SUBJECT_CLASS_PROFILES: Record<string, ClassLevelId[]> = {
   mobilite_urbaine: LYCEE_TO_MASTER,
   fle_didactique: TLE_TO_MASTER,
   traduction_professionnelle: TLE_TO_MASTER,
+  // v26.0 — huit nouvelles matières professionnelles
+  droit_notarial: TLE_TO_MASTER,
+  kinesitherapie_reeducation: TLE_TO_MASTER,
+  immobilier_transaction: TLE_TO_MASTER,
+  blockchain_actifs_numeriques: TLE_TO_MASTER,
+  orthophonie_langage: TLE_TO_MASTER,
+  horticulture_paysage: FROM_3E,
+  menuiserie_ebenisterie: FROM_3E,
+  jeu_video_esport: FROM_3E,
 
   // v24.0 — dix nouvelles matières transversales
   education_financiere: FROM_3E,

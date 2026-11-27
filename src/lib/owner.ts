@@ -1,6 +1,6 @@
 import { AccountRole, OwnerGlobalSettings, UserProfile } from '../types';
 import { COACH_KNOWLEDGE_STATS } from '../data/coachKnowledge';
-import { CHAPTERS, SUBJECTS, X19_COVERAGE, X20_COVERAGE, X21_COVERAGE, X23_COVERAGE, X24_EXTENSION, X25_EXTENSION, X25_NEW_SUBJECTS_EXTENSION } from '../data';
+import { CHAPTERS, SUBJECTS, X19_COVERAGE, X20_COVERAGE, X21_COVERAGE, X23_COVERAGE, X24_EXTENSION, X25_EXTENSION, X25_NEW_SUBJECTS_EXTENSION, X26_EXTENSION, X26_NEW_SUBJECTS_EXTENSION } from '../data';
 
 /**
  * Official Owner identity for Réussite Offline.
@@ -13,7 +13,7 @@ export const OWNER_PROFILE_IDS = ['profile-1795361028411'];
 export const DEFAULT_OWNER_SETTINGS: OwnerGlobalSettings = {
   announcementEnabled: false,
   announcementText:
-    `Bienvenue sur Réussite Offline ! Prépare tes examens et concours 2026 avec 77 examens & concours, ${SUBJECTS.length} matières et ${CHAPTERS.length} chapitres, 100 pare-feux WAF et 134 systèmes de sécurité actifs — dont 6 matières strictement scolaires désormais à 180 chapitres chacune. Nouveautés v25.0 : 8 nouvelles matières illustrées (bibliothéconomie, démographie, économie de la santé, esthétique & cosmétologie, sécurité privée, mobilité urbaine, FLE & didactique, traduction professionnelle) dotées de 80 chapitres chacune, plus ${X25_EXTENSION.chapters.length} chapitres d’approfondissement dans les ${X25_EXTENSION.subjectsCovered} matières. Chaque nouveau chapitre s’ouvre sur une illustration SVG 100 % hors ligne (budget, business model, scène forensique, pyramide des âges, couches de la peau, réseau de neurones, boucle circulaire…). Le catalogue atteint ${CHAPTERS.length} chapitres, avec cours, fiches, QCM, flashcards et annales associées, et un Coach IA de ${COACH_KNOWLEDGE_STATS.notions} notions / ${COACH_KNOWLEDGE_STATS.methods} méthodes.`,
+    `Bienvenue sur Réussite Offline ! Prépare tes examens et concours 2026 avec 77 examens & concours, ${SUBJECTS.length} matières et ${CHAPTERS.length} chapitres, 100 pare-feux WAF et 134 systèmes de sécurité actifs — dont 6 matières strictement scolaires désormais à 180 chapitres chacune. Nouveautés v26.0 : 8 nouvelles matières professionnelles illustrées (droit notarial, kinésithérapie & rééducation, gestion immobilière, blockchain & actifs numériques, orthophonie, horticulture & paysage, menuiserie & ébénisterie, conception de jeux vidéo & e-sport) dotées de 80 chapitres chacune, plus ${X26_EXTENSION.chapters.length} chapitres d’approfondissement dans les ${X26_EXTENSION.subjectsCovered} matières. Chaque nouveau chapitre s’ouvre sur une illustration SVG 100 % hors ligne (acte authentique, progression de rééducation, cycle d’une transaction immobilière, chaîne de blocs, appareil phonatoire, plan paysager, assemblages bois, boucle de gameplay…), et les vingt illustrations v25.0 restent disponibles dans les galeries. Le catalogue atteint ${CHAPTERS.length} chapitres, avec cours, fiches, QCM, flashcards et annales associées, et un Coach IA de ${COACH_KNOWLEDGE_STATS.notions} notions / ${COACH_KNOWLEDGE_STATS.methods} méthodes.`,
   announcementTone: 'info',
   maintenanceMode: false,
   registrationsOpen: true,

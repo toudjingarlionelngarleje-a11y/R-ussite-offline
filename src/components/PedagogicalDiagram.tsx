@@ -1,6 +1,7 @@
 import React from 'react';
 import { CourseSection } from '../types';
 import { PedagogicalDiagramV25, isV25Diagram, V25DiagramId } from './PedagogicalDiagramV25';
+import { PedagogicalDiagramV26, isV26Diagram, V26DiagramId } from './PedagogicalDiagramV26';
 
 /**
  * Cadre SVG commun à tous les schémas (v17.4) : garantit un rendu homogène,
@@ -34,6 +35,11 @@ export const PedagogicalDiagram: React.FC<{
   // v25.0 — les illustrations des nouvelles matières vivent dans leur propre module
   if (isV25Diagram(diagramId)) {
     return <PedagogicalDiagramV25 diagramId={diagramId as V25DiagramId} />;
+  }
+
+  // v26.0 — illustrations des nouveaux métiers (droit, santé, immobilier, jeu vidéo…)
+  if (isV26Diagram(diagramId)) {
+    return <PedagogicalDiagramV26 diagramId={diagramId as V26DiagramId} />;
   }
 
   if (diagramId === 'parabole') {

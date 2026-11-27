@@ -269,7 +269,16 @@ export interface CourseSection {
     | 'chaine_risque_climat'
     | 'accessibilite_universelle'
     | 'arts_composition'
-    | 'planning_organisation';
+    | 'planning_organisation'
+    // v26.0 — Illustrations des métiers du droit, de la santé, du bâtiment et du jeu vidéo
+    | 'acte_authentique'
+    | 'reeducation_mouvement'
+    | 'marche_immobilier'
+    | 'chaine_blocs'
+    | 'appareil_phonatoire'
+    | 'plan_paysager'
+    | 'assemblage_bois'
+    | 'boucle_gameplay';
 }
 
 export interface Course {

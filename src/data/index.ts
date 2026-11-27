@@ -186,6 +186,11 @@ import {
 } from './extensionV25/builder';
 import { NEW_SUBJECTS_V25 } from './newSubjectsV25/subjects';
 import {
+  buildNewSubjectsV26,
+  buildBoostV26,
+} from './extensionV26/builder';
+import { NEW_SUBJECTS_V26 } from './newSubjectsV26/subjects';
+import {
   buildNewSubjectsV24,
   buildBoostV24,
 } from './extensionV24/builder';
@@ -505,6 +510,8 @@ export const SUBJECTS = [
   ...NEW_SUBJECTS_V24,
   // v25.0 — huit nouvelles matières illustrées (90 chapitres chacune après consolidation)
   ...NEW_SUBJECTS_V25,
+  // v26.0 — huit nouvelles matières professionnelles illustrées (90 chapitres chacune)
+  ...NEW_SUBJECTS_V26,
 ].map((s) => ({
   ...s,
   classLevels:
@@ -527,9 +534,14 @@ export const SUBJECTS = [
  */
 const NEW_SUBJECT_IDS_V24 = new Set(NEW_SUBJECTS_V24.map((s) => s.id));
 const NEW_SUBJECT_IDS_V25 = new Set(NEW_SUBJECTS_V25.map((s) => s.id));
-const LEGACY_SUBJECTS = SUBJECTS.filter((s) => !NEW_SUBJECT_IDS_V24.has(s.id) && !NEW_SUBJECT_IDS_V25.has(s.id));
+const NEW_SUBJECT_IDS_V26 = new Set(NEW_SUBJECTS_V26.map((s) => s.id));
+const LEGACY_SUBJECTS = SUBJECTS.filter(
+  (s) => !NEW_SUBJECT_IDS_V24.has(s.id) && !NEW_SUBJECT_IDS_V25.has(s.id) && !NEW_SUBJECT_IDS_V26.has(s.id)
+);
 /** Les 117 matières présentes avant v25.0 (vagues v19.0 à v24.0 incluses). */
-const SUBJECTS_V24 = SUBJECTS.filter((s) => !NEW_SUBJECT_IDS_V25.has(s.id));
+const SUBJECTS_V24 = SUBJECTS.filter((s) => !NEW_SUBJECT_IDS_V25.has(s.id) && !NEW_SUBJECT_IDS_V26.has(s.id));
+/** Les 125 matières présentes avant v26.0 (vagues v19.0 à v25.0 incluses). */
+const SUBJECTS_V25 = SUBJECTS.filter((s) => !NEW_SUBJECT_IDS_V26.has(s.id));
 
 const RAW_CHAPTERS_BASE = [
   ...BASE_CHAPTERS,
@@ -611,9 +623,19 @@ export const X25_NEW_SUBJECTS_EXTENSION = buildNewSubjectsV25(RAW_CHAPTERS_V24, 
 const RAW_CHAPTERS_WITH_V25_SUBJECTS = [...RAW_CHAPTERS_V24, ...X25_NEW_SUBJECTS_EXTENSION.chapters];
 
 /** v25.0 — approfondissement illustré : 10 chapitres de plus dans les 125 matières. */
-export const X25_EXTENSION = buildBoostV25(RAW_CHAPTERS_WITH_V25_SUBJECTS, SUBJECTS);
+export const X25_EXTENSION = buildBoostV25(RAW_CHAPTERS_WITH_V25_SUBJECTS, SUBJECTS_V25);
 
-const RAW_CHAPTERS = [...RAW_CHAPTERS_WITH_V25_SUBJECTS, ...X25_EXTENSION.chapters];
+const RAW_CHAPTERS_V25 = [...RAW_CHAPTERS_WITH_V25_SUBJECTS, ...X25_EXTENSION.chapters];
+
+/** v26.0 — huit nouvelles matières professionnelles illustrées, 80 chapitres chacune. */
+export const X26_NEW_SUBJECTS_EXTENSION = buildNewSubjectsV26(RAW_CHAPTERS_V25, NEW_SUBJECTS_V26);
+
+const RAW_CHAPTERS_WITH_V26_SUBJECTS = [...RAW_CHAPTERS_V25, ...X26_NEW_SUBJECTS_EXTENSION.chapters];
+
+/** v26.0 — approfondissement illustré : 10 chapitres de plus dans les 133 matières. */
+export const X26_EXTENSION = buildBoostV26(RAW_CHAPTERS_WITH_V26_SUBJECTS, SUBJECTS);
+
+const RAW_CHAPTERS = [...RAW_CHAPTERS_WITH_V26_SUBJECTS, ...X26_EXTENSION.chapters];
 
 // Attribuer un niveau de classe (6e → Master) à 100% des chapitres sans écraser les attributions explicites
 const UNASSIGNED_BY_SUBJECT: Record<string, string[]> = {};
@@ -671,6 +693,8 @@ export const COURSES = [
   ...X24_EXTENSION.courses,
   ...X25_NEW_SUBJECTS_EXTENSION.courses,
   ...X25_EXTENSION.courses,
+  ...X26_NEW_SUBJECTS_EXTENSION.courses,
+  ...X26_EXTENSION.courses,
 ].map((crs) => ({
   ...crs,
   classLevel: crs.classLevel ?? CHAPTER_CLASS_MAP[crs.chapterId] ?? getSubjectClassLevels(crs.subjectId)[0],
@@ -708,6 +732,8 @@ export const FICHES = [
   ...X24_EXTENSION.fiches,
   ...X25_NEW_SUBJECTS_EXTENSION.fiches,
   ...X25_EXTENSION.fiches,
+  ...X26_NEW_SUBJECTS_EXTENSION.fiches,
+  ...X26_EXTENSION.fiches,
 ].map((fic) => ({
   ...fic,
   classLevel: fic.classLevel ?? CHAPTER_CLASS_MAP[fic.chapterId] ?? getSubjectClassLevels(fic.subjectId)[0],
@@ -744,6 +770,8 @@ const CORE_AND_MEGA_QUESTIONS = [
   ...X24_EXTENSION.questions,
   ...X25_NEW_SUBJECTS_EXTENSION.questions,
   ...X25_EXTENSION.questions,
+  ...X26_NEW_SUBJECTS_EXTENSION.questions,
+  ...X26_EXTENSION.questions,
 ];
 
 const SUBJECT_META_MAP: Record<string, { name: string; examIds: string[] }> = Object.fromEntries(
@@ -798,6 +826,8 @@ export const ANNALES = [
   ...X24_EXTENSION.annales,
   ...X25_NEW_SUBJECTS_EXTENSION.annales,
   ...X25_EXTENSION.annales,
+  ...X26_NEW_SUBJECTS_EXTENSION.annales,
+  ...X26_EXTENSION.annales,
   // v22.0 — 24 annales inédites (6 nouveaux parcours × 4 sessions)
   ...buildAnnalesV22(QUESTIONS),
 ].map((a) => {
@@ -844,4 +874,6 @@ export const FLASHCARDS = [
   ...X24_EXTENSION.flashcards,
   ...X25_NEW_SUBJECTS_EXTENSION.flashcards,
   ...X25_EXTENSION.flashcards,
+  ...X26_NEW_SUBJECTS_EXTENSION.flashcards,
+  ...X26_EXTENSION.flashcards,
 ];
