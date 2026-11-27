@@ -12,7 +12,7 @@ import {
   Users,
   WifiOff,
 } from 'lucide-react';
-import { EXAMS, SUBJECTS, useApp } from '../context/AppContext';
+import { CHAPTERS, COURSES, EXAMS, SUBJECTS, useApp } from '../context/AppContext';
 
 export const WelcomeScreen: React.FC = () => {
   const { state, navigate, switchProfile, setShowPlanModal } = useApp();
@@ -58,7 +58,7 @@ export const WelcomeScreen: React.FC = () => {
           <div className="lg:col-span-7">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-xs font-bold text-blue-800 dark:border-blue-900 dark:bg-blue-950/60 dark:text-blue-200">
               <WifiOff className="h-3.5 w-3.5" />
-              {SUBJECTS.length} matières × 100 chapitres = {(SUBJECTS.length * 100).toLocaleString('fr-FR')} cours & fiches hors ligne
+              {SUBJECTS.length} matières · {CHAPTERS.length.toLocaleString('fr-FR')} chapitres · {COURSES.length.toLocaleString('fr-FR')} cours & fiches hors ligne
             </div>
             <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-5xl dark:text-white">
               Prépare tes examens et concours,{' '}
