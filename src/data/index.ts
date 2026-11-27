@@ -166,6 +166,11 @@ import {
   MILLENNIUM_QUESTIONS,
 } from './millennium100';
 import {
+  buildExtensionV19,
+  extensionCoverage,
+  ALL_X19_MODULES,
+} from './extensionV19';
+import {
   TRADING_ANNALES,
   TRADING_CHAPTERS,
   TRADING_COURSES,
@@ -483,7 +488,7 @@ export const SUBJECTS = [
   ),
 }));
 
-const RAW_CHAPTERS = [
+const RAW_CHAPTERS_BASE = [
   ...BASE_CHAPTERS,
   ...EXTRA_CHAPTERS,
   ...MEGA_CHAPTERS,
@@ -505,6 +510,16 @@ const RAW_CHAPTERS = [
   // v17.9 — 720 chapitres scolaires (6 matières collège/lycée × 120 chapitres)
   ...COLLEGE_LYCEE_CHAPTERS,
 ];
+
+/**
+ * v19.0 — Extension universelle : 10 chapitres d’approfondissement pour
+ * chacune des 107 matières existantes (1 070 chapitres + cours + fiches +
+ * QCM + flashcards + annales), numérotés à la suite du programme de la matière.
+ */
+export const X19_EXTENSION = buildExtensionV19(RAW_CHAPTERS_BASE, SUBJECTS);
+export const X19_COVERAGE = extensionCoverage(ALL_X19_MODULES);
+
+const RAW_CHAPTERS = [...RAW_CHAPTERS_BASE, ...X19_EXTENSION.chapters];
 
 // Attribuer un niveau de classe (6e → Master) à 100% des chapitres sans écraser les attributions explicites
 const UNASSIGNED_BY_SUBJECT: Record<string, string[]> = {};
@@ -550,6 +565,8 @@ export const COURSES = [
   ...LYCEE_COURSES,
   // v17.9 — 720 chapitres scolaires (6 matières collège/lycée × 120 chapitres)
   ...COLLEGE_LYCEE_COURSES,
+  // v19.0 — 1 070 chapitres d’approfondissement (107 matières × 10)
+  ...X19_EXTENSION.courses,
 ].map((crs) => ({
   ...crs,
   classLevel: crs.classLevel ?? CHAPTER_CLASS_MAP[crs.chapterId] ?? getSubjectClassLevels(crs.subjectId)[0],
@@ -575,6 +592,8 @@ export const FICHES = [
   ...LYCEE_FICHES,
   // v17.9 — 720 chapitres scolaires (6 matières collège/lycée × 120 chapitres)
   ...COLLEGE_LYCEE_FICHES,
+  // v19.0 — 1 070 fiches d’approfondissement (107 matières × 10)
+  ...X19_EXTENSION.fiches,
 ].map((fic) => ({
   ...fic,
   classLevel: fic.classLevel ?? CHAPTER_CLASS_MAP[fic.chapterId] ?? getSubjectClassLevels(fic.subjectId)[0],
@@ -599,6 +618,8 @@ const CORE_AND_MEGA_QUESTIONS = [
   ...LYCEE_QUESTIONS,
   // v17.9 — 720 chapitres scolaires (6 matières collège/lycée × 120 chapitres)
   ...COLLEGE_LYCEE_QUESTIONS,
+  // v19.0 — 1 070 QCM d’approfondissement (107 matières × 10)
+  ...X19_EXTENSION.questions,
 ];
 
 const SUBJECT_META_MAP: Record<string, { name: string; examIds: string[] }> = Object.fromEntries(
@@ -640,6 +661,8 @@ export const ANNALES = [
   ...LYCEE_ANNALES,
   // v17.9 — 720 chapitres scolaires (6 matières collège/lycée × 120 chapitres)
   ...COLLEGE_LYCEE_ANNALES,
+  // v19.0 — 321 annales d’approfondissement (107 matières × 3 sujets)
+  ...X19_EXTENSION.annales,
 ].map((a) => {
   const examClasses = EXAM_CLASS_MAP[a.examId];
   const subjectClasses = getSubjectClassLevels(a.subjectId);
@@ -672,4 +695,6 @@ export const FLASHCARDS = [
   ...LYCEE_FLASHCARDS,
   // v17.9 — 720 chapitres scolaires (6 matières collège/lycée × 120 chapitres)
   ...COLLEGE_LYCEE_FLASHCARDS,
+  // v19.0 — 1 070 flashcards d’approfondissement (107 matières × 10)
+  ...X19_EXTENSION.flashcards,
 ];

@@ -45,7 +45,7 @@ export const TRADING_NEW_SUBJECTS: Subject[] = [
     color: '#0f766e',
     icon: 'TrendingUp',
     description:
-      '100 chapitres : marchés & microstructure, chandeliers japonais, figures chartistes, supports/résistances, tendances & moyennes mobiles, RSI/MACD, volatilité & ATR, volume et carnet d’ordres, Fibonacci & Elliott, price action (BOS/CHoCH), multi-timeframes, gestion du risque et taille de position, stop-loss & trailing, psychologie, journal de trading, plan de trading, forex/crypto/matières premières et stratégies avancées — avec exercices corrigés détaillés.',
+      '110 chapitres : marchés & microstructure, chandeliers japonais, figures chartistes, supports/résistances, tendances & moyennes mobiles, RSI/MACD, volatilité & ATR, volume et carnet d’ordres, Fibonacci & Elliott, price action (BOS/CHoCH), multi-timeframes, gestion du risque et taille de position, stop-loss & trailing, psychologie, journal de trading, plan de trading, forex/crypto/matières premières et stratégies avancées — avec exercices corrigés détaillés.',
     sizeKb: 1640,
   },
 ];

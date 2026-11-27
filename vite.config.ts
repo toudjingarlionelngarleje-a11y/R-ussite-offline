@@ -33,6 +33,7 @@ export default defineConfig({
           if (id.includes('/megaExpansion50/')) return 'data-mega50';
           if (id.includes('/curriculumExpansion/')) return 'data-curriculum';
           if (id.includes('/coachKnowledge/')) return 'data-coach';
+          if (id.includes('/extensionV19/')) return 'data-x19';
         },
       },
     },

@@ -1,5 +1,6 @@
 import { AccountRole, OwnerGlobalSettings, UserProfile } from '../types';
 import { COACH_KNOWLEDGE_STATS } from '../data/coachKnowledge';
+import { CHAPTERS, X19_COVERAGE } from '../data';
 
 /**
  * Official Owner identity for Réussite Offline.
@@ -12,7 +13,7 @@ export const OWNER_PROFILE_IDS = ['profile-1795361028411'];
 export const DEFAULT_OWNER_SETTINGS: OwnerGlobalSettings = {
   announcementEnabled: false,
   announcementText:
-    `Bienvenue sur Réussite Offline ! Prépare tes examens et concours 2026 avec 71 examens & concours, 107 matières, 11 420 chapitres, 100 pare-feux WAF et 134 systèmes de sécurité actifs — dont 6 nouvelles matières strictement scolaires (latin-grec, technologie du collège, arts plastiques, méthodes & orientation, sciences de l’ingénieur, méthodologie du Bac) à 120 chapitres chacune. Nouveau Coach IA v18.0 : ${COACH_KNOWLEDGE_STATS.notions} notions détaillées (définition, formule, exemple, piège, astuce mémoire), 15 méthodes d’épreuve et un moteur de recherche hors ligne qui comprend les accents, les synonymes et ton niveau.`,
+    `Bienvenue sur Réussite Offline ! Prépare tes examens et concours 2026 avec 71 examens & concours, 107 matières et ${CHAPTERS.length} chapitres, 100 pare-feux WAF et 134 systèmes de sécurité actifs — dont 6 matières strictement scolaires (latin-grec, technologie du collège, arts plastiques, méthodes & orientation, sciences de l’ingénieur, méthodologie du Bac) désormais à 130 chapitres chacune. Nouveautés v19.0 : ${X19_COVERAGE.chapters} chapitres d’approfondissement (10 par matière, avec cours, fiches, QCM, flashcards et annales) et un Coach IA de ${COACH_KNOWLEDGE_STATS.notions} notions / 15 méthodes, 100 % hors ligne.`,
   announcementTone: 'info',
   maintenanceMode: false,
   registrationsOpen: true,

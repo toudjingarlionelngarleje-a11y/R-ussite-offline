@@ -49,6 +49,14 @@ npm run build
 npm run preview
 ```
 
+## Catalogue — extension universelle v19.0 (10 nouveaux chapitres par matière)
+
+- **+1 070 chapitres d’approfondissement** : chacune des **107 matières** reçoit 10 chapitres numérotés à la suite de son programme existant, soit **12 490 chapitres** au total (contre 11 420 en v18.0).
+- **Chaque nouveau chapitre est complet** : cours en 4 sections, fiche synthétique, QCM corrigé à 4 options, flashcards et rattachement aux annales — soit **12 490 cours, 12 490 fiches, 12 635 QCM, 11 565 flashcards et 1 354 annales**.
+- **Progression en 10 étapes** (diagnostic initial, fondements approfondis, cadre normatif, méthode experte, exercice guidé, étude de cas, copies fautives, fiche mémo, entraînement chronométré, synthèse transversale), rédigée matière par matière dans `src/data/extensionV19/`.
+- **Numérotation continue** : chaque matière démarre ses nouveaux chapitres après son dernier chapitre existant ; les descriptions de matières affichent désormais leur volume réel (110, 130 ou 170 chapitres).
+- **Aucune ressource externe** : le pack est embarqué (chunk `data-x19`, ~48 kB) et le cache PWA passe en `secure-v17`.
+
 ## Coach IA — base de connaissances hors ligne (v18.0)
 
 Le coach pédagogique s’appuie sur une base de connaissances embarquée, sans aucun appel réseau :
@@ -63,3 +71,4 @@ Fichiers : `src/data/coachKnowledge/` (données) et `src/lib/coachEngine.ts` (mo
 
 > **v18.0.1** : 3 notions d’orientation ajoutées (admission post-bac, métiers & secteurs, alternance) et tous les libellés de volume dérivés de `COACH_KNOWLEDGE_STATS`.
 > **v18.0.2** : les compteurs de l’accueil et de l’inscription affichent les volumes réels du catalogue (11 420 chapitres, 11 420 cours & fiches) au lieu de l’estimation « 107 × 100 ».
+> **v19.0** : 1 070 nouveaux chapitres d’approfondissement (10 par matière sur les 107), soit 12 490 chapitres / cours / fiches au total ; cache PWA `secure-v17`.
