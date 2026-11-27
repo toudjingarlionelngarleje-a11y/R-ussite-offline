@@ -18,6 +18,7 @@ import {
   getClassLevelMeta,
   mapStudyLevelToClassId,
 } from '../data';
+import { COACH_KNOWLEDGE_STATS } from '../data/coachKnowledge';
 import { generateAdaptiveStudyPlan, formatIsoDate } from '../lib/planner';
 import { computeNextFlashcardReview } from '../lib/sm2';
 import {
@@ -3125,7 +3126,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const backup = {
       exportedAt: new Date().toISOString(),
       owner: activeProfile?.email,
-      appVersion: 'Réussite Offline v17.9 — 6 matières collège & lycée (120 chapitres) + Bouclier 36 + Console Propriétaire',
+      appVersion: 'Réussite Offline v18.0 — Coach IA : 149 notions & 15 méthodes hors ligne + Bouclier 36 + Console Propriétaire',
       catalogSummary: {
         exams: EXAMS.length,
         subjects: SUBJECTS.length,
@@ -3134,6 +3135,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         questions: allQuestions.length,
         annales: ANNALES.length,
         flashcards: allFlashcards.length,
+        coachNotions: COACH_KNOWLEDGE_STATS.notions,
+        coachMethods: COACH_KNOWLEDGE_STATS.methods,
       },
       ownerSettings: state.ownerSettings,
       profiles: state.profiles.map(({ passwordHash: _ph, ...safe }) => safe),

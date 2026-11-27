@@ -11,7 +11,7 @@ export const OWNER_PROFILE_IDS = ['profile-1795361028411'];
 export const DEFAULT_OWNER_SETTINGS: OwnerGlobalSettings = {
   announcementEnabled: false,
   announcementText:
-    'Bienvenue sur Réussite Offline ! Prépare tes examens et concours 2026 avec 71 examens & concours, 107 matières, 11 420 chapitres, 100 pare-feux WAF et 134 systèmes de sécurité actifs — dont 6 nouvelles matières strictement scolaires (latin-grec, technologie du collège, arts plastiques, méthodes & orientation, sciences de l’ingénieur, méthodologie du Bac) à 120 chapitres chacune.',
+    'Bienvenue sur Réussite Offline ! Prépare tes examens et concours 2026 avec 71 examens & concours, 107 matières, 11 420 chapitres, 100 pare-feux WAF et 134 systèmes de sécurité actifs — dont 6 nouvelles matières strictement scolaires (latin-grec, technologie du collège, arts plastiques, méthodes & orientation, sciences de l’ingénieur, méthodologie du Bac) à 120 chapitres chacune. Nouveau Coach IA v18.0 : 149 notions détaillées (définition, formule, exemple, piège, astuce mémoire), 15 méthodes d’épreuve et un moteur de recherche hors ligne qui comprend les accents, les synonymes et ton niveau.',
   announcementTone: 'info',
   maintenanceMode: false,
   registrationsOpen: true,

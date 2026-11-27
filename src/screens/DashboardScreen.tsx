@@ -311,6 +311,9 @@ export const DashboardScreen: React.FC = () => {
             <h2 className="mt-1 text-base font-extrabold text-slate-900 dark:text-white">
               Tes priorités personnalisées aujourd’hui
             </h2>
+            <p className="mt-0.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              149 notions détaillées · 15 méthodes d’épreuve · 100 % hors ligne
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button

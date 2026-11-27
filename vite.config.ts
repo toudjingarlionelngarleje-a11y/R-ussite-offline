@@ -32,6 +32,7 @@ export default defineConfig({
           if (id.includes('/hyperExpansion72/packD')) return 'data-h72-d';
           if (id.includes('/megaExpansion50/')) return 'data-mega50';
           if (id.includes('/curriculumExpansion/')) return 'data-curriculum';
+          if (id.includes('/coachKnowledge/')) return 'data-coach';
         },
       },
     },
