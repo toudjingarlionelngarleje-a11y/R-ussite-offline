@@ -35,7 +35,7 @@ export const REVISION_PHASES: RevisionPhaseMeta[] = [
     index: 1,
     title: 'Diagnostic et repères',
     objective:
-      'Mesure ton point de départ sur les deux premiers chapitres du programme, puis note précisément ce que tu dois revoir.',
+      'Mesure ton point de départ sur les chapitres d’ouverture du programme, puis note précisément ce que tu dois revoir.',
     minutes: 65,
     advice: 'Ne consulte pas la correction pendant le QCM : c’est le seul moyen de savoir où tu en es vraiment.',
   },
@@ -73,7 +73,7 @@ export const REVISION_PHASES: RevisionPhaseMeta[] = [
     objective:
       'Enchaîne les QCM sur les notions charnières et vérifie tes automatismes avant la simulation.',
     minutes: 60,
-    advice: 'Chronomètre chaque série : une question mal lue coûte plus cher qu’une question Non sue.',
+    advice: 'Chronomètre chaque série : une question mal lue coûte plus cher qu’une question non sue.',
   },
   {
     id: 'simulation',
