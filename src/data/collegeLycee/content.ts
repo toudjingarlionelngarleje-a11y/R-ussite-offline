@@ -48,7 +48,7 @@ export const LATIN_GREC_SUBJECT: CollegeLyceeSubjectSpec = {
   icon: 'Landmark',
   sizeKb: 1720,
   description:
-    '190 chapitres : alphabets et prononciation, cinq déclinaisons latines, conjugaisons, syntaxe de la phrase, étymologie, mythologie gréco-romaine, histoire de Rome et d’Athènes, littérature latine et grecque, traduction et commentaire d’auteur.',
+    '200 chapitres : alphabets et prononciation, cinq déclinaisons latines, conjugaisons, syntaxe de la phrase, étymologie, mythologie gréco-romaine, histoire de Rome et d’Athènes, littérature latine et grecque, traduction et commentaire d’auteur.',
   modules: [
     [
       'lg-alphabet',
@@ -162,7 +162,7 @@ export const TECHNOLOGIE_COLLEGE_SUBJECT: CollegeLyceeSubjectSpec = {
   icon: 'Cog',
   sizeKb: 1650,
   description:
-    '190 chapitres : objets techniques et besoins, matériaux, énergie, électricité, mécanismes, dessin technique, programmation, automatismes, habitat, transport, développement durable et conduite de projet technique.',
+    '200 chapitres : objets techniques et besoins, matériaux, énergie, électricité, mécanismes, dessin technique, programmation, automatismes, habitat, transport, développement durable et conduite de projet technique.',
   modules: [
     [
       'tec-objet-besoin',
@@ -276,7 +276,7 @@ export const ARTS_PLASTIQUES_SUBJECT: CollegeLyceeSubjectSpec = {
   icon: 'Palette',
   sizeKb: 1680,
   description:
-    '190 chapitres : langage visuel, couleur, dessin, peinture, sculpture, photographie, création numérique, espace et installation, analyse d’œuvre, arts africains, histoire de l’art et démarche de projet artistique.',
+    '200 chapitres : langage visuel, couleur, dessin, peinture, sculpture, photographie, création numérique, espace et installation, analyse d’œuvre, arts africains, histoire de l’art et démarche de projet artistique.',
   modules: [
     [
       'art-langage',
@@ -390,7 +390,7 @@ export const METHODES_TRAVAIL_SUBJECT: CollegeLyceeSubjectSpec = {
   icon: 'Brain',
   sizeKb: 1600,
   description:
-    '190 chapitres : organisation du travail, prise de notes, mémorisation espacée, lecture efficace, concentration, gestion du temps, préparation des épreuves, gestion du stress, orientation et découverte des métiers.',
+    '200 chapitres : organisation du travail, prise de notes, mémorisation espacée, lecture efficace, concentration, gestion du temps, préparation des épreuves, gestion du stress, orientation et découverte des métiers.',
   modules: [
     [
       'met-organisation',
@@ -504,7 +504,7 @@ export const SCIENCES_INGENIEUR_SUBJECT: CollegeLyceeSubjectSpec = {
   icon: 'Cpu',
   sizeKb: 1760,
   description:
-    '190 chapitres : analyse fonctionnelle, chaînes d’énergie et d’information, mécanique, électricité, automatique, informatique embarquée, capteurs, actionneurs, modélisation, prototypage, sécurité et gestion de projet d’ingénierie.',
+    '200 chapitres : analyse fonctionnelle, chaînes d’énergie et d’information, mécanique, électricité, automatique, informatique embarquée, capteurs, actionneurs, modélisation, prototypage, sécurité et gestion de projet d’ingénierie.',
   modules: [
     [
       'si-besoin',
@@ -627,7 +627,7 @@ export const PREPARATION_BAC_SUBJECT: CollegeLyceeSubjectSpec = {
   icon: 'ClipboardCheck',
   sizeKb: 1580,
   description:
-    '190 chapitres : programme et épreuves du Bac, dissertation, commentaire, étude de document, exercices et QCM, épreuve orale, gestion du temps, annales corrigées, barèmes, gestion du stress et plan de révision final.',
+    '200 chapitres : programme et épreuves du Bac, dissertation, commentaire, étude de document, exercices et QCM, épreuve orale, gestion du temps, annales corrigées, barèmes, gestion du stress et plan de révision final.',
   modules: [
     [
       'bac-programme',

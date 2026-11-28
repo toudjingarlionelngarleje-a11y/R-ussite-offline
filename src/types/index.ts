@@ -278,7 +278,16 @@ export interface CourseSection {
     | 'appareil_phonatoire'
     | 'plan_paysager'
     | 'assemblage_bois'
-    | 'boucle_gameplay';
+    | 'boucle_gameplay'
+    // v27.0 — Illustrations des métiers de terrain, de l’artisanat et du protocole
+    | 'coupe_cheveu'
+    | 'reseau_plomberie'
+    | 'diagnostic_auto'
+    | 'soudure_assemblage'
+    | 'ruche_cadres'
+    | 'vinification'
+    | 'taille_gemme'
+    | 'rang_protocole';
 }
 
 export interface Course {

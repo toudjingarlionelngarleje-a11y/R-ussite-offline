@@ -77,6 +77,14 @@ export const SECONDE_SCIENCE_SUBJECT_IDS: string[] = [
   'traduction_professionnelle',
     'droit_notarial',
   'immobilier_transaction',
+  // v27.0
+  'coiffure_barbier',
+  'plomberie_sanitaire',
+  'maintenance_automobile',
+  'soudage_chaudronnerie',
+  'apiculture_ruche',
+  'viticulture_oenologie',
+  'gemmologie_joaillerie',
 // v26.0
   'blockchain_actifs_numeriques',
   'horticulture_paysage',
@@ -140,7 +148,11 @@ export const SECONDE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'mobilite_urbaine',
   'fle_didactique',
   'traduction_professionnelle',
-  // v26.0
+    // v27.0
+  'protocole_diplomatique',
+  'coiffure_barbier',
+  'gemmologie_joaillerie',
+// v26.0
   'droit_notarial',
   'immobilier_transaction',
   'orthophonie_langage',
@@ -209,6 +221,14 @@ export const PREMIERE_SCIENCE_SUBJECT_IDS: string[] = [
   'traduction_professionnelle',
     'droit_notarial',
   'immobilier_transaction',
+  // v27.0
+  'coiffure_barbier',
+  'plomberie_sanitaire',
+  'maintenance_automobile',
+  'soudage_chaudronnerie',
+  'apiculture_ruche',
+  'viticulture_oenologie',
+  'gemmologie_joaillerie',
 // v26.0
   'blockchain_actifs_numeriques',
   'horticulture_paysage',
@@ -268,7 +288,11 @@ export const PREMIERE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'mobilite_urbaine',
   'fle_didactique',
   'traduction_professionnelle',
-  // v26.0
+    // v27.0
+  'protocole_diplomatique',
+  'coiffure_barbier',
+  'gemmologie_joaillerie',
+// v26.0
   'droit_notarial',
   'immobilier_transaction',
   'orthophonie_langage',
@@ -357,6 +381,15 @@ export const TERMINALE_SCIENCE_SUBJECT_IDS: string[] = [
   'traduction_professionnelle',
     'droit_notarial',
   'immobilier_transaction',
+  // v27.0
+  'plomberie_sanitaire',
+  'maintenance_automobile',
+  'soudage_chaudronnerie',
+  'apiculture_ruche',
+  'viticulture_oenologie',
+  'gemmologie_joaillerie',
+  'coiffure_barbier',
+  'protocole_diplomatique',
 // v26.0
   'blockchain_actifs_numeriques',
   'kinesitherapie_reeducation',
@@ -451,7 +484,11 @@ export const TERMINALE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'mobilite_urbaine',
   'fle_didactique',
   'traduction_professionnelle',
-  // v26.0
+    // v27.0
+  'protocole_diplomatique',
+  'gemmologie_joaillerie',
+  'coiffure_barbier',
+// v26.0
   'droit_notarial',
   'immobilier_transaction',
   'orthophonie_langage',

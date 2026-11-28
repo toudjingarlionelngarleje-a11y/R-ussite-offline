@@ -280,6 +280,15 @@ export const SUBJECT_CLASS_PROFILES: Record<string, ClassLevelId[]> = {
   horticulture_paysage: FROM_3E,
   menuiserie_ebenisterie: FROM_3E,
   jeu_video_esport: FROM_3E,
+  // v27.0 — huit nouvelles matières de métiers et de protocole
+  coiffure_barbier: FROM_3E,
+  plomberie_sanitaire: FROM_3E,
+  maintenance_automobile: FROM_3E,
+  soudage_chaudronnerie: FROM_3E,
+  apiculture_ruche: FROM_3E,
+  viticulture_oenologie: LYCEE_TO_MASTER,
+  gemmologie_joaillerie: LYCEE_TO_MASTER,
+  protocole_diplomatique: TLE_TO_MASTER,
 
   // v24.0 — dix nouvelles matières transversales
   education_financiere: FROM_3E,
