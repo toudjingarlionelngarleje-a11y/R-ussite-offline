@@ -3,6 +3,7 @@ import { CourseSection } from '../types';
 import { PedagogicalDiagramV25, isV25Diagram, V25DiagramId } from './PedagogicalDiagramV25';
 import { PedagogicalDiagramV26, isV26Diagram, V26DiagramId } from './PedagogicalDiagramV26';
 import { PedagogicalDiagramV27, isV27Diagram, V27DiagramId } from './PedagogicalDiagramV27';
+import { PedagogicalDiagramPractical, isPracticalDiagram, PracticalDiagramId } from './PedagogicalDiagramPractical';
 
 /**
  * Cadre SVG commun à tous les schémas (v17.4) : garantit un rendu homogène,
@@ -46,6 +47,11 @@ export const PedagogicalDiagram: React.FC<{
   // v27.0 — illustrations des métiers (coiffure, plomberie, auto, soudage, apiculture…)
   if (isV27Diagram(diagramId)) {
     return <PedagogicalDiagramV27 diagramId={diagramId as V27DiagramId} />;
+  }
+
+  // v28.0 — illustrations pratiques transversales (démarche, causes, frise, comparaison…)
+  if (isPracticalDiagram(diagramId)) {
+    return <PedagogicalDiagramPractical diagramId={diagramId as PracticalDiagramId} />;
   }
 
   if (diagramId === 'parabole') {

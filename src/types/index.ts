@@ -287,7 +287,14 @@ export interface CourseSection {
     | 'ruche_cadres'
     | 'vinification'
     | 'taille_gemme'
-    | 'rang_protocole';
+    | 'rang_protocole'
+    // v28.0 — Illustrations pratiques transversales (démarche, causes, frise, comparaison, carte, checklist)
+    | 'demarche_methodologique'
+    | 'schema_cause_effet'
+    | 'frise_chronologique'
+    | 'comparaison_criteres'
+    | 'carte_notions'
+    | 'checklist_validation';
 }
 
 export interface Course {

@@ -1,4 +1,5 @@
 import { ClassLevelId, ExamTrack } from '../types';
+import { getChapterIllustration } from '../lib/subjectDiagrams';
 import {
   CHAPTERS as BASE_CHAPTERS,
   COUNTRIES,
@@ -687,6 +688,15 @@ const CHAPTER_CLASS_MAP: Record<string, ClassLevelId> = Object.fromEntries(
   CHAPTERS.map((ch) => [ch.id, ch.classLevel!])
 );
 
+/**
+ * v28.0 — Chaque chapitre reçoit une illustration pratique : un schéma SVG choisi
+ * de façon stable dans la galerie de sa matière (en complétant la galerie si besoin),
+ * sur la première section du cours et sur la flashcard associée.
+ */
+const SUBJECT_BY_ID = new Map(SUBJECTS.map((s) => [s.id, s]));
+const CHAPTER_SUBJECT_ID: Record<string, string> = {};
+for (const ch of CHAPTERS) CHAPTER_SUBJECT_ID[ch.id] = ch.subjectId;
+
 export const COURSES = [
   ...BASE_COURSES,
   ...EXTRA_COURSES,
@@ -723,10 +733,16 @@ export const COURSES = [
   ...X26_EXTENSION.courses,
   ...X27_NEW_SUBJECTS_EXTENSION.courses,
   ...X27_EXTENSION.courses,
-].map((crs) => ({
-  ...crs,
-  classLevel: crs.classLevel ?? CHAPTER_CLASS_MAP[crs.chapterId] ?? getSubjectClassLevels(crs.subjectId)[0],
-}));
+].map((crs) => {
+  const chapterDiagram = getChapterIllustration(SUBJECT_BY_ID.get(crs.subjectId), crs.chapterId);
+  return {
+    ...crs,
+    classLevel: crs.classLevel ?? CHAPTER_CLASS_MAP[crs.chapterId] ?? getSubjectClassLevels(crs.subjectId)[0],
+    sections: crs.sections.map((sec, index) =>
+      index === 0 ? { ...sec, diagramId: sec.diagramId ?? chapterDiagram } : sec
+    ),
+  };
+});
 
 export const FICHES = [
   ...BASE_FICHES,
@@ -912,4 +928,8 @@ export const FLASHCARDS = [
   ...X26_EXTENSION.flashcards,
   ...X27_NEW_SUBJECTS_EXTENSION.flashcards,
   ...X27_EXTENSION.flashcards,
-];
+].map((fc) => {
+  if (fc.diagramId) return fc;
+  const subjectId = CHAPTER_SUBJECT_ID[fc.chapterId] ?? (fc as { subjectId?: string }).subjectId;
+  return { ...fc, diagramId: getChapterIllustration(SUBJECT_BY_ID.get(subjectId ?? ''), fc.chapterId) };
+});

@@ -145,6 +145,32 @@ export const DIAGRAM_META: Partial<Record<DiagramId, { title: string; summary: s
     title: 'Ordre protocolaire',
     summary: 'Préséance bilatérale (fonction, ancienneté) et ordre alphabétique multilatéral.',
   },
+
+  // v28.0 — Illustrations pratiques transversales
+  demarche_methodologique: {
+    title: 'Démarche méthodologique en 4 temps',
+    summary: 'Observer, analyser, agir, vérifier : la boucle de méthode applicable à tout chapitre.',
+  },
+  schema_cause_effet: {
+    title: 'Diagramme causes-effets',
+    summary: 'Matière, matériel, méthode, main-d’œuvre et milieu : remonter aux causes racines.',
+  },
+  frise_chronologique: {
+    title: 'Frise chronologique',
+    summary: 'Situer les étapes dans le temps et repérer les jalons.',
+  },
+  comparaison_criteres: {
+    title: 'Comparaison sur critères',
+    summary: 'Comparer deux options avec des critères pondérés (coût, délai, qualité, risque).',
+  },
+  carte_notions: {
+    title: 'Carte de notions',
+    summary: 'Une notion centrale, ses branches : définition, exemple, méthode, limites.',
+  },
+  checklist_validation: {
+    title: 'Liste de vérification',
+    summary: 'Cocher les points essentiels avant de rendre un travail.',
+  },
   mediation_triangle: {
     title: 'Triangle positions, intérêts, besoins',
     summary: 'Dépasser les positions pour négocier sur les intérêts et les besoins.',
@@ -503,15 +529,58 @@ const KEYWORD_GALLERIES: { test: RegExp; diagrams: DiagramId[] }[] = [
 const FALLBACK_GALLERY: DiagramId[] = [];
 
 /** Renvoie la galerie illustrée (dédoublonnée) d'une matière, ou [] si aucun schéma n'est pertinent. */
+
+/**
+ * v28.0 — Illustrations pratiques transversales ajoutées aux galeries trop courtes
+ * et sélection stable d'un schéma pour chaque chapitre.
+ */
+const PRACTICAL_ROTATION: DiagramId[] = [
+  'demarche_methodologique',
+  'checklist_validation',
+  'carte_notions',
+  'schema_cause_effet',
+  'frise_chronologique',
+  'comparaison_criteres',
+];
+
+function stableHash(seed: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i += 1) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return Math.abs(h);
+}
+
+/** Garantit au moins trois illustrations par matière, sans jamais écraser les dédiées. */
+function withPractical(base: DiagramId[], seed: string): DiagramId[] {
+  if (base.length >= 3) return base;
+  const out = [...base];
+  const start = stableHash(seed) % PRACTICAL_ROTATION.length;
+  let step = 0;
+  while (out.length < 3 && step < PRACTICAL_ROTATION.length) {
+    const candidate = PRACTICAL_ROTATION[(start + step) % PRACTICAL_ROTATION.length];
+    if (!out.includes(candidate)) out.push(candidate);
+    step += 1;
+  }
+  return out;
+}
+
+export function getChapterIllustration(subject: Subject | undefined, chapterId: string): DiagramId | undefined {
+  const gallery = getSubjectDiagramGallery(subject);
+  if (gallery.length === 0) return undefined;
+  return gallery[stableHash(chapterId) % gallery.length];
+}
+
 export function getSubjectDiagramGallery(subject?: Subject): DiagramId[] {
   if (!subject) return FALLBACK_GALLERY;
   const explicit = SUBJECT_GALLERIES[subject.id];
-  if (explicit && explicit.length > 0) return explicit;
+  if (explicit && explicit.length > 0) return withPractical(explicit, subject.id);
   const key = `${subject.id} ${subject.name ?? ''}`.toLowerCase();
   for (const entry of KEYWORD_GALLERIES) {
-    if (entry.test.test(key)) return entry.diagrams;
+    if (entry.test.test(key)) return withPractical(entry.diagrams, subject.id);
   }
-  return FALLBACK_GALLERY;
+  return withPractical(FALLBACK_GALLERY, subject.id);
 }
 
 /** Choisit un schéma déterminant (stable et varié) pour un chapitre donné. */
