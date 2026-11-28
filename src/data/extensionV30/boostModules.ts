@@ -2,7 +2,7 @@ import { ExtensionSubjectModules } from '../extensionV23/types';
 
 /**
  * v30.0 — Deux modules « méthode et pratique » inédits par matière
- * (141 matières × 2 modules × 10 étapes), soit 2 820 nouveaux chapitres complets.
+ * (150 matières × 2 modules × 10 étapes), soit 3 000 nouveaux chapitres complets.
  */
 export const X30_BOOST_MODULES: ExtensionSubjectModules = {
   maths: [
@@ -568,5 +568,41 @@ export const X30_BOOST_MODULES: ExtensionSubjectModules = {
   protocole_diplomatique: [
     ['x30-correspondance-diplomatique', 'Correspondance diplomatique', 'Note verbale, lettre, formule, ton', 'Chaque type de note a une forme et un ton codifiés', 'Mélanger note verbale et lettre personnelle', 'Note d’invitation'],
     ['x30-reunions-internationales', 'Organisations et réunions internationales', 'Ordre du jour, présidence, quorum, résolution', 'Une réunion internationale suit un règlement intérieur', 'Improviser l’ordre de parole', 'Sommet régional'],
+  ],
+  imagerie_medicale: [
+    ['x30-doppler-vasculaire', 'Échographie doppler vasculaire', 'Flux, vitesse, résistance, orientation', 'Le doppler mesure la vitesse d’un flux sanguin', 'Confondre artère et veine au doppler', 'Exploration d’une thrombose'],
+    ['x30-radiologie-interventionnelle', 'Radiologie interventionnelle', 'Guidage, cathéter, asepsie, dose', 'Un geste guidé exige une asepsie stricte', 'Intervenir sans contrôle de la dose', 'Pose de cathéter'],
+  ],
+  optometrie_optique: [
+    ['x30-lentilles-speciales', 'Lentilles spéciales et kératocône', 'Kératocône, cornée irrégulière, adaptation', 'Une cornée irrégulière demande une lentille sur mesure', 'Adapter une lentille standard à un kératocône', 'Kératocône débutant'],
+    ['x30-vision-conduite', 'Vision et conduite automobile', 'Champ visuel, acuité minimale, éblouissement', 'L’aptitude à conduire exige une acuité minimale réglementaire', 'Délivrer une attestation sans mesure', 'Renouvellement de permis'],
+  ],
+  appareillage_orthopedie: [
+    ['x30-appareillage-sport', 'Appareillage et sport', 'Contention, souplesse, matériaux, reprise', 'Une orthèse de sport doit concilier maintien et mobilité', 'Immobiliser totalement une articulation sportive', 'Entorse du sportif'],
+    ['x30-ortheses-main-poignet', 'Orthèses de la main et du poignet', 'Attelle, doigtier, pouce, rééducation', 'La main s’immobilise dans une position fonctionnelle', 'Immobiliser le poignet en position extrême', 'Fracture du scaphoïde'],
+  ],
+  pharmacie_officine: [
+    ['x30-medicaments-veterinaires', 'Médicaments vétérinaires en officine', 'Espèces, posologie animale, délai d’attente', 'Un médicament vétérinaire respecte un délai d’attente', 'Utiliser une posologie humaine', 'Traitement d’un bovin'],
+    ['x30-soins-courants-pansements', 'Soins courants et pansements', 'Nettoyage, pansement, cicatrisation, orientation', 'Une plaie infectée s’oriente vers le médecin', 'Poser un pansement occlusif sur une plaie sale', 'Plaie superficielle'],
+  ],
+  mode_stylisme: [
+    ['x30-costume-traditionnel', 'Costume traditionnel et cérémonie', 'Pagne, boubou, broderie, symboles', 'Un costume de cérémonie respecte les codes du milieu', 'Mélanger les codes sans référence', 'Tenue de mariage'],
+    ['x30-defile-presentation', 'Défilé et présentation de collection', 'Ordre de passage, musique, lumière, mannequin', 'L’ordre de passage raconte une progression', 'Présenter les pièces sans ordre', 'Défilé de fin d’année'],
+  ],
+  arts_culinaires: [
+    ['x30-poissons-fruits-mer', 'Poissons et fruits de mer', 'Fraîcheur, parage, cuisson, conservation', 'Un poisson frais se reconnaît à l’œil bombé et aux ouïes rouges', 'Cuire un poisson sans contrôle de fraîcheur', 'Filet de capitaine'],
+    ['x30-buffet-reception', 'Buffets et réceptions', 'Quantités, tenue au froid, réassort, service', 'Un buffet se calcule sur le nombre de convives', 'Prévoir sans marge de réassort', 'Buffet de cent couverts'],
+  ],
+  machinisme_agricole: [
+    ['x30-motoculture-petit-materiel', 'Motoculture et petit matériel', 'Moteur deux temps, carburateur, lame, entretien', 'Le mélange deux temps respecte un dosage précis', 'Utiliser de l’essence pure dans un deux temps', 'Débroussailleuse'],
+    ['x30-electronique-tracteur', 'Électronique embarquée du tracteur', 'Capteurs, calculateur, codes défaut, diagnostic', 'Un code défaut se lit avant de remplacer une pièce', 'Changer une pièce au hasard', 'Tracteur en mode dégradé'],
+  ],
+  imprimerie_graphique: [
+    ['x30-signaletique-grand-format', 'Signalétique et grands formats', 'Bâche, adhésif, découpe, pose', 'La pose d’un adhésif exige une surface propre et dégraissée', 'Coller sur une surface poussiéreuse', 'Enseigne de magasin'],
+    ['x30-finitions-luxe', 'Finitions de luxe et dorure', 'Vernis sélectif, dorure à chaud, gaufrage', 'La dorure à chaud se réalise avec un cliché et un film', 'Dorer sans réglage de température', 'Carte de vœux'],
+  ],
+  bureautique_secretariat: [
+    ['x30-accueil-international', 'Accueil international et langues', 'Formules, interprétation, courtoisie, culture', 'L’accueil international adapte les codes au visiteur', 'Traduire mot à mot sans contexte', 'Visite d’une délégation'],
+    ['x30-archivage-numerique', 'Archivage numérique et GED', 'Nommage, métadonnées, version, sauvegarde', 'Un fichier archivé porte un nom et des métadonnées explicites', 'Archiver sans règle de nommage', 'Dossier de marché public'],
   ],
 };

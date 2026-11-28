@@ -146,7 +146,7 @@ function buildWave(
   return { ...merged, subjectsCovered: covered.size, illustratedChapters: illustrated };
 }
 
-/** v29.0 — 20 chapitres inédits (2 modules × 10 étapes) dans chacune des 141 matières. */
+/** v29.0 — 20 chapitres inédits (2 modules × 10 étapes) dans chacune des 150 matières. */
 export function buildBoostV29(existing: Chapter[], subjects: Subject[]): V29Bundle {
   return buildWave(existing, subjects, X29_BOOST_MODULES, BOOST_STAGES_V29, {
     idPrefix: 'x29',

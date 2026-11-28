@@ -90,6 +90,16 @@ export const SECONDE_SCIENCE_SUBJECT_IDS: string[] = [
   'horticulture_paysage',
   'menuiserie_ebenisterie',
   'jeu_video_esport',
+  // v31.0 — neuf matières professionnelles
+  'imagerie_medicale',
+  'optometrie_optique',
+  'appareillage_orthopedie',
+  'pharmacie_officine',
+  'mode_stylisme',
+  'arts_culinaires',
+  'machinisme_agricole',
+  'imprimerie_graphique',
+  'bureautique_secretariat',
 
 ];
 
@@ -157,6 +167,16 @@ export const SECONDE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'immobilier_transaction',
   'orthophonie_langage',
   'kinesitherapie_reeducation',
+  // v31.0 — neuf matières professionnelles
+  'imagerie_medicale',
+  'optometrie_optique',
+  'appareillage_orthopedie',
+  'pharmacie_officine',
+  'mode_stylisme',
+  'arts_culinaires',
+  'machinisme_agricole',
+  'imprimerie_graphique',
+  'bureautique_secretariat',
 
 ];
 
@@ -235,6 +255,16 @@ export const PREMIERE_SCIENCE_SUBJECT_IDS: string[] = [
   'menuiserie_ebenisterie',
   'jeu_video_esport',
   'kinesitherapie_reeducation',
+  // v31.0 — neuf matières professionnelles
+  'imagerie_medicale',
+  'optometrie_optique',
+  'appareillage_orthopedie',
+  'pharmacie_officine',
+  'mode_stylisme',
+  'arts_culinaires',
+  'machinisme_agricole',
+  'imprimerie_graphique',
+  'bureautique_secretariat',
 
 ];
 
@@ -296,6 +326,16 @@ export const PREMIERE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'droit_notarial',
   'immobilier_transaction',
   'orthophonie_langage',
+  // v31.0 — neuf matières professionnelles
+  'imagerie_medicale',
+  'optometrie_optique',
+  'appareillage_orthopedie',
+  'pharmacie_officine',
+  'mode_stylisme',
+  'arts_culinaires',
+  'machinisme_agricole',
+  'imprimerie_graphique',
+  'bureautique_secretariat',
 
 ];
 
@@ -397,6 +437,16 @@ export const TERMINALE_SCIENCE_SUBJECT_IDS: string[] = [
   'horticulture_paysage',
   'menuiserie_ebenisterie',
   'jeu_video_esport',
+  // v31.0 — neuf matières professionnelles
+  'imagerie_medicale',
+  'optometrie_optique',
+  'appareillage_orthopedie',
+  'pharmacie_officine',
+  'mode_stylisme',
+  'arts_culinaires',
+  'machinisme_agricole',
+  'imprimerie_graphique',
+  'bureautique_secretariat',
 
 ];
 
@@ -493,5 +543,15 @@ export const TERMINALE_LITTERAIRE_SUBJECT_IDS: string[] = [
   'immobilier_transaction',
   'orthophonie_langage',
   'jeu_video_esport',
+  // v31.0 — neuf matières professionnelles
+  'imagerie_medicale',
+  'optometrie_optique',
+  'appareillage_orthopedie',
+  'pharmacie_officine',
+  'mode_stylisme',
+  'arts_culinaires',
+  'machinisme_agricole',
+  'imprimerie_graphique',
+  'bureautique_secretariat',
 
 ];

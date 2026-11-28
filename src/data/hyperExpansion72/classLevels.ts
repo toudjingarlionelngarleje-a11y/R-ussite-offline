@@ -289,6 +289,16 @@ export const SUBJECT_CLASS_PROFILES: Record<string, ClassLevelId[]> = {
   viticulture_oenologie: LYCEE_TO_MASTER,
   gemmologie_joaillerie: LYCEE_TO_MASTER,
   protocole_diplomatique: TLE_TO_MASTER,
+  // v31.0 — neuf nouvelles matières professionnelles
+  imagerie_medicale: TLE_TO_MASTER,
+  optometrie_optique: TLE_TO_MASTER,
+  appareillage_orthopedie: TLE_TO_MASTER,
+  pharmacie_officine: TLE_TO_MASTER,
+  mode_stylisme: FROM_3E,
+  arts_culinaires: FROM_3E,
+  machinisme_agricole: FROM_3E,
+  imprimerie_graphique: FROM_3E,
+  bureautique_secretariat: FROM_3E,
 
   // v24.0 — dix nouvelles matières transversales
   education_financiere: FROM_3E,

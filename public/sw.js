@@ -1,6 +1,6 @@
-const CACHE_NAME = 'reussite-offline-secure-v28';
+const CACHE_NAME = 'reussite-offline-secure-v29';
 const STATIC_ASSETS = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg'];
-const MAX_CACHE_ENTRIES = 340;
+const MAX_CACHE_ENTRIES = 360;
 
 // Service Worker Security Firewall: allowed MIME prefixes for offline cache (Anti-Cache Poisoning)
 const ALLOWED_CACHE_MIME_PREFIXES = [

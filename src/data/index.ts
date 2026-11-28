@@ -197,6 +197,8 @@ import {
 } from './extensionV27/builder';
 import { NEW_SUBJECTS_V27 } from './newSubjectsV27/subjects';
 import { buildBoostV29 } from './extensionV29/builder';
+import { buildNewSubjectsV31 } from './extensionV31/builder';
+import { NEW_SUBJECTS_V31 } from './newSubjectsV31/subjects';
 import { buildBoostV30 } from './extensionV30/builder';
 import {
   buildNewSubjectsV24,
@@ -522,6 +524,8 @@ export const SUBJECTS = [
   ...NEW_SUBJECTS_V26,
   // v27.0 — huit nouvelles matières de métiers et de protocole (90 chapitres chacune)
   ...NEW_SUBJECTS_V27,
+  // v31.0 — neuf nouvelles matières professionnelles (120 chapitres chacune)
+  ...NEW_SUBJECTS_V31,
 ].map((s) => ({
   ...s,
   classLevels:
@@ -546,21 +550,31 @@ const NEW_SUBJECT_IDS_V24 = new Set(NEW_SUBJECTS_V24.map((s) => s.id));
 const NEW_SUBJECT_IDS_V25 = new Set(NEW_SUBJECTS_V25.map((s) => s.id));
 const NEW_SUBJECT_IDS_V26 = new Set(NEW_SUBJECTS_V26.map((s) => s.id));
 const NEW_SUBJECT_IDS_V27 = new Set(NEW_SUBJECTS_V27.map((s) => s.id));
+const NEW_SUBJECT_IDS_V31 = new Set(NEW_SUBJECTS_V31.map((s) => s.id));
 const LEGACY_SUBJECTS = SUBJECTS.filter(
   (s) =>
     !NEW_SUBJECT_IDS_V24.has(s.id) &&
     !NEW_SUBJECT_IDS_V25.has(s.id) &&
     !NEW_SUBJECT_IDS_V26.has(s.id) &&
-    !NEW_SUBJECT_IDS_V27.has(s.id)
+    !NEW_SUBJECT_IDS_V27.has(s.id) &&
+    !NEW_SUBJECT_IDS_V31.has(s.id)
 );
 /** Les 117 matières présentes avant v25.0 (vagues v19.0 à v24.0 incluses). */
 const SUBJECTS_V24 = SUBJECTS.filter(
-  (s) => !NEW_SUBJECT_IDS_V25.has(s.id) && !NEW_SUBJECT_IDS_V26.has(s.id) && !NEW_SUBJECT_IDS_V27.has(s.id)
+  (s) =>
+    !NEW_SUBJECT_IDS_V25.has(s.id) &&
+    !NEW_SUBJECT_IDS_V26.has(s.id) &&
+    !NEW_SUBJECT_IDS_V27.has(s.id) &&
+    !NEW_SUBJECT_IDS_V31.has(s.id)
 );
 /** Les 125 matières présentes avant v26.0 (vagues v19.0 à v25.0 incluses). */
-const SUBJECTS_V25 = SUBJECTS.filter((s) => !NEW_SUBJECT_IDS_V26.has(s.id) && !NEW_SUBJECT_IDS_V27.has(s.id));
+const SUBJECTS_V25 = SUBJECTS.filter(
+  (s) => !NEW_SUBJECT_IDS_V26.has(s.id) && !NEW_SUBJECT_IDS_V27.has(s.id) && !NEW_SUBJECT_IDS_V31.has(s.id)
+);
 /** Les 133 matières présentes avant v27.0 (vagues v19.0 à v26.0 incluses). */
-const SUBJECTS_V26 = SUBJECTS.filter((s) => !NEW_SUBJECT_IDS_V27.has(s.id));
+const SUBJECTS_V26 = SUBJECTS.filter((s) => !NEW_SUBJECT_IDS_V27.has(s.id) && !NEW_SUBJECT_IDS_V31.has(s.id));
+/** Les 141 matières présentes avant v31.0 (vagues v19.0 à v30.0 incluses). */
+const SUBJECTS_V27 = SUBJECTS.filter((s) => !NEW_SUBJECT_IDS_V31.has(s.id));
 
 const RAW_CHAPTERS_BASE = [
   ...BASE_CHAPTERS,
@@ -662,15 +676,27 @@ export const X27_NEW_SUBJECTS_EXTENSION = buildNewSubjectsV27(RAW_CHAPTERS_V26, 
 const RAW_CHAPTERS_WITH_V27_SUBJECTS = [...RAW_CHAPTERS_V26, ...X27_NEW_SUBJECTS_EXTENSION.chapters];
 
 /** v27.0 — approfondissement illustré : 10 chapitres de plus dans les 141 matières. */
-export const X27_EXTENSION = buildBoostV27(RAW_CHAPTERS_WITH_V27_SUBJECTS, SUBJECTS);
+export const X27_EXTENSION = buildBoostV27(RAW_CHAPTERS_WITH_V27_SUBJECTS, SUBJECTS_V27);
 
-/** v29.0 — deux modules inédits par matière : 20 chapitres de plus dans les 141 matières. */
-export const X29_EXTENSION = buildBoostV29([...RAW_CHAPTERS_WITH_V27_SUBJECTS, ...X27_EXTENSION.chapters], SUBJECTS);
+/** v31.0 — neuf nouvelles matières professionnelles, 80 chapitres chacune. */
+export const X31_NEW_SUBJECTS_EXTENSION = buildNewSubjectsV31(
+  [...RAW_CHAPTERS_WITH_V27_SUBJECTS, ...X27_EXTENSION.chapters],
+  NEW_SUBJECTS_V31
+);
+
+const RAW_CHAPTERS_WITH_V31_SUBJECTS = [
+  ...RAW_CHAPTERS_WITH_V27_SUBJECTS,
+  ...X27_EXTENSION.chapters,
+  ...X31_NEW_SUBJECTS_EXTENSION.chapters,
+];
+
+/** v29.0 — deux modules inédits par matière : 20 chapitres de plus dans les 150 matières. */
+export const X29_EXTENSION = buildBoostV29(RAW_CHAPTERS_WITH_V31_SUBJECTS, SUBJECTS);
 
 /** v30.0 — deux modules « méthode et pratique » inédits par matière : 20 chapitres de plus. */
-export const X30_EXTENSION = buildBoostV30([...RAW_CHAPTERS_WITH_V27_SUBJECTS, ...X27_EXTENSION.chapters, ...X29_EXTENSION.chapters], SUBJECTS);
+export const X30_EXTENSION = buildBoostV30([...RAW_CHAPTERS_WITH_V31_SUBJECTS, ...X29_EXTENSION.chapters], SUBJECTS);
 
-const RAW_CHAPTERS = [...RAW_CHAPTERS_WITH_V27_SUBJECTS, ...X27_EXTENSION.chapters, ...X29_EXTENSION.chapters, ...X30_EXTENSION.chapters];
+const RAW_CHAPTERS = [...RAW_CHAPTERS_WITH_V31_SUBJECTS, ...X29_EXTENSION.chapters, ...X30_EXTENSION.chapters];
 
 // Attribuer un niveau de classe (6e → Master) à 100% des chapitres sans écraser les attributions explicites
 const UNASSIGNED_BY_SUBJECT: Record<string, string[]> = {};
@@ -753,6 +779,7 @@ export const COURSES = [
   ...X26_EXTENSION.courses,
   ...X27_NEW_SUBJECTS_EXTENSION.courses,
   ...X27_EXTENSION.courses,
+  ...X31_NEW_SUBJECTS_EXTENSION.courses,
   ...X29_EXTENSION.courses,
   ...X30_EXTENSION.courses,
 ].map((crs) => {
@@ -802,6 +829,7 @@ export const FICHES = [
   ...X26_EXTENSION.fiches,
   ...X27_NEW_SUBJECTS_EXTENSION.fiches,
   ...X27_EXTENSION.fiches,
+  ...X31_NEW_SUBJECTS_EXTENSION.fiches,
   ...X29_EXTENSION.fiches,
   ...X30_EXTENSION.fiches,
 ].map((fic) => ({
@@ -844,6 +872,7 @@ const CORE_AND_MEGA_QUESTIONS = [
   ...X26_EXTENSION.questions,
   ...X27_NEW_SUBJECTS_EXTENSION.questions,
   ...X27_EXTENSION.questions,
+  ...X31_NEW_SUBJECTS_EXTENSION.questions,
   ...X29_EXTENSION.questions,
   ...X30_EXTENSION.questions,
 ];
@@ -904,6 +933,7 @@ export const ANNALES = [
   ...X26_EXTENSION.annales,
   ...X27_NEW_SUBJECTS_EXTENSION.annales,
   ...X27_EXTENSION.annales,
+  ...X31_NEW_SUBJECTS_EXTENSION.annales,
   ...X29_EXTENSION.annales,
   ...X30_EXTENSION.annales,
   // v22.0 — 24 annales inédites (6 nouveaux parcours × 4 sessions)
@@ -956,6 +986,7 @@ export const FLASHCARDS = [
   ...X26_EXTENSION.flashcards,
   ...X27_NEW_SUBJECTS_EXTENSION.flashcards,
   ...X27_EXTENSION.flashcards,
+  ...X31_NEW_SUBJECTS_EXTENSION.flashcards,
   ...X29_EXTENSION.flashcards,
   ...X30_EXTENSION.flashcards,
 ].map((fc) => {

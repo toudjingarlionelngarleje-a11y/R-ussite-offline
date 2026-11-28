@@ -144,7 +144,7 @@ function buildWave(
   return { ...merged, subjectsCovered: covered.size, illustratedChapters: illustrated };
 }
 
-/** v30.0 — 20 chapitres « méthode et pratique » de plus dans chacune des 141 matières. */
+/** v30.0 — 20 chapitres « méthode et pratique » de plus dans chacune des 150 matières. */
 export function buildBoostV30(existing: Chapter[], subjects: Subject[]): V30Bundle {
   return buildWave(existing, subjects, X30_BOOST_MODULES, BOOST_STAGES_V30, {
     idPrefix: 'x30',

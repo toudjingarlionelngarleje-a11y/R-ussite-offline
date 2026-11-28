@@ -1,7 +1,7 @@
 import { ExtensionSubjectModules } from '../extensionV23/types';
 
 /**
- * v29.0 — Deux modules « approfondissement » inédits par matière (141 matières × 2 modules × 10 étapes),
+ * v29.0 — Deux modules « approfondissement » inédits par matière (150 matières × 2 modules × 10 étapes),
  * soit 2 820 nouveaux chapitres complets, illustrés par la galerie SVG de chaque matière.
  */
 export const X29_BOOST_MODULES: ExtensionSubjectModules = {
@@ -568,5 +568,41 @@ export const X29_BOOST_MODULES: ExtensionSubjectModules = {
   protocole_diplomatique: [
     ['x29-visites-officielles', 'Visites officielles', 'Préséance, accueil, drapeaux, programme', 'L’ordre de préséance se fixe avant toute visite', 'Improviser l’ordre d’accueil', 'Visite d’État'],
     ['x29-immunites-diplomatiques', 'Immunités et courtoisie', 'Immunité, valise diplomatique, réciprocité', 'L’immunité protège la fonction et non la personne', 'Confondre immunité et impunité', 'Incident consulaire'],
+  ],
+  imagerie_medicale: [
+    ['x29-protocoles-urgence-imagerie', 'Protocoles d’urgence en imagerie', 'Priorisation, transfert, communication, urgence vitale', 'L’urgence vitale passe avant le programme de la journée', 'Faire attendre un traumatisé grave', 'Patient polytraumatisé'],
+    ['x29-archivage-pacs', 'Archivage et système PACS', 'DICOM, réseau, sauvegarde, droits d’accès', 'Une image non archivée est une image perdue', 'Stocker uniquement sur un poste local', 'Consultation d’examens anciens'],
+  ],
+  optometrie_optique: [
+    ['x29-vision-binoculaire', 'Vision binoculaire et strabisme', 'Œil directeur, convergence, diplopie, dépistage', 'La vision binoculaire se teste avant toute correction', 'Corriger sans tester la binocularité', 'Enfant qui louche'],
+    ['x29-optique-pediatrique', 'Optique de l’enfant', 'Développement visuel, amblyopie, monture adaptée', 'L’amblyopie se traite avant la fin de la période sensible', 'Attendre l’âge adulte pour corriger', 'Bilan visuel à six ans'],
+  ],
+  appareillage_orthopedie: [
+    ['x29-appareillage-pied', 'Appareillage du pied et semelles', 'Empreinte, appui, correction, chaussage', 'Une semelle corrige un trouble de la marche identifié', 'Corriger sans analyse de la marche', 'Pied plat douloureux'],
+    ['x29-materiaux-biomedicaux', 'Matériaux biomédicaux et biocompatibilité', 'Polymères, composites, métaux, contact cutané', 'Un matériau au contact de la peau doit être biocompatible', 'Choisir un matériau sans tenir compte du terrain', 'Allergie de contact'],
+  ],
+  pharmacie_officine: [
+    ['x29-phytotherapie', 'Phytothérapie et compléments', 'Plantes, extraits, interactions, allégations', 'Une plante active peut interagir avec un traitement', 'Considérer le naturel comme sans risque', 'Patient sous anticoagulant'],
+    ['x29-vaccination-officine', 'Vaccination à l’officine', 'Chaîne du froid, injection, traçabilité, urgence', 'Le vaccin se conserve jusqu’à l’injection à bonne température', 'Sortir le vaccin trop tôt du réfrigérateur', 'Campagne de vaccination'],
+  ],
+  mode_stylisme: [
+    ['x29-broderie-ornements', 'Broderie et ornements', 'Points, tambour, perles, entretien', 'Le point se choisit selon le tissu et l’effet voulu', 'Broder un tissu extensible sans renfort', 'Broderie d’un col'],
+    ['x29-mode-durable', 'Mode durable et réemploi', 'Fibres recyclées, upcycling, traçabilité, entretien', 'Le réemploi prolonge la vie d’un vêtement', 'Jeter une pièce réparable', 'Vêtement transformé'],
+  ],
+  arts_culinaires: [
+    ['x29-cuisine-cereales-legumineuses', 'Céréales et légumineuses locales', 'Mil, sorgho, riz, niébé, trempage', 'Le trempage réduit le temps de cuisson des légumineuses', 'Cuire sans trempage préalable', 'Plat de niébé'],
+    ['x29-conservation-produits', 'Conservation et transformation', 'Séchage, salaison, conserve, étiquetage', 'Une conserve respecte un barème de stérilisation', 'Refermer un bocal sans stériliser', 'Confiture artisanale'],
+  ],
+  machinisme_agricole: [
+    ['x29-irrigation-motorisee', 'Irrigation et pompage motorisé', 'Pompe, débit, hauteur, réseau, entretien', 'Le débit utile dépend de la hauteur manométrique', 'Dimensionner une pompe sans hauteur', 'Pompage pour maraîchage'],
+    ['x29-reparation-terrain', 'Réparation au champ', 'Diagnostic, outillage, dépannage, sécurité', 'Une réparation au champ se prépare avec l’outillage adapté', 'Bricoler sans couper le moteur', 'Panne au labour'],
+  ],
+  imprimerie_graphique: [
+    ['x29-emballage-carton', 'Emballage et cartonnage', 'Gabarit, découpe, collage, résistance', 'Le gabarit d’emballage se construit avant l’impression', 'Imprimer avant validation du gabarit', 'Boîte de conditionnement'],
+    ['x29-gestion-atelier-graphique', 'Gestion d’atelier graphique', 'Planning, gâche, encres, maintenance', 'La gâche se prévoit dans le calcul du tirage', 'Chiffrer sans gâche', 'Commande urgente'],
+  ],
+  bureautique_secretariat: [
+    ['x29-courriels-professionnels', 'Courriels et communication écrite', 'Objet, ton, pièces jointes, relance', 'Un courriel professionnel annonce l’objet et l’action attendue', 'Envoyer un message sans objet', 'Relance d’un fournisseur'],
+    ['x29-organisation-evenement', 'Organisation d’événements et déplacements', 'Budget, rétroplanning, prestataires, logistique', 'Un événement se pilote par un rétroplanning', 'Réserver sans budget validé', 'Séminaire de service'],
   ],
 };
