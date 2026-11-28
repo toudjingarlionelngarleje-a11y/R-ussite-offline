@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reussite-offline-secure-v27';
+const CACHE_NAME = 'reussite-offline-secure-v28';
 const STATIC_ASSETS = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg'];
 const MAX_CACHE_ENTRIES = 340;
 

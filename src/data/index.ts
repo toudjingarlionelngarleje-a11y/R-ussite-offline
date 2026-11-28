@@ -197,6 +197,7 @@ import {
 } from './extensionV27/builder';
 import { NEW_SUBJECTS_V27 } from './newSubjectsV27/subjects';
 import { buildBoostV29 } from './extensionV29/builder';
+import { buildBoostV30 } from './extensionV30/builder';
 import {
   buildNewSubjectsV24,
   buildBoostV24,
@@ -666,7 +667,10 @@ export const X27_EXTENSION = buildBoostV27(RAW_CHAPTERS_WITH_V27_SUBJECTS, SUBJE
 /** v29.0 — deux modules inédits par matière : 20 chapitres de plus dans les 141 matières. */
 export const X29_EXTENSION = buildBoostV29([...RAW_CHAPTERS_WITH_V27_SUBJECTS, ...X27_EXTENSION.chapters], SUBJECTS);
 
-const RAW_CHAPTERS = [...RAW_CHAPTERS_WITH_V27_SUBJECTS, ...X27_EXTENSION.chapters, ...X29_EXTENSION.chapters];
+/** v30.0 — deux modules « méthode et pratique » inédits par matière : 20 chapitres de plus. */
+export const X30_EXTENSION = buildBoostV30([...RAW_CHAPTERS_WITH_V27_SUBJECTS, ...X27_EXTENSION.chapters, ...X29_EXTENSION.chapters], SUBJECTS);
+
+const RAW_CHAPTERS = [...RAW_CHAPTERS_WITH_V27_SUBJECTS, ...X27_EXTENSION.chapters, ...X29_EXTENSION.chapters, ...X30_EXTENSION.chapters];
 
 // Attribuer un niveau de classe (6e → Master) à 100% des chapitres sans écraser les attributions explicites
 const UNASSIGNED_BY_SUBJECT: Record<string, string[]> = {};
@@ -750,6 +754,7 @@ export const COURSES = [
   ...X27_NEW_SUBJECTS_EXTENSION.courses,
   ...X27_EXTENSION.courses,
   ...X29_EXTENSION.courses,
+  ...X30_EXTENSION.courses,
 ].map((crs) => {
   const chapterDiagram = getChapterIllustration(SUBJECT_BY_ID.get(crs.subjectId), crs.chapterId);
   return {
@@ -798,6 +803,7 @@ export const FICHES = [
   ...X27_NEW_SUBJECTS_EXTENSION.fiches,
   ...X27_EXTENSION.fiches,
   ...X29_EXTENSION.fiches,
+  ...X30_EXTENSION.fiches,
 ].map((fic) => ({
   ...fic,
   classLevel: fic.classLevel ?? CHAPTER_CLASS_MAP[fic.chapterId] ?? getSubjectClassLevels(fic.subjectId)[0],
@@ -839,6 +845,7 @@ const CORE_AND_MEGA_QUESTIONS = [
   ...X27_NEW_SUBJECTS_EXTENSION.questions,
   ...X27_EXTENSION.questions,
   ...X29_EXTENSION.questions,
+  ...X30_EXTENSION.questions,
 ];
 
 const SUBJECT_META_MAP: Record<string, { name: string; examIds: string[] }> = Object.fromEntries(
@@ -898,6 +905,7 @@ export const ANNALES = [
   ...X27_NEW_SUBJECTS_EXTENSION.annales,
   ...X27_EXTENSION.annales,
   ...X29_EXTENSION.annales,
+  ...X30_EXTENSION.annales,
   // v22.0 — 24 annales inédites (6 nouveaux parcours × 4 sessions)
   ...buildAnnalesV22(QUESTIONS),
 ].map((a) => {
@@ -949,6 +957,7 @@ export const FLASHCARDS = [
   ...X27_NEW_SUBJECTS_EXTENSION.flashcards,
   ...X27_EXTENSION.flashcards,
   ...X29_EXTENSION.flashcards,
+  ...X30_EXTENSION.flashcards,
 ].map((fc) => {
   if (fc.diagramId) return fc;
   const subjectId = CHAPTER_SUBJECT_ID[fc.chapterId] ?? (fc as { subjectId?: string }).subjectId;

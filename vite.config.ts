@@ -47,6 +47,7 @@ export default defineConfig({
           if (id.includes('/extensionV27/')) return 'data-x27';
           if (id.includes('/newSubjectsV27/')) return 'data-x27';
           if (id.includes('/extensionV29/')) return 'data-x29';
+          if (id.includes('/extensionV30/')) return 'data-x30';
         },
       },
     },
