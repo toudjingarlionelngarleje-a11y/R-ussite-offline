@@ -10,7 +10,7 @@ import {
   USER_CATEGORIES,
 } from './metadata';
 import { ANNALES as BASE_ANNALES, QUESTIONS as BASE_QUESTIONS } from './questions';
-import { buildRevisionPaths } from './revisionPaths/builder';
+import { buildExpressRevisionPaths, buildRevisionPaths } from './revisionPaths/builder';
 import { FICHES as BASE_FICHES, FLASHCARDS as BASE_FLASHCARDS } from './fichesAndCards';
 import {
   EXTRA_CHAPTERS,
@@ -1012,3 +1012,6 @@ export const FLASHCARDS = [
  * fiches, QCM, flashcards et annales du catalogue hors ligne.
  */
 export const REVISION_PATHS = buildRevisionPaths(SUBJECTS, CHAPTERS, ANNALES);
+
+/** v34.0 — parcours express de trois journées (J-3, J-2, J-1), un par matière. */
+export const REVISION_EXPRESS_PATHS = buildExpressRevisionPaths(SUBJECTS, CHAPTERS, ANNALES);

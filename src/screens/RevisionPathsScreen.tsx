@@ -17,11 +17,12 @@ import {
   Sparkles,
   Target,
 } from 'lucide-react';
-import { REVISION_PATHS } from '../data';
+import { REVISION_EXPRESS_PATHS, REVISION_PATHS } from '../data';
 import { createRevisionEngine } from '../data/revisionPaths/engine';
 import { RevisionDayStep, RevisionPathPlan } from '../data/revisionPaths/types';
 import { ANNALES, CHAPTERS, FLASHCARDS, SUBJECTS, useApp } from '../context/AppContext';
-import { RevisionStepKind } from '../types';
+import { RevisionPathMode, RevisionStepKind } from '../types';
+import { buildRevisionSchedule } from '../lib/revisionSchedule';
 
 const STEP_META: Record<
   RevisionStepKind,
@@ -89,6 +90,8 @@ export const RevisionPathsScreen: React.FC = () => {
     openFlashcardsForSubject,
     toggleRevisionStep,
     resetRevisionPath,
+    scheduleRevisionPath,
+    unscheduleRevisionPath,
     notify,
   } = useApp();
 
@@ -98,6 +101,7 @@ export const RevisionPathsScreen: React.FC = () => {
   const [subjectId, setSubjectId] = useState(defaultSubjectId);
   const [query, setQuery] = useState('');
   const [openDay, setOpenDay] = useState<number | null>(null);
+  const [mode, setMode] = useState<RevisionPathMode>('standard');
 
   const engine = useMemo(
     () =>
@@ -114,9 +118,12 @@ export const RevisionPathsScreen: React.FC = () => {
 
   const plans = useMemo(() => {
     const map = new Map<string, RevisionPathPlan>();
-    for (const path of REVISION_PATHS) map.set(path.id, engine.buildPlan(path));
+    for (const path of [...REVISION_PATHS, ...REVISION_EXPRESS_PATHS]) map.set(path.id, engine.buildPlan(path));
     return map;
   }, [engine]);
+
+  const activePaths = mode === 'express' ? REVISION_EXPRESS_PATHS : REVISION_PATHS;
+  const planIdFor = (id: string) => (mode === 'express' ? `rp-exp-${id}` : `rp-${id}`);
 
   const progress = state.revisionPathProgress ?? {};
 
@@ -137,13 +144,15 @@ export const RevisionPathsScreen: React.FC = () => {
     let done = 0;
     let total = 0;
     let finishedPaths = 0;
-    for (const value of statsByPath.values()) {
+    for (const path of activePaths) {
+      const value = statsByPath.get(path.id);
+      if (!value) continue;
       done += value.done;
       total += value.total;
       if (value.total > 0 && value.done === value.total) finishedPaths += 1;
     }
     return { done, total, finishedPaths };
-  }, [statsByPath]);
+  }, [statsByPath, activePaths]);
 
   const subjectsSorted = useMemo(
     () => [...SUBJECTS].sort((a, b) => a.name.localeCompare(b.name, 'fr')),
@@ -161,17 +170,60 @@ export const RevisionPathsScreen: React.FC = () => {
     );
   }, [query, subjectsSorted]);
 
-  const plan = plans.get(`rp-${subjectId}`) ?? plans.values().next().value;
+  const plan = plans.get(planIdFor(subjectId)) ?? plans.values().next().value;
   const subject = SUBJECTS.find((s) => s.id === plan?.subjectId);
   const doneIds = new Set(progress[plan?.id ?? ''] ?? []);
   const currentDayIndex =
     plan?.days.find((day) => !day.steps.every((step) => doneIds.has(step.id)))?.index ?? null;
+  const scheduledDays = plan
+    ? state.studyPlan
+        .filter((item) => item.pathId === plan.id && typeof item.pathDay === 'number')
+        .sort((a, b) => a.date.localeCompare(b.date))
+    : [];
+  const scheduleLabel =
+    scheduledDays.length > 0
+      ? `${scheduledDays[0].dayLabel} → ${scheduledDays[scheduledDays.length - 1].dayLabel}`
+      : null;
+
   const planDone = plan?.days.reduce(
     (sum, day) => sum + day.steps.filter((step) => doneIds.has(step.id)).length,
     0
   ) ?? 0;
   const planTotal = plan?.stepCount ?? 0;
   const planPercent = planTotal > 0 ? Math.round((planDone / planTotal) * 100) : 0;
+
+  const handleSchedule = () => {
+    if (!plan) return;
+    const slots = buildRevisionSchedule({
+      mode,
+      dayCount: plan.days.length,
+      examDate: activeProfile?.examDate,
+      restDays: activeProfile?.restDays,
+    });
+    scheduleRevisionPath({
+      pathId: plan.id,
+      pathMode: mode,
+      subjectId: plan.subjectId,
+      days: plan.days.map((day, index) => ({
+        index: day.index,
+        date: slots[index].date,
+        dayLabel: slots[index].dayLabel,
+        title: `${plan.subjectName} — Jour ${day.index} : ${day.title}`,
+        minutes: day.minutes,
+        stepIds: day.steps.map((step) => step.id),
+      })),
+    });
+    notify(
+      `${plan.days.length} journée${plan.days.length > 1 ? 's' : ''} ajoutée${plan.days.length > 1 ? 's' : ''} au programme : ${slots[0].dayLabel} → ${slots[slots.length - 1].dayLabel}.`,
+      'success'
+    );
+  };
+
+  const handleUnschedule = () => {
+    if (!plan) return;
+    unscheduleRevisionPath(plan.id);
+    notify('Parcours retiré du programme personnalisé (ta progression est conservée).', 'info');
+  };
 
   const launchStep = (step: RevisionDayStep) => {
     if (!plan) return;
@@ -210,16 +262,17 @@ export const RevisionPathsScreen: React.FC = () => {
             Parcours de révision guidés
           </h1>
           <p className="mt-1 max-w-3xl text-sm text-slate-600 dark:text-slate-400">
-            Sept journées par matière, du diagnostic au bilan final. Chaque étape ouvre un cours,
-            une fiche, un QCM ou une annale réellement présents dans ton catalogue hors ligne :
-            rien à télécharger, rien à improviser.
+            Deux formats guidés par matière : le parcours complet en sept journées, du diagnostic au
+            bilan final, et l’express en trois journées pour la dernière ligne droite. Chaque étape
+            ouvre un cours, une fiche, un QCM ou une annale réellement présents dans ton catalogue
+            hors ligne : rien à télécharger, rien à improviser.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center">
           <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900">
-            <p className="text-lg font-extrabold text-slate-900 dark:text-white">{REVISION_PATHS.length}</p>
+            <p className="text-lg font-extrabold text-slate-900 dark:text-white">{activePaths.length}</p>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-              Parcours
+              {mode === 'express' ? 'Express' : 'Parcours'}
             </p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900">
@@ -239,10 +292,71 @@ export const RevisionPathsScreen: React.FC = () => {
         </div>
       </header>
 
+      <div className="flex flex-wrap gap-2">
+        {[
+          {
+            id: 'standard' as RevisionPathMode,
+            label: 'Parcours complet',
+            hint: '7 journées · diagnostic → bilan',
+            count: REVISION_PATHS.length,
+          },
+          {
+            id: 'express' as RevisionPathMode,
+            label: 'Parcours express',
+            hint: '3 journées · J-3, J-2, J-1',
+            count: REVISION_EXPRESS_PATHS.length,
+          },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => {
+              setMode(tab.id);
+              setOpenDay(null);
+            }}
+            aria-pressed={mode === tab.id}
+            className={`flex-1 rounded-2xl border px-4 py-3 text-left transition ${
+              mode === tab.id
+                ? 'border-indigo-600 bg-indigo-600 text-white shadow-sm'
+                : 'border-slate-200 bg-white text-slate-700 hover:border-indigo-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200'
+            }`}
+          >
+            <span className="flex items-center gap-2 text-sm font-extrabold">
+              {tab.id === 'express' ? <Sparkles className="h-4 w-4" /> : <Compass className="h-4 w-4" />}
+              {tab.label}
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  mode === tab.id
+                    ? 'bg-indigo-500 text-white'
+                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                }`}
+              >
+                {tab.count}
+              </span>
+            </span>
+            <span
+              className={`mt-1 block text-[11px] font-semibold ${
+                mode === tab.id ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              {tab.hint}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {mode === 'express' && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-xs font-semibold text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+          Parcours express : trois journées à activer à J-3, J-2 et J-1. Chaque journée tient en une
+          heure environ et ne retient que les notions tombables du cœur du programme.
+        </div>
+      )}
+
       <div className="rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 dark:border-indigo-900 dark:bg-indigo-950/40">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs font-semibold text-indigo-900 dark:text-indigo-200">
-            Progression globale : {globalTotals.done} étape{globalTotals.done > 1 ? 's' : ''} validée
+            Progression globale ({mode === 'express' ? 'express' : 'parcours complet'}) :{' '}
+            {globalTotals.done} étape{globalTotals.done > 1 ? 's' : ''} validée
             {globalTotals.done > 1 ? 's' : ''} sur {globalTotals.total} ({globalTotals.total > 0
               ? Math.round((globalTotals.done / globalTotals.total) * 100)
               : 0}
@@ -279,8 +393,7 @@ export const RevisionPathsScreen: React.FC = () => {
               </p>
             )}
             {filteredSubjects.map((item) => {
-              const itemPlan = plans.get(`rp-${item.id}`);
-              const itemStats = statsByPath.get(`rp-${item.id}`);
+              const itemStats = statsByPath.get(planIdFor(item.id));
               const percent =
                 itemStats && itemStats.total > 0
                   ? Math.round((itemStats.done / itemStats.total) * 100)
@@ -328,9 +441,9 @@ export const RevisionPathsScreen: React.FC = () => {
             })}
           </div>
           <p className="px-1 text-[11px] text-slate-500 dark:text-slate-400">
-            {filteredSubjects.length === plans.size
-              ? `${plans.size} parcours disponibles, un par matière du programme.`
-              : `${filteredSubjects.length} matière${filteredSubjects.length > 1 ? 's' : ''} sur ${plans.size} affichée${filteredSubjects.length > 1 ? 's' : ''}.`}
+            {filteredSubjects.length === activePaths.length
+              ? `${activePaths.length} parcours ${mode === 'express' ? 'express ' : ''}disponibles, un par matière du programme.`
+              : `${filteredSubjects.length} matière${filteredSubjects.length > 1 ? 's' : ''} sur ${activePaths.length} affichée${filteredSubjects.length > 1 ? 's' : ''}.`}
           </p>
         </aside>
 
@@ -340,7 +453,8 @@ export const RevisionPathsScreen: React.FC = () => {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-wide text-indigo-600 dark:text-indigo-300">
-                    {subject.shortName} · {formatMinutes(plan.totalMinutes)} · {plan.stepCount} étapes
+                    {subject.shortName} · {mode === 'express' ? 'express 3 jours' : 'parcours complet 7 jours'} ·{' '}
+                    {formatMinutes(plan.totalMinutes)} · {plan.stepCount} étapes
                   </p>
                   <h2 className="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">
                     {subject.name}
@@ -365,6 +479,44 @@ export const RevisionPathsScreen: React.FC = () => {
                     <RotateCcw className="h-3.5 w-3.5" />
                     Recommencer
                   </button>
+                  {scheduleLabel ? (
+                    <div className="flex flex-wrap items-center justify-end gap-1.5">
+                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                        <CalendarCheck2 className="h-3.5 w-3.5" />
+                        Planifié : {scheduleLabel}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleSchedule}
+                        className="rounded-lg border border-emerald-300 px-2.5 py-1.5 text-[11px] font-bold text-emerald-800 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300"
+                      >
+                        Replanifier
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleUnschedule}
+                        className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200"
+                      >
+                        Retirer
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigate('planner')}
+                        className="rounded-lg bg-slate-900 px-2.5 py-1.5 text-[11px] font-bold text-white hover:bg-slate-700 dark:bg-indigo-600"
+                      >
+                        Voir le programme
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSchedule}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-700"
+                    >
+                      <CalendarCheck2 className="h-3.5 w-3.5" />
+                      Intégrer au programme
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -450,6 +602,15 @@ export const RevisionPathsScreen: React.FC = () => {
                           <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                             {dayDone}/{day.steps.length} faits
                           </span>
+                          {(() => {
+                            const slot = scheduledDays.find((item) => item.pathDay === day.index);
+                            return slot ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                <CalendarCheck2 className="h-3 w-3" />
+                                {slot.dayLabel}
+                              </span>
+                            ) : null;
+                          })()}
                         </span>
                         <span className="mt-0.5 block truncate text-xs text-slate-500 dark:text-slate-400">
                           {day.chapters.map((c) => c.title).join(' · ')}

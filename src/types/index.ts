@@ -313,6 +313,9 @@ export interface Course {
 /** v33.0 — Parcours de révision guidés (7 journées par matière). */
 export type RevisionStepKind = 'cours' | 'fiche' | 'qcm' | 'flashcards' | 'annale' | 'bilan';
 
+/** v34.0 — deux formats : parcours complet (7 jours) ou express (3 jours). */
+export type RevisionPathMode = 'standard' | 'express';
+
 export interface RevisionPathDay {
   id: string;
   phase: string;
@@ -326,7 +329,8 @@ export interface RevisionPath {
   subjectId: string;
   title: string;
   goal: string;
-  /** 7 journées : diagnostic, fondations, cœur, méthode, entraînement, simulation, bilan. */
+  mode: RevisionPathMode;
+  /** 7 journées (complet) ou 3 journées (express). */
   days: RevisionPathDay[];
   anchorChapterCount: number;
 }
@@ -565,11 +569,17 @@ export interface StudyPlanItem {
     | 'bilan'
     | 'pause'
     | 'revision_finale'
-    | 'objectif_perso';
+    | 'objectif_perso'
+    | 'parcours';
   durationMinutes: number;
   completed: boolean;
   targetId?: string;
   priority?: 'haute' | 'normale';
+  /** v34.0 — rattachement à une journée de parcours guidé. */
+  pathId?: string;
+  pathMode?: RevisionPathMode;
+  pathDay?: number;
+  stepIds?: string[];
 }
 
 export interface SyncQueueItem {

@@ -22,7 +22,7 @@ import { CHAPTERS, EXAMS, SUBJECTS, useApp } from '../context/AppContext';
 import { buildAdaptiveRecommendations } from '../lib/adaptiveEngine';
 import { daysUntil, formatIsoDate } from '../lib/planner';
 import { isCardDue } from '../lib/sm2';
-import { FLASHCARDS, REVISION_PATHS } from '../data';
+import { FLASHCARDS, REVISION_EXPRESS_PATHS, REVISION_PATHS } from '../data';
 
 export const DashboardScreen: React.FC = () => {
   const {
@@ -282,8 +282,8 @@ export const DashboardScreen: React.FC = () => {
           },
           {
             label: 'Parcours guidés',
-            value: `${startedPathCount}/${REVISION_PATHS.length}`,
-            sub: 'Sept journées par matière',
+            value: `${startedPathCount}/${REVISION_PATHS.length + REVISION_EXPRESS_PATHS.length}`,
+            sub: 'Complet 7 j ou express 3 j',
             icon: Compass,
             tone: 'text-indigo-700 bg-indigo-50 dark:bg-indigo-950/60 dark:text-indigo-300',
             onClick: () => navigate('revision-paths'),

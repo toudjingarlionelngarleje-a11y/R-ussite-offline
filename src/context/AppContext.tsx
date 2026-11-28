@@ -102,6 +102,7 @@ import {
   PersonalNote,
   PrivacySettings,
   Question,
+  RevisionPathMode,
   ScreenId,
   SecurityConfig,
   SecurityEvent,
@@ -131,6 +132,23 @@ export interface PracticeLaunchConfig {
   immediateFeedback?: boolean;
   penaltyPerWrong?: number;
   officialSimulation?: boolean;
+}
+
+/** v34.0 — branchement d’un parcours guidé sur le programme personnalisé. */
+export interface RevisionScheduleDayInput {
+  index: number;
+  date: string;
+  dayLabel: string;
+  title: string;
+  minutes: number;
+  stepIds: string[];
+}
+
+export interface RevisionScheduleInput {
+  pathId: string;
+  pathMode: RevisionPathMode;
+  subjectId?: string;
+  days: RevisionScheduleDayInput[];
 }
 
 const DEFAULT_ACCESSIBILITY: AccessibilitySettings = {
@@ -630,6 +648,8 @@ interface AppContextValue {
   toggleCourseCompleted: (courseId: string) => void;
   toggleRevisionStep: (pathId: string, stepId: string) => void;
   resetRevisionPath: (pathId: string) => void;
+  scheduleRevisionPath: (input: RevisionScheduleInput) => void;
+  unscheduleRevisionPath: (pathId: string) => void;
   flashcardFocusSubjectId: string | null;
   openFlashcardsForSubject: (subjectId: string) => void;
   reportQuestionError: (questionId: string, questionPrompt: string, reason: string) => void;
@@ -2448,8 +2468,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const current = prev.revisionPathProgress?.[pathId] ?? [];
       const exists = current.includes(stepId);
       const next = exists ? current.filter((id) => id !== stepId) : [...current, stepId];
+      const done = new Set(next);
+      // Une journée planifiée dans le programme personnalisé se coche toute seule
+      // lorsque toutes ses étapes sont validées (et se décoche sinon).
+      const studyPlan = prev.studyPlan.map((item) => {
+        if (item.pathId !== pathId || !Array.isArray(item.stepIds) || item.stepIds.length === 0) {
+          return item;
+        }
+        if (!item.stepIds.includes(stepId)) return item;
+        const completed = item.stepIds.every((id) => done.has(id));
+        return completed === item.completed ? item : { ...item, completed };
+      });
       return {
         ...prev,
+        studyPlan,
         revisionPathProgress: { ...(prev.revisionPathProgress ?? {}), [pathId]: next },
       };
     });
@@ -2459,6 +2491,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setState((prev) => ({
       ...prev,
       revisionPathProgress: { ...(prev.revisionPathProgress ?? {}), [pathId]: [] },
+    }));
+  }, []);
+
+  const scheduleRevisionPath = useCallback((input: RevisionScheduleInput) => {
+    setState((prev) => {
+      const kept = prev.studyPlan.filter((item) => item.pathId !== input.pathId);
+      const scheduled: StudyPlanItem[] = input.days.map((day) => ({
+        id: `plan-${input.pathId}-j${day.index}`,
+        date: day.date,
+        dayLabel: day.dayLabel,
+        subjectId: input.subjectId,
+        title: day.title,
+        type: 'parcours',
+        durationMinutes: Math.max(10, Math.min(180, day.minutes)),
+        completed: false,
+        priority: 'haute',
+        pathId: input.pathId,
+        pathMode: input.pathMode,
+        pathDay: day.index,
+        stepIds: day.stepIds,
+      }));
+      const studyPlan = [...kept, ...scheduled].sort((a, b) => a.date.localeCompare(b.date));
+      return { ...prev, studyPlan };
+    });
+  }, []);
+
+  const unscheduleRevisionPath = useCallback((pathId: string) => {
+    setState((prev) => ({
+      ...prev,
+      studyPlan: prev.studyPlan.filter((item) => item.pathId !== pathId),
     }));
   }, []);
 
@@ -2514,17 +2576,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       avgMap,
       getMistakeQuestionIds().length
     );
-    setState((prev) => ({ ...prev, studyPlan: nextPlan }));
+    setState((prev) => {
+      // Les journées de parcours guidé planifiées par l’utilisateur sont conservées.
+      const keptPaths = prev.studyPlan.filter((item) => item.pathId);
+      return {
+        ...prev,
+        studyPlan: [...nextPlan, ...keptPaths].sort((a, b) => a.date.localeCompare(b.date)),
+      };
+    });
     notify('Programme de révision recalculé selon tes derniers résultats !', 'success');
   }, [activeProfile, state.sessions, allQuestions, getMistakeQuestionIds, notify]);
 
   const togglePlanItemComplete = useCallback((id: string) => {
-    setState((prev) => ({
-      ...prev,
-      studyPlan: prev.studyPlan.map((item) =>
-        item.id === id ? { ...item, completed: !item.completed } : item
-      ),
-    }));
+    setState((prev) => {
+      const target = prev.studyPlan.find((item) => item.id === id);
+      if (!target) return prev;
+      const completed = !target.completed;
+      const studyPlan = prev.studyPlan.map((item) =>
+        item.id === id ? { ...item, completed } : item
+      );
+      if (!target.pathId || !Array.isArray(target.stepIds) || target.stepIds.length === 0) {
+        return { ...prev, studyPlan };
+      }
+      // Cocher une journée de parcours valide ses étapes ; la décocher les libère.
+      const current = new Set(prev.revisionPathProgress?.[target.pathId] ?? []);
+      for (const stepId of target.stepIds) {
+        if (completed) current.add(stepId);
+        else current.delete(stepId);
+      }
+      return {
+        ...prev,
+        studyPlan,
+        revisionPathProgress: {
+          ...(prev.revisionPathProgress ?? {}),
+          [target.pathId]: Array.from(current),
+        },
+      };
+    });
   }, []);
 
   const movePlanItemDate = useCallback((id: string, newDate: string) => {
@@ -3173,7 +3261,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const backup = {
       exportedAt: new Date().toISOString(),
       owner: activeProfile?.email,
-      appVersion: `Réussite Offline v33.0 — ${CHAPTERS.length} chapitres, Coach IA ${COACH_KNOWLEDGE_STATS.notions} notions & ${COACH_KNOWLEDGE_STATS.methods} méthodes hors ligne + Bouclier 36 + Console Propriétaire`,
+      appVersion: `Réussite Offline v34.0 — ${CHAPTERS.length} chapitres, Coach IA ${COACH_KNOWLEDGE_STATS.notions} notions & ${COACH_KNOWLEDGE_STATS.methods} méthodes hors ligne + Bouclier 36 + Console Propriétaire`,
       catalogSummary: {
         exams: EXAMS.length,
         subjects: SUBJECTS.length,
@@ -3764,6 +3852,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toggleCourseCompleted,
     toggleRevisionStep,
     resetRevisionPath,
+    scheduleRevisionPath,
+    unscheduleRevisionPath,
     flashcardFocusSubjectId,
     openFlashcardsForSubject,
     reportQuestionError,

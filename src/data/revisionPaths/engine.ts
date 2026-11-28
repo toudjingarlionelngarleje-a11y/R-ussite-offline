@@ -1,11 +1,12 @@
 import { Chapter, Flashcard, Fiche, Question, RevisionPath, RevisionStepKind } from '../../types';
 import {
+  REVISION_PHASE_BY_ID,
   REVISION_PHASES,
   RevisionDayPlan,
   RevisionDayStep,
   RevisionPathPlan,
   RevisionPathSources,
-  RevisionPhaseId,
+  RevisionPhaseKey,
 } from './types';
 
 export interface RevisionEngine {
@@ -108,8 +109,8 @@ export function createRevisionEngine(sources: RevisionPathSources): RevisionEngi
     return out;
   };
 
-  const courseStep = (chapter: Chapter): RevisionDayStep => ({
-    id: `${chapter.id}-cours`,
+  const courseStep = (path: RevisionPath, chapter: Chapter): RevisionDayStep => ({
+    id: `${path.id}-${chapter.id}-cours`,
     kind: 'cours',
     label: `Cours — ${chapter.title}`,
     detail: chapter.summary,
@@ -119,8 +120,8 @@ export function createRevisionEngine(sources: RevisionPathSources): RevisionEngi
     questionIds: [],
   });
 
-  const ficheStep = (chapter: Chapter, fiche?: Fiche): RevisionDayStep => ({
-    id: `${chapter.id}-fiche`,
+  const ficheStep = (path: RevisionPath, chapter: Chapter, fiche?: Fiche): RevisionDayStep => ({
+    id: `${path.id}-${chapter.id}-fiche`,
     kind: 'fiche',
     label: `Fiche de synthèse — ${chapter.title}`,
     detail: fiche
@@ -215,7 +216,7 @@ export function createRevisionEngine(sources: RevisionPathSources): RevisionEngi
       dayIndex * 7
     );
     return {
-      id: `${annale.id}-simulation`,
+      id: `${path.id}-${annale.id}-simulation`,
       kind: 'annale',
       label: `Annale — ${annale.title}`,
       detail: `${annale.responseFormat} · ${annale.durationMinutes} min · session ${annale.year}.`,
@@ -228,10 +229,11 @@ export function createRevisionEngine(sources: RevisionPathSources): RevisionEngi
   const buildDaySteps = (
     path: RevisionPath,
     dayIndex: number,
-    phase: RevisionPhaseId,
+    phase: RevisionPhaseKey,
     chapters: Chapter[],
     offset: number
   ): RevisionDayStep[] => {
+    const prefix = path.id;
     const first = chapters[0];
     const second = chapters[1] ?? chapters[0];
     if (!first) return [];
@@ -239,53 +241,72 @@ export function createRevisionEngine(sources: RevisionPathSources): RevisionEngi
 
     switch (phase) {
       case 'diagnostic':
-        steps.push(courseStep(first), ficheStep(first, fichesById.get(first.ficheId)));
-        steps.push(qcmStep(`rp-${path.subjectId}-j1-qcm1`, [first], path.subjectId, offset, 6));
-        steps.push(bilanStep(`rp-${path.subjectId}-j1-bilan`, path.subjectId, offset, 8));
+        steps.push(courseStep(path, first), ficheStep(path, first, fichesById.get(first.ficheId)));
+        steps.push(qcmStep(`${prefix}-j1-qcm1`, [first], path.subjectId, offset, 6));
+        steps.push(bilanStep(`${prefix}-j1-bilan`, path.subjectId, offset, 8));
         break;
       case 'fondations':
-        steps.push(courseStep(first), courseStep(second));
-        steps.push(ficheStep(first, fichesById.get(first.ficheId)));
-        steps.push(qcmStep(`rp-${path.subjectId}-j2-qcm`, [first, second], path.subjectId, offset, 8));
+        steps.push(courseStep(path, first), courseStep(path, second));
+        steps.push(ficheStep(path, first, fichesById.get(first.ficheId)));
+        steps.push(qcmStep(`${prefix}-j2-qcm`, [first, second], path.subjectId, offset, 8));
         break;
       case 'coeur':
-        steps.push(courseStep(first), ficheStep(first, fichesById.get(first.ficheId)));
-        steps.push(courseStep(second));
-        steps.push(qcmStep(`rp-${path.subjectId}-j3-qcm`, [first, second], path.subjectId, offset, 10));
+        steps.push(courseStep(path, first), ficheStep(path, first, fichesById.get(first.ficheId)));
+        steps.push(courseStep(path, second));
+        steps.push(qcmStep(`${prefix}-j3-qcm`, [first, second], path.subjectId, offset, 10));
         break;
       case 'methode':
-        steps.push(ficheStep(first, fichesById.get(first.ficheId)));
-        steps.push(courseStep(first));
-        steps.push(ficheStep(second, fichesById.get(second.ficheId)));
-        steps.push(bilanStep(`rp-${path.subjectId}-j4-bilan`, path.subjectId, offset, 10));
+        steps.push(ficheStep(path, first, fichesById.get(first.ficheId)));
+        steps.push(courseStep(path, first));
+        steps.push(ficheStep(path, second, fichesById.get(second.ficheId)));
+        steps.push(bilanStep(`${prefix}-j4-bilan`, path.subjectId, offset, 10));
         break;
       case 'entrainement':
-        steps.push(qcmStep(`rp-${path.subjectId}-j5-qcm1`, [first], path.subjectId, offset, 6));
-        steps.push(courseStep(second));
-        steps.push(qcmStep(`rp-${path.subjectId}-j5-qcm2`, [second], path.subjectId, offset + 3, 6));
-        steps.push(flashcardStep(`rp-${path.subjectId}-j5-cartes`, chapters, path.subjectId, offset));
+        steps.push(qcmStep(`${prefix}-j5-qcm1`, [first], path.subjectId, offset, 6));
+        steps.push(courseStep(path, second));
+        steps.push(qcmStep(`${prefix}-j5-qcm2`, [second], path.subjectId, offset + 3, 6));
+        steps.push(flashcardStep(`${prefix}-j5-cartes`, chapters, path.subjectId, offset));
         break;
       case 'simulation': {
         const annale = annaleStep(path, dayIndex);
         if (annale) steps.push(annale);
-        steps.push(qcmStep(`rp-${path.subjectId}-j6-qcm`, [first, second], path.subjectId, offset, 8));
-        steps.push(bilanStep(`rp-${path.subjectId}-j6-bilan`, path.subjectId, offset + 5, 10));
+        steps.push(qcmStep(`${prefix}-j6-qcm`, [first, second], path.subjectId, offset, 8));
+        steps.push(bilanStep(`${prefix}-j6-bilan`, path.subjectId, offset + 5, 10));
         break;
       }
       case 'consolidation':
-        steps.push(flashcardStep(`rp-${path.subjectId}-j7-cartes`, chapters, path.subjectId, offset + 4));
-        steps.push(ficheStep(second, fichesById.get(second.ficheId)));
-        steps.push(bilanStep(`rp-${path.subjectId}-j7-bilan`, path.subjectId, offset, 12));
+        steps.push(flashcardStep(`${prefix}-j7-cartes`, chapters, path.subjectId, offset + 4));
+        steps.push(ficheStep(path, second, fichesById.get(second.ficheId)));
+        steps.push(bilanStep(`${prefix}-j7-bilan`, path.subjectId, offset, 12));
         break;
+      case 'filet-securite':
+        steps.push(ficheStep(path, first, fichesById.get(first.ficheId)));
+        steps.push(courseStep(path, first));
+        steps.push(qcmStep(`${prefix}-j1-qcm`, [first, second], path.subjectId, offset, 10));
+        steps.push(flashcardStep(`${prefix}-j1-cartes`, [first, second], path.subjectId, offset));
+        break;
+      case 'notions-tombables':
+        steps.push(courseStep(path, first));
+        steps.push(ficheStep(path, second, fichesById.get(second.ficheId)));
+        steps.push(qcmStep(`${prefix}-j2-qcm`, [second], path.subjectId, offset + 2, 10));
+        steps.push(bilanStep(`${prefix}-j2-bilan`, path.subjectId, offset, 10));
+        break;
+      case 'veille-epreuve': {
+        const annale = annaleStep(path, dayIndex);
+        if (annale) steps.push(annale);
+        steps.push(ficheStep(path, first, fichesById.get(first.ficheId)));
+        steps.push(bilanStep(`${prefix}-j3-bilan`, path.subjectId, offset + 3, 12));
+        break;
+      }
       default:
-        steps.push(courseStep(first));
+        steps.push(courseStep(path, first));
     }
     return steps;
   };
 
   const buildPlan = (path: RevisionPath): RevisionPathPlan => {
     const days: RevisionDayPlan[] = path.days.map((day, index) => {
-      const phase = REVISION_PHASES.find((p) => p.id === day.phase) ?? REVISION_PHASES[0];
+      const phase = REVISION_PHASE_BY_ID[day.phase] ?? REVISION_PHASES[0];
       const chapters = day.chapterIds
         .map((id) => chaptersById.get(id))
         .filter((c): c is Chapter => Boolean(c));

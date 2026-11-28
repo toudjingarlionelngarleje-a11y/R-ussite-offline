@@ -5,11 +5,12 @@ import {
   CheckCircle2,
   Circle,
   Clock,
+  Compass,
   Plus,
   RefreshCw,
 } from 'lucide-react';
 import { SUBJECTS, useApp } from '../context/AppContext';
-import { daysUntil, formatIsoDate } from '../lib/planner';
+import { daysUntil, formatDayLabel, formatIsoDate } from '../lib/planner';
 
 const WEEKDAYS = [
   { id: 1, label: 'Lun' },
@@ -30,6 +31,7 @@ const TYPE_META: Record<string, { label: string; badge: string }> = {
   pause: { label: 'Repos', badge: 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
   revision_finale: { label: 'Révision finale', badge: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200' },
   objectif_perso: { label: 'Objectif perso', badge: 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200' },
+  parcours: { label: 'Parcours guidé', badge: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200' },
 };
 
 export const PlannerScreen: React.FC = () => {
@@ -58,6 +60,31 @@ export const PlannerScreen: React.FC = () => {
 
   const countdown = activeProfile?.examDate ? daysUntil(activeProfile.examDate) : 45;
   const completedCount = state.studyPlan.filter((i) => i.completed).length;
+
+  // v34.0 — parcours guidés branchés sur le programme personnalisé
+  const parcoursGroups = Array.from(
+    state.studyPlan
+      .filter((item) => item.type === 'parcours' && item.pathId)
+      .reduce((map, item) => {
+        const key = item.pathId as string;
+        const group = map.get(key) ?? {
+          pathId: key,
+          subjectId: item.subjectId,
+          mode: item.pathMode ?? 'standard',
+          total: 0,
+          done: 0,
+          first: item.date,
+          last: item.date,
+        };
+        group.total += 1;
+        if (item.completed) group.done += 1;
+        if (item.date < group.first) group.first = item.date;
+        if (item.date > group.last) group.last = item.date;
+        map.set(key, group);
+        return map;
+      }, new Map<string, { pathId: string; subjectId?: string; mode: string; total: number; done: number; first: string; last: string }>())
+      .values()
+  );
 
   const handleAddGoal = (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,6 +267,48 @@ export const PlannerScreen: React.FC = () => {
         </div>
       </section>
 
+      {/* Parcours guidés planifiés (v34.0) */}
+      {parcoursGroups.length > 0 && (
+        <section className="hc-card rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4 dark:border-indigo-900 dark:bg-indigo-950/30">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="inline-flex items-center gap-1.5 text-xs font-extrabold text-indigo-900 dark:text-indigo-200">
+              <Compass className="h-4 w-4" />
+              Parcours guidés intégrés ({parcoursGroups.length})
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('revision-paths')}
+              className="rounded-lg bg-indigo-600 px-2.5 py-1.5 text-[11px] font-bold text-white hover:bg-indigo-700"
+            >
+              Ouvrir les parcours
+            </button>
+          </div>
+          <ul className="mt-2 space-y-1.5">
+            {parcoursGroups.map((group) => {
+              const subjectName =
+                SUBJECTS.find((s) => s.id === group.subjectId)?.name ?? 'Matière';
+              return (
+                <li
+                  key={group.pathId}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white/80 px-3 py-2 text-xs dark:bg-slate-900/70"
+                >
+                  <span className="font-bold text-slate-800 dark:text-slate-100">
+                    {subjectName}
+                    <span className="ml-2 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-indigo-800 dark:bg-indigo-950 dark:text-indigo-200">
+                      {group.mode === 'express' ? 'Express 3 j' : 'Complet 7 j'}
+                    </span>
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                    {group.done}/{group.total} journées · du {formatDayLabel(group.first)} au{' '}
+                    {formatDayLabel(group.last)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
       {/* Add Personal Goal */}
       <form
         onSubmit={handleAddGoal}
@@ -382,7 +451,8 @@ export const PlannerScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      if (item.type === 'fiche') navigate('fiche-viewer');
+                      if (item.type === 'parcours') navigate('revision-paths');
+                      else if (item.type === 'fiche') navigate('fiche-viewer');
                       else if (item.type === 'examen_blanc') navigate('mock-exam');
                       else if (item.type === 'erreurs') navigate('mistakes');
                       else if (item.type === 'bilan') navigate('stats');

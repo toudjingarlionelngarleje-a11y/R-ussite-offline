@@ -18,8 +18,13 @@ export type RevisionPhaseId =
   | 'simulation'
   | 'consolidation';
 
+/** v34.0 — journées du parcours express (J-3, J-2, J-1). */
+export type ExpressPhaseId = 'filet-securite' | 'notions-tombables' | 'veille-epreuve';
+
+export type RevisionPhaseKey = RevisionPhaseId | ExpressPhaseId;
+
 export interface RevisionPhaseMeta {
-  id: RevisionPhaseId;
+  id: RevisionPhaseKey;
   index: number;
   title: string;
   objective: string;
@@ -95,6 +100,43 @@ export const REVISION_PHASES: RevisionPhaseMeta[] = [
   },
 ];
 
+/** Les trois journées du parcours express, à activer à J-3, J-2 et J-1. */
+export const EXPRESS_PHASES: RevisionPhaseMeta[] = [
+  {
+    id: 'filet-securite',
+    index: 1,
+    title: 'Filet de sécurité',
+    objective:
+      'Sécurise les notions qui rapportent le plus de points : une fiche relue, un cours ciblé, un QCM de calibrage et les cartes du chapitre.',
+    minutes: 60,
+    advice: 'Coche chaque question réussie : ce que tu sais déjà n’a plus besoin d’être révisé demain.',
+  },
+  {
+    id: 'notions-tombables',
+    index: 2,
+    title: 'Notions tombables',
+    objective:
+      'Travaille les notions qui reviennent le plus souvent dans les sujets et vérifie-les avec un QCM court puis un bilan noté.',
+    minutes: 70,
+    advice: 'Pour chaque notion, récite la définition puis donne un exemple : c’est ce que le correcteur attend.',
+  },
+  {
+    id: 'veille-epreuve',
+    index: 3,
+    title: 'Veille d’épreuve',
+    objective:
+      'Dernière ligne droite : relis la fiche mémo, passe une annale en conditions réelles et termine par un bilan pour doser ta confiance.',
+    minutes: 75,
+    advice: 'Couche-toi tôt : une nuit complète vaut mieux qu’une heure de révision supplémentaire.',
+  },
+];
+
+export const ALL_REVISION_PHASES: RevisionPhaseMeta[] = [...REVISION_PHASES, ...EXPRESS_PHASES];
+
+export const REVISION_PHASE_BY_ID: Record<string, RevisionPhaseMeta> = Object.fromEntries(
+  ALL_REVISION_PHASES.map((phase) => [phase.id, phase])
+);
+
 export interface RevisionDayStep {
   id: string;
   kind: RevisionStepKind;
@@ -111,7 +153,7 @@ export interface RevisionDayStep {
 export interface RevisionDayPlan {
   id: string;
   index: number;
-  phase: RevisionPhaseId;
+  phase: RevisionPhaseKey;
   title: string;
   objective: string;
   advice: string;
