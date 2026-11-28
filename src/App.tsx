@@ -23,6 +23,7 @@ import { OwnerHubScreen } from './screens/OwnerHubScreen';
 import { PlannerScreen } from './screens/PlannerScreen';
 import { PracticeScreen } from './screens/PracticeScreen';
 import { PrivacySettingsScreen } from './screens/PrivacySettingsScreen';
+import { RevisionPathsScreen } from './screens/RevisionPathsScreen';
 import { SecurityCenterScreen } from './screens/SecurityCenterScreen';
 import { StatsScreen } from './screens/StatsScreen';
 import { StorageSyncScreen } from './screens/StorageSyncScreen';
@@ -81,6 +82,8 @@ const ScreenRouter: React.FC = () => {
       case 'subject-detail':
       case 'chapters':
         return <LibraryScreen />;
+      case 'revision-paths':
+        return <RevisionPathsScreen />;
       case 'annales':
         return <AnnalesScreen />;
       case 'downloads':

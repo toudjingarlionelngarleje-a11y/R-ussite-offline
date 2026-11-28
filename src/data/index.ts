@@ -10,6 +10,7 @@ import {
   USER_CATEGORIES,
 } from './metadata';
 import { ANNALES as BASE_ANNALES, QUESTIONS as BASE_QUESTIONS } from './questions';
+import { buildRevisionPaths } from './revisionPaths/builder';
 import { FICHES as BASE_FICHES, FLASHCARDS as BASE_FLASHCARDS } from './fichesAndCards';
 import {
   EXTRA_CHAPTERS,
@@ -1003,3 +1004,11 @@ export const FLASHCARDS = [
   const subjectId = CHAPTER_SUBJECT_ID[fc.chapterId] ?? (fc as { subjectId?: string }).subjectId;
   return { ...fc, diagramId: getChapterIllustration(SUBJECT_BY_ID.get(subjectId ?? ''), fc.chapterId) };
 });
+
+/**
+ * v33.0 — Parcours de révision guidés : sept journées par matière
+ * (diagnostic, fondations, cœur du programme, méthode, entraînement,
+ * simulation d’examen, consolidation), adossées à de vrais chapitres,
+ * fiches, QCM, flashcards et annales du catalogue hors ligne.
+ */
+export const REVISION_PATHS = buildRevisionPaths(SUBJECTS, CHAPTERS, ANNALES);

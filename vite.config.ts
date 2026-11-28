@@ -51,6 +51,7 @@ export default defineConfig({
           if (id.includes('/extensionV31/')) return 'data-x31';
           if (id.includes('/newSubjectsV31/')) return 'data-x31';
           if (id.includes('/extensionV32/')) return 'data-x32';
+          if (id.includes('/revisionPaths/')) return 'data-paths';
         },
       },
     },

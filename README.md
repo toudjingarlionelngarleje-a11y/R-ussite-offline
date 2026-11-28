@@ -8,32 +8,34 @@ Application web et mobile **offline-first (PWA)** conçue pour les lycéens, ét
   - Stockage persistant dans **IndexedDB** (`reussite-offline-db`) avec repli automatique `localStorage`.
   - **Service Worker** (`public/sw.js`) et **Manifest PWA** (`public/manifest.webmanifest`) pour fonctionner sans connexion.
   - Gestion des 5 états de synchronisation (`Synchronisé`, `En attente de synchronisation`, `Téléchargement en cours`, `Mode hors ligne`, `Erreur de synchronisation`), simulateur hors ligne intégré et option **Wi-Fi uniquement**.
-- **25 écrans complets et navigables** :
+- **Parcours de révision guidés (v33.0)** : **150 parcours**, un par matière, de **sept journées** chacun — diagnostic et repères, fondations, cœur du programme, méthode et rédaction, entraînement ciblé, simulation d’examen, consolidation et bilan. Chaque journée s’appuie sur **deux chapitres pivots** réellement tirés du programme et propose cours, fiche, QCM corrigé, flashcards, annale et bilan noté, avec progression enregistrée hors ligne et synchronisée sur le cloud.
+- **26 écrans complets et navigables** :
   1. Accueil
   2. Inscription & Connexion (hachage SHA-256 local + multi-profil appareil partagé)
   3. Choix de l’examen / concours (pays, niveau, matières)
   4. Configuration du niveau et des objectifs (date d’épreuve, temps quotidien, jours de repos, score cible)
   5. Tableau de bord pédagogique
   6. Bibliothèque de contenus
-  7. Détail d’une matière
-  8. Liste des chapitres
-  9. Banque d’annales et de sujets (filtres multi-critères, recherche, favoris, reprise, partage)
-  10. Téléchargement hors ligne (packs par matière, annales, fiches, cours, zéro doublon)
-  11. Lecteur de cours hors ligne (schémas SVG, audio Web Speech API, surlignage, notes, synthèse IA responsable)
-  12. Fiches synthétiques en **6 formats** (Détaillée, Express 60s, Tableau, Cartes mémoire, Imprimable/PDF, Audio)
-  13. Flashcards avec **répétition espacée SM-2** hors ligne (4 niveaux de maîtrise)
-  14. Session d’entraînement (Révision rapide, Entraînement libre, Défi quotidien)
-  15. Examen blanc chronométré (compte à rebours/progressif, alertes mi-parcours & 10/5/1 min, focus lock, navigation contrôlée)
-  16. Correction détaillée (analytique de temps, étapes officielles, fiche liée, questions similaires, assistant IA responsable)
-  17. Révision des erreurs
-  18. Programme de révision personnalisé et adaptatif (déplacement de sessions, durées, jours de repos, objectifs personnels, rappels locaux)
-  19. Statistiques de progression (graphiques SVG légers, chapitres maîtrisés/faibles, historique)
-  20. Favoris
-  21. Notes personnelles & surlignages
-  22. Gestion du stockage sur l’appareil
-  23. Centre de synchronisation
-  24. Espace Enseignant (création QCM/fiches, import, checklist qualité anti-doublon/erreurs avant publication hors ligne, stats anonymisées)
-  25. Paramètres de confidentialité, sécurité & accessibilité (mode sombre, contraste élevé, taille de police, économie batterie, export JSON, suppression du compte)
+  7. Parcours de révision guidés (7 journées par matière, progression et reprise)
+  8. Détail d’une matière
+  9. Liste des chapitres
+  10. Banque d’annales et de sujets (filtres multi-critères, recherche, favoris, reprise, partage)
+  11. Téléchargement hors ligne (packs par matière, annales, fiches, cours, zéro doublon)
+  12. Lecteur de cours hors ligne (schémas SVG, audio Web Speech API, surlignage, notes, synthèse IA responsable)
+  13. Fiches synthétiques en **6 formats** (Détaillée, Express 60s, Tableau, Cartes mémoire, Imprimable/PDF, Audio)
+  14. Flashcards avec **répétition espacée SM-2** hors ligne (4 niveaux de maîtrise)
+  15. Session d’entraînement (Révision rapide, Entraînement libre, Défi quotidien)
+  16. Examen blanc chronométré (compte à rebours/progressif, alertes mi-parcours & 10/5/1 min, focus lock, navigation contrôlée)
+  17. Correction détaillée (analytique de temps, étapes officielles, fiche liée, questions similaires, assistant IA responsable)
+  18. Révision des erreurs
+  19. Programme de révision personnalisé et adaptatif (déplacement de sessions, durées, jours de repos, objectifs personnels, rappels locaux)
+  20. Statistiques de progression (graphiques SVG légers, chapitres maîtrisés/faibles, historique)
+  21. Favoris
+  22. Notes personnelles & surlignages
+  23. Gestion du stockage sur l’appareil
+  24. Centre de synchronisation
+  25. Espace Enseignant (création QCM/fiches, import, checklist qualité anti-doublon/erreurs avant publication hors ligne, stats anonymisées)
+  26. Paramètres de confidentialité, sécurité & accessibilité (mode sombre, contraste élevé, taille de police, économie batterie, export JSON, suppression du compte)
 
 ## Démarrage rapide
 
@@ -49,7 +51,7 @@ npm run build
 npm run preview
 ```
 
-## Catalogue — extensions v19.0 à v32.0 (43 nouvelles matières illustrées + 140 chapitres par matière), v28.0 (un schéma par chapitre) et v22.0 (6 parcours, 24 annales, Coach enrichi)
+## Catalogue — v33.0 (150 parcours de révision guidés), extensions v19.0 à v32.0 (43 nouvelles matières illustrées + 140 chapitres par matière), v28.0 (un schéma par chapitre) et v22.0 (6 parcours, 24 annales, Coach enrichi)
 
 - **+21 880 chapitres** : **150 matières** au total, dont **43 nouvelles matières** créées en v24.0 (10), v25.0 (8), v26.0 (8), v27.0 (8) et v31.0 (9), chacune avec 120 chapitres dédiés, et **140 chapitres supplémentaires** dans chacune des 107 matières historiques (quatorze vagues de 10 en v19.0 à v32.0), soit **33 300 chapitres** (11 420 en v18.0).
 - **Chaque nouveau chapitre est complet** : cours en 4 sections, fiche synthétique, QCM corrigé à 4 options, flashcards et rattachement aux annales — soit **33 300 cours, 33 300 fiches, 33 445 QCM, 32 375 flashcards et 5 368 annales**.
@@ -72,6 +74,7 @@ npm run preview
 - **Vague v27.0 — nouvelles matières illustrées** : observation guidée du réel, lexique du métier, gestes de base, modèle commenté, chantier école, sécurité et prévention, vérification rapide, dossier client, présentation du livrable, plan de progression.
 - **Vague v27.0 — approfondissement (toutes matières)** : idée clé, schéma muet à compléter, automatisme, entraînement ciblé, piège classique, mission longue, chrono examen, fiche express, cas voisin, bilan de maîtrise.
 - **Illustrations SVG v27.0** : 8 nouveaux schémas vectoriels 100 % hors ligne (structure du cheveu, réseau de plomberie, démarche de diagnostic automobile, assemblage soudé, ruche et cadres, vinification, taille en brillant, ordre protocolaire), soit **36 illustrations** au total (acte authentique, progression de rééducation, cycle d’une transaction immobilière, chaîne de blocs, appareil phonatoire, plan paysager, assemblages bois, boucle de gameplay), en plus des 20 illustrations v25.0 (budget, business model canvas, scène forensique, transmission orale, réseau de neurones, roue de l’autonomie, pyramide des âges, financement de la santé, couches de la peau, périmètres de sûreté, chaîne de déplacement, quadrant des compétences, cycle de traduction, plan de classification, triangle de médiation, boucle circulaire, chaîne du risque climatique, accessibilité universelle, cercle chromatique, planning d’organisation). Chaque nouveau chapitre et chaque flashcard de la vague s’ouvre sur son illustration, et les 141 matières disposent désormais d’une galerie de schémas (aucune ressource distante, aucune image téléchargée).
+- **v33.0 — 150 parcours de révision guidés** : un parcours par matière, sept journées et **3 900 étapes** au total, adossées à de vrais contenus — 1 050 lectures de cours, 900 fiches, 900 QCM corrigés (6 à 10 questions), 300 séries de flashcards (10 cartes minimum), 150 annales et 600 bilans notés. Chaque parcours sélectionne **14 chapitres pivots répartis du début à la fin du programme** (1 050 journées au total), affiche sa durée réelle (7 h 30 à 8 h 30 selon la matière) et enregistre la progression étape par étape, hors ligne comme sur le cloud. Aucune donnée de chapitre n’est dupliquée : les parcours pointent vers les cours, fiches, QCM et annales existants.
 - **v32.0 — 3 000 chapitres de raisonnement et de transfert** : deux modules inédits dans chacune des 150 matières (300 modules au total), déclinés en dix étapes nouvelles — le déclic initial, carte des repères, raisonnement guidé, exercice modèle, atelier autonome, pièges du sujet, test progressif, situation réelle, passerelle vers les métiers, récapitulatif actif. Le catalogue atteint **33 300 chapitres**, **33 445 QCM**, **32 375 flashcards** et **5 368 annales** ; min 140 / max 300 chapitres par matière.
 - **v31.0 — neuf nouvelles matières professionnelles** : 120 chapitres chacune, soit **1 080 chapitres** — 8 modules × 10 étapes de professionnalisation (découverte du métier, terminologie, matériel et sécurité, geste technique guidé, protocole du métier, cas client commenté, contrôle qualité, économie de l’activité, cadre réglementaire, progression dans le métier) puis 20 chapitres d’approfondissement v29.0 et 20 chapitres de méthode v30.0. Chaque chapitre reste complet (cours en 4 sections, fiche, QCM corrigé, flashcards) et illustré ; **9 nouvelles galeries de schémas** sont rattachées aux matières créées. Le catalogue atteint **150 matières**, **30 300 chapitres**, **30 445 QCM**, **29 375 flashcards** et **4 918 annales**.
 - **v30.0 — 2 820 chapitres de méthode et de pratique** : deux modules inédits par matière (282 au total) déclinés en 10 étapes concrètes — exemple vécu, mini-projet, étude de document, analyse d’erreur, débat argumenté, défi chronométré, fiche de révision, question orale, schéma bilan, grille de réussite. Le catalogue atteint **29 220 chapitres**, **29 365 QCM**, **28 295 flashcards** et **4 837 annales**.
@@ -80,7 +83,7 @@ npm run preview
 - **Numérotation continue** : 140 chapitres pour toutes les matières après la vague v32.0, 120 pour les nouvelles matières v31.0, 130 pour celles de v27.0 (140 pour celles de v26.0, 150 pour celles de v25.0, 160 pour celles de v24.0), 220 à 280 pour les matières historiques ; le volume annoncé dans chaque description est recalculé depuis les données réelles à chaque vague.
 - **Nouveautés v22.0 — 6 parcours d’examen inédits** : Eaux, Forêts, Climat & Environnement ; Statistique publique, Démographie & Prévision ; Transports, Logistique & Commerce International ; Hôtellerie, Restauration & Tourisme Durable ; Cybersécurité Industrielle & Systèmes OT ; Éducation Physique, Sport & Santé — soit **77 examens & concours** au total, chacun rattaché à 6 matières existantes (aucune matière créée).
 - **24 annales v22.0** (6 parcours × 4 sessions 2023-2026) assemblées à partir des questions du catalogue, avec durées, barèmes, consignes et format d’épreuve propres — **2 020 annales** au total.
-- **Aucune ressource externe** : packs embarqués (chunks `data-x19` à `data-x27`, `data-x29` à `data-x32`) et cache PWA `secure-v30`.
+- **Aucune ressource externe** : packs embarqués (chunks `data-x19` à `data-x27`, `data-x29` à `data-x32` et `data-paths` pour les parcours guidés) et cache PWA `secure-v31`.
 
 ## Coach IA — base de connaissances hors ligne (v18.0)
 
@@ -105,6 +108,7 @@ Fichiers : `src/data/coachKnowledge/` (données) et `src/lib/coachEngine.ts` (mo
 > **v25.0** : **8 nouvelles matières illustrées** (80 chapitres chacune), **1 250 chapitres d’approfondissement** (10 par matière sur 125) et **20 illustrations SVG** intégrées aux cours et flashcards, soit **19 560 chapitres / cours / fiches**, 19 705 QCM, 3 121 annales et 18 635 flashcards ; cache PWA `secure-v23`.
 > **v26.0** : **8 nouvelles matières professionnelles illustrées** (80 chapitres chacune), **1 330 chapitres d’approfondissement** (10 par matière sur 133) et **8 nouvelles illustrations SVG**, soit **21 530 chapitres / cours / fiches**, 21 675 QCM, 3 544 annales et 20 605 flashcards ; cache PWA `secure-v24`.
 > **v27.0** : **8 nouvelles matières de métiers et de protocole** (80 chapitres chacune), **1 410 chapitres d’approfondissement** (10 par matière sur 141) et **8 nouvelles illustrations SVG**, soit **23 580 chapitres / cours / fiches**, 23 725 QCM, 3 991 annales et 22 655 flashcards ; cache PWA `secure-v25`.
+> **v33.0** : **150 parcours de révision guidés** (7 journées par matière, 1 050 journées et 3 900 étapes), progression enregistrée hors ligne et synchronisée ; volumes de données inchangés (150 matières, 33 300 chapitres / cours / fiches, 33 445 QCM, 5 368 annales, 32 375 flashcards) ; cache PWA `secure-v31`.
 > **v32.0** : **3 000 chapitres de raisonnement et de transfert** (2 modules × 10 étapes dans chacune des 150 matières), soit **33 300 chapitres / cours / fiches**, 33 445 QCM, 5 368 annales et 32 375 flashcards ; cache PWA `secure-v30`.
 > **v31.0** : **9 nouvelles matières professionnelles** (120 chapitres chacune, 9 nouvelles galeries de schémas), soit **150 matières** et **30 300 chapitres / cours / fiches**, 30 445 QCM, 4 918 annales et 29 375 flashcards ; cache PWA `secure-v29`.
 > **v30.0** : **2 820 chapitres de méthode et de pratique** (2 modules × 10 étapes dans les 141 matières), soit **29 220 chapitres / cours / fiches**, 29 365 QCM, 4 837 annales et 28 295 flashcards ; cache PWA `secure-v28`.

@@ -5,6 +5,7 @@ import {
   ArrowRight,
   BookMarked,
   Brain,
+  Compass,
   Calendar,
   CheckCircle2,
   Clock,
@@ -21,7 +22,7 @@ import { CHAPTERS, EXAMS, SUBJECTS, useApp } from '../context/AppContext';
 import { buildAdaptiveRecommendations } from '../lib/adaptiveEngine';
 import { daysUntil, formatIsoDate } from '../lib/planner';
 import { isCardDue } from '../lib/sm2';
-import { FLASHCARDS } from '../data';
+import { FLASHCARDS, REVISION_PATHS } from '../data';
 
 export const DashboardScreen: React.FC = () => {
   const {
@@ -85,6 +86,10 @@ export const DashboardScreen: React.FC = () => {
     () => FLASHCARDS.filter((fc) => isCardDue(state.flashcardProgress[fc.id])).length,
     [state.flashcardProgress]
   );
+
+  const startedPathCount = Object.values(state.revisionPathProgress ?? {}).filter(
+    (steps) => Array.isArray(steps) && steps.length > 0
+  ).length;
 
   const nextPlan = state.studyPlan.find((p) => !p.completed && p.type !== 'pause');
   const downloadedCount = Object.keys(state.downloadedItems).length;
@@ -241,7 +246,7 @@ export const DashboardScreen: React.FC = () => {
       </section>
 
       {/* KPI Cards */}
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {[
           {
             label: 'Taux de réussite',
@@ -274,6 +279,14 @@ export const DashboardScreen: React.FC = () => {
             icon: Layers,
             tone: 'text-purple-700 bg-purple-50 dark:bg-purple-950/60 dark:text-purple-300',
             onClick: () => navigate('flashcards'),
+          },
+          {
+            label: 'Parcours guidés',
+            value: `${startedPathCount}/${REVISION_PATHS.length}`,
+            sub: 'Sept journées par matière',
+            icon: Compass,
+            tone: 'text-indigo-700 bg-indigo-50 dark:bg-indigo-950/60 dark:text-indigo-300',
+            onClick: () => navigate('revision-paths'),
           },
         ].map((kpi) => {
           const Icon = kpi.icon;

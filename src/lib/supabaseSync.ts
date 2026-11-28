@@ -116,6 +116,8 @@ export interface OwnerCloudSnapshot {
 
 export interface PortableCloudAccountData {
   completedCourseIds: string[];
+  /** v33.0 — progression des parcours de révision guidés. */
+  revisionPathProgress?: Record<string, string[]>;
   favorites: AppState['favorites'];
   sessions: SessionRecord[];
   flashcardProgress: Record<string, FlashcardProgress>;
@@ -141,6 +143,12 @@ export function buildPortableCloudSnapshot(state: AppState): PortableCloudAccoun
     completedCourseIds: Array.isArray(state.completedCourseIds)
       ? state.completedCourseIds.slice(-2000)
       : [],
+    revisionPathProgress: Object.fromEntries(
+      Object.entries(state.revisionPathProgress ?? {}).map(([pathId, steps]) => [
+        pathId,
+        Array.isArray(steps) ? steps.slice(-500) : [],
+      ])
+    ),
     favorites: {
       annales: state.favorites?.annales?.slice(-300) ?? [],
       fiches: state.favorites?.fiches?.slice(-500) ?? [],
@@ -1105,6 +1113,14 @@ export async function fetchCloudAccountBundleByEmail(
       completedCourseIds: Array.isArray(rawJson.completedCourseIds)
         ? rawJson.completedCourseIds
         : [],
+      revisionPathProgress:
+        rawJson.revisionPathProgress && typeof rawJson.revisionPathProgress === 'object'
+          ? Object.fromEntries(
+              Object.entries(rawJson.revisionPathProgress as Record<string, unknown>)
+                .filter(([, steps]) => Array.isArray(steps))
+                .map(([pathId, steps]) => [pathId, (steps as string[]).slice(-500)])
+            )
+          : {},
       favorites: {
         annales: Array.isArray(rawJson.favorites?.annales) ? rawJson.favorites.annales : [],
         fiches: Array.isArray(rawJson.favorites?.fiches) ? rawJson.favorites.fiches : [],

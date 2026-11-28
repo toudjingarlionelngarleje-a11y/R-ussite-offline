@@ -6,8 +6,9 @@ import { isCardDue, MASTERY_LABELS } from '../lib/sm2';
 import { MasteryLevel } from '../types';
 
 export const FlashcardsScreen: React.FC = () => {
-  const { state, allFlashcards, rateFlashcard } = useApp();
-  const [subjectFilter, setSubjectFilter] = useState('all');
+  const { state, allFlashcards, rateFlashcard, flashcardFocusSubjectId } = useApp();
+  // v33.0 — un parcours guidé peut ouvrir les cartes directement sur sa matière.
+  const [subjectFilter, setSubjectFilter] = useState(flashcardFocusSubjectId ?? 'all');
   const [dueOnly, setDueOnly] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const [index, setIndex] = useState(0);

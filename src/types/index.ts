@@ -8,6 +8,7 @@ export type ScreenId =
   | 'coach'
   | 'generator'
   | 'library'
+  | 'revision-paths'
   | 'subject-detail'
   | 'chapters'
   | 'annales'
@@ -307,6 +308,27 @@ export interface Course {
   sizeKb: number;
   sections: CourseSection[];
   updatedAt: string;
+}
+
+/** v33.0 — Parcours de révision guidés (7 journées par matière). */
+export type RevisionStepKind = 'cours' | 'fiche' | 'qcm' | 'flashcards' | 'annale' | 'bilan';
+
+export interface RevisionPathDay {
+  id: string;
+  phase: string;
+  index: number;
+  chapterIds: string[];
+  annaleId?: string;
+}
+
+export interface RevisionPath {
+  id: string;
+  subjectId: string;
+  title: string;
+  goal: string;
+  /** 7 journées : diagnostic, fondations, cœur, méthode, entraînement, simulation, bilan. */
+  days: RevisionPathDay[];
+  anchorChapterCount: number;
 }
 
 export interface Question {
@@ -720,6 +742,8 @@ export interface AppState {
   notes: PersonalNote[];
   highlights: HighlightItem[];
   completedCourseIds: string[];
+  /** v33.0 — étapes de parcours guidés terminées, par parcours. */
+  revisionPathProgress: Record<string, string[]>;
   studyPlan: StudyPlanItem[];
   errorReports: ErrorReport[];
   syncQueue: SyncQueueItem[];

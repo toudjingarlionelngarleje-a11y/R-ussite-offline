@@ -91,6 +91,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         { id: 'diagnostic', label: 'Test de niveau IA', icon: Compass },
         { id: 'coach', label: 'Assistant & Vocal', icon: Bot },
         { id: 'library', label: 'Bibliothèque', icon: BookOpen },
+        { id: 'revision-paths', label: 'Parcours guidés', icon: Compass },
         { id: 'annales', label: 'Banque d’annales', icon: FileText },
         { id: 'fiche-viewer', label: 'Fiches synthétiques', icon: BookMarked },
         { id: 'flashcards', label: 'Flashcards (SM-2)', icon: Layers },

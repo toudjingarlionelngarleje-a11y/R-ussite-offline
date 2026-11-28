@@ -179,6 +179,7 @@ function createCleanBaseState(): AppState {
     notes: [],
     highlights: [],
     completedCourseIds: [],
+    revisionPathProgress: {},
     studyPlan: [],
     errorReports: [],
     syncQueue: [],
@@ -460,6 +461,21 @@ export interface LoginAccountResult {
   legacyAccount?: LegacyCloudAccountPreview;
 }
 
+function mergeRevisionProgress(
+  local: Record<string, string[]> | undefined,
+  cloud: Record<string, string[]> | undefined
+): Record<string, string[]> {
+  const merged: Record<string, string[]> = {};
+  for (const [pathId, steps] of Object.entries(local ?? {})) {
+    if (Array.isArray(steps)) merged[pathId] = [...steps];
+  }
+  for (const [pathId, steps] of Object.entries(cloud ?? {})) {
+    if (!Array.isArray(steps)) continue;
+    merged[pathId] = Array.from(new Set([...(merged[pathId] ?? []), ...steps]));
+  }
+  return merged;
+}
+
 function mergeCloudDataIntoState(
   prev: AppState,
   cloudData?: PortableCloudAccountData | null
@@ -511,6 +527,7 @@ function mergeCloudDataIntoState(
       b.updatedAt.localeCompare(a.updatedAt)
     ),
     highlights: Array.from(hlMap.values()),
+    revisionPathProgress: mergeRevisionProgress(prev.revisionPathProgress, cloudData.revisionPathProgress),
     studyPlan: prev.studyPlan.length > 0 ? prev.studyPlan : cloudData.studyPlan ?? [],
     streakDays: Math.max(prev.streakDays ?? 0, cloudData.streakDays ?? 1),
     dailyChallengeCompletedDate:
@@ -611,6 +628,10 @@ interface AppContextValue {
   addHighlight: (hl: Omit<HighlightItem, 'id' | 'createdAt'>) => void;
   removeHighlight: (id: string) => void;
   toggleCourseCompleted: (courseId: string) => void;
+  toggleRevisionStep: (pathId: string, stepId: string) => void;
+  resetRevisionPath: (pathId: string) => void;
+  flashcardFocusSubjectId: string | null;
+  openFlashcardsForSubject: (subjectId: string) => void;
   reportQuestionError: (questionId: string, questionPrompt: string, reason: string) => void;
 
   // Study Plan
@@ -698,6 +719,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedFicheId, setSelectedFicheId] = useState<string>('fiche-maths-second-degre');
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [showPlanModal, setShowPlanModal] = useState(false);
+  const [flashcardFocusSubjectId, setFlashcardFocusSubjectId] = useState<string | null>(null);
   const [browserOnline, setBrowserOnline] = useState<boolean>(
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
@@ -759,6 +781,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           profiles: realProfiles,
           activeProfileId: validActiveProfile ? validActiveProfile.id : null,
           customFlashcards: saved.customFlashcards ?? [],
+          revisionPathProgress: saved.revisionPathProgress ?? {},
           diagnosticResult: saved.diagnosticResult ?? null,
           studyGroups: saved.studyGroups?.length
             ? [
@@ -2420,6 +2443,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, []);
 
+  const toggleRevisionStep = useCallback((pathId: string, stepId: string) => {
+    setState((prev) => {
+      const current = prev.revisionPathProgress?.[pathId] ?? [];
+      const exists = current.includes(stepId);
+      const next = exists ? current.filter((id) => id !== stepId) : [...current, stepId];
+      return {
+        ...prev,
+        revisionPathProgress: { ...(prev.revisionPathProgress ?? {}), [pathId]: next },
+      };
+    });
+  }, []);
+
+  const resetRevisionPath = useCallback((pathId: string) => {
+    setState((prev) => ({
+      ...prev,
+      revisionPathProgress: { ...(prev.revisionPathProgress ?? {}), [pathId]: [] },
+    }));
+  }, []);
+
+  const openFlashcardsForSubject = useCallback((subjectId: string) => {
+    setFlashcardFocusSubjectId(subjectId);
+    setScreen('flashcards');
+  }, []);
+
   const reportQuestionError = useCallback(
     (questionId: string, questionPrompt: string, reason: string) => {
       const check = guardInput('Signalement question', reason, 1500);
@@ -3126,7 +3173,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const backup = {
       exportedAt: new Date().toISOString(),
       owner: activeProfile?.email,
-      appVersion: `Réussite Offline v32.0 — ${CHAPTERS.length} chapitres, Coach IA ${COACH_KNOWLEDGE_STATS.notions} notions & ${COACH_KNOWLEDGE_STATS.methods} méthodes hors ligne + Bouclier 36 + Console Propriétaire`,
+      appVersion: `Réussite Offline v33.0 — ${CHAPTERS.length} chapitres, Coach IA ${COACH_KNOWLEDGE_STATS.notions} notions & ${COACH_KNOWLEDGE_STATS.methods} méthodes hors ligne + Bouclier 36 + Console Propriétaire`,
       catalogSummary: {
         exams: EXAMS.length,
         subjects: SUBJECTS.length,
@@ -3715,6 +3762,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     addHighlight,
     removeHighlight,
     toggleCourseCompleted,
+    toggleRevisionStep,
+    resetRevisionPath,
+    flashcardFocusSubjectId,
+    openFlashcardsForSubject,
     reportQuestionError,
     regenerateStudyPlan,
     togglePlanItemComplete,
