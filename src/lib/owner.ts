@@ -1,0 +1,85 @@
+import { AccountRole, OwnerGlobalSettings, UserProfile } from '../types';
+import { COACH_KNOWLEDGE_STATS } from '../data/coachKnowledge';
+import { CHAPTERS, SUBJECTS, X19_COVERAGE, X20_COVERAGE, X21_COVERAGE, X23_COVERAGE, X24_EXTENSION, X25_EXTENSION, X25_NEW_SUBJECTS_EXTENSION, X26_EXTENSION, X26_NEW_SUBJECTS_EXTENSION, X27_EXTENSION, X27_NEW_SUBJECTS_EXTENSION } from '../data';
+
+/**
+ * Official Owner identity for Réussite Offline.
+ * Automatically grants Owner / Founder privileges (role='owner', plan='premium')
+ * both offline in IndexedDB and online in Supabase.
+ */
+export const OWNER_EMAILS = ['toudjingarlionelngarleje@gmail.com'];
+export const OWNER_PROFILE_IDS = ['profile-1795361028411'];
+
+export const DEFAULT_OWNER_SETTINGS: OwnerGlobalSettings = {
+  announcementEnabled: false,
+  announcementText:
+    `Bienvenue sur Réussite Offline ! Prépare tes examens et concours 2026 avec 77 examens & concours, ${SUBJECTS.length} matières et ${CHAPTERS.length} chapitres, 100 pare-feux WAF et 134 systèmes de sécurité actifs. Nouveautés v34.0 : **parcours express de 3 journées** (J-3, J-2, J-1) en plus des **150 parcours guidés de 7 journées**, soit **300 parcours et 5 550 étapes** — chaque parcours peut être **branché sur le programme personnalisé** : les journées se placent automatiquement avant la date d’épreuve, en sautant les jours de repos, et cocher une journée valide ses étapes (et inversement). Rappel v33.0 : sept journées guidées par matière, du diagnostic au bilan. Le catalogue atteint ${SUBJECTS.length} matières et ${CHAPTERS.length} chapitres, avec cours, fiches, QCM, flashcards et annales associées, et un Coach IA de ${COACH_KNOWLEDGE_STATS.notions} notions / ${COACH_KNOWLEDGE_STATS.methods} méthodes.`,
+  announcementTone: 'info',
+  maintenanceMode: false,
+  registrationsOpen: true,
+  freePremiumEvent: false,
+  globalFirewallLevel: 'renforce',
+  updatedAt: new Date().toISOString(),
+};
+
+export function isOwnerEmail(email?: string | null): boolean {
+  if (!email) return false;
+  return OWNER_EMAILS.includes(email.trim().toLowerCase());
+}
+
+/**
+ * Le rôle « owner » porté par les DONNÉES ne suffit JAMAIS : une simple chaîne
+ * `role: 'owner'` dans un profil (ou un patch d'interface) ne doit pas donner les
+ * pleins pouvoirs. Seul l'e-mail officiel ou l'identifiant historique du fondateur
+ * accorde le statut Propriétaire.
+ */
+export function isOwnerProfile(profile?: UserProfile | null): boolean {
+  if (!profile) return false;
+  if (OWNER_PROFILE_IDS.includes(profile.id)) return true;
+  return isOwnerEmail(profile.email);
+}
+
+/**
+ * Normalizes a profile so the official owner always has role='owner' and unlimited 'premium' access.
+ */
+export function applyOwnerEntitlements(profile: UserProfile): UserProfile {
+  if (isOwnerProfile(profile)) {
+    const rawMethod = profile.twoFactor?.method;
+    const normalizedMethod = rawMethod === 'pin' ? 'pin' : 'device';
+    return {
+      ...profile,
+      role: 'owner',
+      plan: 'premium',
+      twoFactor: {
+        required: true,
+        enabled: profile.twoFactor?.enabled ?? false,
+        method: normalizedMethod,
+        webauthnCredentialId: profile.twoFactor?.webauthnCredentialId,
+        webauthnDeviceLabel: profile.twoFactor?.webauthnDeviceLabel,
+        pinHash: profile.twoFactor?.pinHash,
+        recoveryCodeHashes: profile.twoFactor?.recoveryCodeHashes ?? [],
+        configuredAt: profile.twoFactor?.configuredAt,
+        lastVerifiedAt: profile.twoFactor?.lastVerifiedAt,
+      },
+    };
+  }
+  // Un profil non-Propriétaire qui prétend être 'owner' est ramené à son rôle réel.
+  const fallbackRole = profile.category === 'enseignant' ? 'teacher' : 'user';
+  return {
+    ...profile,
+    role: profile.role === 'owner' ? fallbackRole : profile.role ?? fallbackRole,
+  };
+}
+
+export function getRoleLabel(role?: AccountRole): string {
+  switch (role) {
+    case 'owner':
+      return 'Propriétaire / Fondateur';
+    case 'admin':
+      return 'Administrateur';
+    case 'teacher':
+      return 'Enseignant';
+    default:
+      return 'Candidat';
+  }
+}

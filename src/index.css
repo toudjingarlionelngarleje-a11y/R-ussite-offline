@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Adjustable font sizes for accessibility */
+  html[data-font-size='sm'] {
+    font-size: 14px;
+  }
+  html[data-font-size='md'] {
+    font-size: 16px;
+  }
+  html[data-font-size='lg'] {
+    font-size: 18px;
+  }
+  html[data-font-size='xl'] {
+    font-size: 20px;
+  }
+
+  /* High contrast mode */
+  html.high-contrast body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  html.high-contrast.dark body {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+  }
+  html.high-contrast .hc-card {
+    border-width: 2px !important;
+    border-color: #0f172a !important;
+  }
+  html.high-contrast.dark .hc-card {
+    border-color: #f8fafc !important;
+  }
+
+  /* Reduced motion / battery saver */
+  html.reduced-motion *,
+  html.reduced-motion *::before,
+  html.reduced-motion *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus visibility for keyboard navigation */
+:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* 3D Flashcard flip utility */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Clean print styles for printable fiches & PDF export */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .print-container {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+}
